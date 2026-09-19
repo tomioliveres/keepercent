@@ -509,13 +509,57 @@
   </section>
 
   <section>
-    <h2><span class="num">06</span>Arquitectura: el dominio no conoce la pantalla</h2>
-    <p>El código está separado en capas, y la de abajo es la más importante:</p>
-<pre>Domain/        <span class="c-com">// Swift puro. Cero imports. Todo testeado.</span>
-Persistence/   <span class="c-com">// SwiftData: guardar y leer</span>
-Features/      <span class="c-com">// las pantallas</span>
-Insights/      <span class="c-com">// los textos en lenguaje natural</span></pre>
-    <p>El dominio no importa SwiftUI ni SwiftData. Eso no es una recomendación amable: es un <strong>paquete Swift aparte</strong>, así que si alguien intenta meter una vista adentro, el proyecto no compila.</p>
+    <h2><span class="num">06</span>Arquitectura: quién puede conocer a quién</h2>
+
+    <h3>El problema de fondo</h3>
+    <p>Un programa crece agregando archivos, y cualquier archivo puede llamar a cualquier otro. Con 20 archivos eso todavía se maneja a mano. Con 200, cambiar uno rompe tres que no tenían nada que ver. La arquitectura no es estética ni una lista de patrones de moda: responde una sola pregunta — <strong>¿quién tiene permitido conocer a quién?</strong> Las carpetas, los protocolos, los paquetes separados, todo lo que sigue en esta sección es consecuencia de esa respuesta, no un fin en sí mismo.</p>
+
+    <h3>La regla de dependencia</h3>
+    <p>Las dependencias apuntan hacia adentro. Lo estable no puede depender de lo volátil. Las reglas del handball — un tiro al ángulo superior izquierdo, un lanzamiento desde el lateral izquierdo — son hechos que no cambian aunque mañana Apple rediseñe SwiftUI de punta a punta. La pantalla es volátil: cambia con cada versión del sistema y con cada decisión de diseño. Las reglas del juego son estables: existían antes que la app y le van a sobrevivir. Por eso la pantalla conoce las reglas del juego, y nunca al revés.</p>
+
+    <h3>Por qué <code>Domain/</code> es un paquete Swift aparte</h3>
+    <p>Si el dominio importara SwiftUI, contestar una pregunta tan simple como “¿esto fue un tiro cruzado?” en un test obligaría a levantar una pantalla completa para poder correrlo. Al ser un paquete separado, sin un solo import de interfaz, <code>swift test</code> corre en segundos y sin simulador.</p>
+    <p>Y esto no es disciplina ni buenas intenciones: es el compilador. Metan una vista adentro de <code>Domain/</code> y el proyecto directamente no compila — no hace falta que nadie lo note en una revisión, ni que quede escrito en un documento que alguien puede no leer. Una regla que hace cumplir una máquina vale más que una regla escrita.</p>
+
+    <h3>Screaming Architecture: las carpetas gritan qué hace la app</h3>
+<pre>App/
+<span class="c-type">Domain/</span>            <span class="c-com">// Swift puro. Cero imports. Todo testeado.</span>
+  GoalTarget, CourtZone, ShotClassification, StatsEngine
+Persistence/       <span class="c-com">// SwiftData: @Model + mapeo a valores del dominio</span>
+Features/
+  Teams/  Sessions/  ShotEntry/
+  ShooterCard/  GoalkeeperCard/  Report/
+Insights/          <span class="c-com">// protocolo InsightWriter</span>
+  FoundationModelsInsightWriter   <span class="c-com">// modelo en el dispositivo</span>
+  TemplateInsightWriter           <span class="c-com">// respaldo determinístico</span>
+DesignSystem/      <span class="c-com">// CourtView, GoalView, HeatmapCell, colores</span></pre>
+    <p>Miren los nombres de las carpetas: <code>ShotEntry</code>, <code>ShooterCard</code>, <code>GoalkeeperCard</code>. Gritan qué <strong>hace</strong> la app — cargar un lanzamiento, mostrar la ficha de un tirador, mostrar la ficha de un arquero — no de qué framework está hecha. Compárenlo con la estructura clásica <code>Models/ Views/ Controllers/</code>: al abrir esas carpetas no se aprende nada del negocio, solo que alguien eligió MVC. La estructura de Keepercent copia la forma del problema real, no el patrón técnico que lo resuelve.</p>
+
+    <h3>Puertos y adaptadores</h3>
+    <p><code>InsightWriter</code> es un puerto: la app declara “necesito que alguien convierta estos hechos ya calculados en una frase”, sin saber ni importarle quién lo hace. Dos adaptadores cumplen ese contrato: <code>FoundationModelsInsightWriter</code>, que usa el modelo de lenguaje del dispositivo, y <code>TemplateInsightWriter</code>, que arma la frase con una plantilla fija, sin ninguna IA de por medio.</p>
+    <div class="why">
+      <b>La ganancia concreta.</b> Sin este puerto, cada pantalla que necesita un texto tendría su propio <code>if disponible { IA } else { plantilla }</code> repetido. Con el puerto, ese cambio ocurre en un solo lugar: se elige el adaptador una vez, y el resto de la app llama a <code>InsightWriter</code> sin enterarse de cuál de los dos le está contestando.
+    </div>
+
+    <h3>Contenedor y presentación <span class="pill now">decisión de hoy</span></h3>
+    <p>Hoy se sumó una segunda distinción, adentro de <code>Features/</code>: dos tipos de vista.</p>
+    <ul class="clean">
+      <li>Una vista <strong>contenedora</strong> sabe de dónde vienen los datos: usa <code>@Query</code> de SwiftData para leerlos de la base.</li>
+      <li>Una vista <strong>de presentación</strong> recibe structs del dominio ya armados y solo los dibuja. No tiene forma de saber si esos datos vinieron de la base real o los inventó una preview.</li>
+    </ul>
+    <div class="why">
+      <b>La ganancia concreta.</b> Las previews de SwiftUI renderizan al instante con datos de prueba, sin tocar la base ni esperar ninguna consulta. Y el código que dibuja — el más delicado, con el hit-testing del arco y la cancha — se puede ejercitar sin que haya una base de datos de por medio.
+    </div>
+
+    <h3>Por qué no hay una capa de repositorio sobre SwiftData <span class="pill now">decisión de hoy</span></h3>
+    <p><code>@Query</code> ya es el mecanismo nativo para leer datos en una vista de SwiftUI. Envolverlo en un repositorio genérico va contra el grano del framework, agrega código, y uno de los criterios del jurado es justamente el <strong>uso correcto de las APIs nativas de Apple</strong>.</p>
+    <p>El principio general, sin vueltas: <strong>una capa se agrega cuando resuelve un problema que existe, no uno que se imagina que podría llegar a existir</strong>. Y hay que ser honesto con el costo de esta decisión: un repositorio haría más fácil cambiar de base de datos el día de mañana, y conscientemente no se paga ese costo, porque esta app no va a cambiar de base de datos.</p>
+
+    <h3>El invariante que sostiene todo</h3>
+    <p><code>StatsEngine</code> siempre recibe un array de structs del dominio, nunca un <code>ModelContext</code> de SwiftData. Los tipos <code>@Model</code> no pueden vivir adentro de <code>Domain/</code> — necesitarían importar SwiftData, y eso rompería la pureza del paquete. Por eso el mapeo va en una sola dirección, siempre en el borde entre capas: <code>@Model</code> → struct del dominio, nunca al revés.</p>
+    <div class="why">
+      <b>Por qué esto importa más que el resto.</b> Esta es la decisión que hace posible que cada estadística de la app se pueda testear en segundos, sin simulador. Si <code>StatsEngine</code> necesitara un <code>ModelContext</code> para calcular un porcentaje, cada test de una cuenta tendría que levantar una base de datos en memoria primero. Al no necesitarlo, calcular el save rate de una zona es una función pura: entra un array, sale un número, y el test lo comprueba sin esperar nada.
+    </div>
 
     <h3>Dónde entra la inteligencia artificial, y dónde no</h3>
     <p>Los porcentajes, los mapas de calor y las tendencias los calcula código determinístico y testeado. El modelo de lenguaje que corre en el dispositivo <strong>solo redacta</strong> los hechos que ya calculamos.</p>
@@ -525,7 +569,28 @@ Insights/      <span class="c-com">// los textos en lenguaje natural</span></pre
   </section>
 
   <section>
-    <h2><span class="num">07</span>Glosario: del código al handball</h2>
+    <h2><span class="num">07</span>Cómo se construye: tests, revisión y commits</h2>
+    <p>La arquitectura dice cómo se organiza el código. Esta sección dice cómo se escribe, día a día, para que lo anterior no se quede en una intención.</p>
+
+    <h3>TDD: rojo, verde, refactor</h3>
+    <p>Un test se escribe <strong>antes</strong> que el código que lo cumple, y primero tiene que fallar. Suena a pérdida de tiempo — ¿para qué correr algo que ya se sabe que va a fallar? — pero es exactamente al revés: un test que nunca falló no prueba nada. No hay forma de saber si está atado de verdad al comportamiento que dice medir, o si pasaría igual aunque el código estuviera roto. Verlo fallar es la única prueba de que está conectado a lo que dice probar. Recién después se escribe el mínimo código para que pase (verde), y solo entonces se mejora la forma sin tocar el comportamiento (refactor), con los tests en verde cubriendo la espalda.</p>
+
+    <h3>Qué se testea y qué no</h3>
+    <p>El dominio —reglas, geometría, estadísticas— se testea de forma exhaustiva: son funciones puras, corren en segundos y un error ahí es silencioso y caro, porque un porcentaje mal calculado no tira ningún error, solo miente. Las vistas no se testean unitariamente: el simulador es lento, y mirar la pantalla ya alcanza para saber si el arco se dibuja bien o no. Testear no es un ritual que se aplica por igual a todo el código: se testea donde un error sale caro y pasa desapercibido, y se verifica a ojo donde el costo del test supera lo que ese test evitaría.</p>
+
+    <h3>RDD, y una aclaración necesaria</h3>
+    <p>RDD (<em>receipt-driven development</em>) es la revisión adversarial de código de Gentle AI, con constancia de lo revisado: lentes de riesgo, resiliencia, legibilidad y confiabilidad sobre un commit. Vale aclararlo con toda claridad: RDD <strong>no es testear</strong>. RDD nunca corre un solo test. Tests en verde no producen una constancia de revisión, y una constancia de revisión no prueba que la app funcione. Son dos cosas complementarias, ninguna sustituye a la otra.</p>
+    <p>La decisión: RDD está activado de forma selectiva, según el riesgo que calcula <code>gentle-ai review assess</code> sobre cada commit. Riesgo bajo recibe un chequeo estructural silencioso; riesgo medio se acumula en una porción de revisión; riesgo alto se revisa en el momento. El motivo es de agenda: el jurado puntúa calidad de código, pero someter cada commit a la ceremonia completa de revisión no entra en un cronograma de seis días.</p>
+
+    <h3>Commits como unidad de trabajo</h3>
+    <p>Un commit es un comportamiento entregable completo, con sus tests y su documentación adentro. No es “todos los modelos” en un commit, después “todas las vistas” en otro y “todos los tests” al final, porque ninguno de esos tres sirve solo y ninguno se puede revertir de forma independiente sin arrastrar a los otros dos.</p>
+
+    <h3>Una rama secuencial, no sesiones en paralelo</h3>
+    <p>La hackathon exige que el autor pueda explicar cada línea de código. Dos sesiones de IA trabajando en paralelo generan código más rápido de lo que una persona puede leer, así que el cuello de botella nunca es la máquina: es la atención del autor. El trabajo pesado sí se delega a sub-agentes, pero el autor revisa un solo hilo y un solo diff a la vez, nunca varios cambios simultáneos que después haya que reconciliar sin haberlos leído.</p>
+  </section>
+
+  <section>
+    <h2><span class="num">08</span>Glosario: del código al handball</h2>
     <p>El código está en inglés, que es la convención del ecosistema de Apple y lo que espera el jurado. Acá está la traducción de cada término.</p>
     <div class="tablewrap">
       <table>
@@ -562,7 +627,7 @@ Insights/      <span class="c-com">// los textos en lenguaje natural</span></pre
   </section>
 
   <section>
-    <h2><span class="num">08</span>Decisiones tomadas, y las que descartamos</h2>
+    <h2><span class="num">09</span>Decisiones tomadas, y las que descartamos</h2>
     <div class="tablewrap">
       <table>
         <thead><tr><th>Decisión</th><th>Por qué</th><th>Qué se descartó</th></tr></thead>
@@ -612,13 +677,43 @@ Insights/      <span class="c-com">// los textos en lenguaje natural</span></pre
             <td>El video se mira en otra pantalla; la carga es idéntica a la de un partido</td>
             <td>AVKit con tiros enlazados al segundo del video</td>
           </tr>
+          <tr>
+            <td><code>@Query</code> directo en las vistas contenedoras</td>
+            <td>Es el mecanismo nativo de SwiftData, y el jurado puntúa el uso correcto de APIs nativas</td>
+            <td>Una capa de repositorio envolviendo a SwiftData</td>
+          </tr>
+          <tr>
+            <td>Separación entre vista contenedora y vista de presentación</td>
+            <td>Previews instantáneas y código de dibujo testeable sin base de datos</td>
+            <td>Vistas que consultan la base de datos ellas mismas</td>
+          </tr>
+          <tr>
+            <td><code>StatsEngine</code> nunca recibe un <code>ModelContext</code></td>
+            <td>Mantiene cada estadística testeable en segundos, sin simulador</td>
+            <td>Pasar el contexto de la base de datos hacia abajo, hasta el cálculo</td>
+          </tr>
+          <tr>
+            <td>RDD activado de forma selectiva según el riesgo evaluado</td>
+            <td>Constancia de revisión donde importa, sin gastar el cronograma en ceremonia</td>
+            <td>Revisar cada commit, o no revisar ninguno</td>
+          </tr>
+          <tr>
+            <td>TDD estricto solo en el dominio</td>
+            <td>Ahí un error silencioso sale caro; las vistas se verifican mirándolas</td>
+            <td>Testear todo, o no testear nada</td>
+          </tr>
+          <tr>
+            <td>Una rama secuencial con sub-agentes, sin sesiones en paralelo</td>
+            <td>Cada línea tiene que poder explicarla el autor</td>
+            <td>Sesiones en paralelo sobre worktrees separados</td>
+          </tr>
         </tbody>
       </table>
     </div>
   </section>
 
   <section>
-    <h2><span class="num">09</span>El avance, día por día</h2>
+    <h2><span class="num">10</span>El avance, día por día</h2>
 
     <div class="day">
       <div class="when">Sáb 19/9</div>

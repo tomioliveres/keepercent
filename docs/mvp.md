@@ -161,6 +161,9 @@ Key decisions:
 - **Persist primitives, expose enums**: store the target as a simple code (e.g. `"inside.0.2"`, `"post.left.top"`) and the origin as two `Double`s. Map them to rich enums in the domain. This avoids SwiftData issues with enums that carry associated values, and keeps predicates simple.
 - **One linked-view component** (court ↔ goal) reused by both cards.
 - **Demo data seed**: a debug/demo action that loads a realistic sample rival, so the jury never opens an empty app.
+- **Container / presentational split**: a container view owns `@Query` and knows where data comes from; a presentational view only draws the domain structs it receives, so previews render instantly and drawing code is testable without a database.
+- **No repository layer over SwiftData**: `@Query` is the native read mechanism, used directly in containers. Wrapping it in a repository would fight the framework's grain for a swap this app will never make.
+- **`StatsEngine` never receives a `ModelContext`**: it takes an array of domain structs. This keeps every statistic testable in seconds, with no simulator.
 
 ## 9. Scope Priorities
 

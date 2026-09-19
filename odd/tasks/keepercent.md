@@ -11,6 +11,7 @@ TDD: strict mode enabled for the Domain layer (RED → GREEN → REFACTOR), Swif
 - [x] T0.4 Create the Xcode project `Keepercent` — hand-written pbxproj (synchronized group, shared scheme, local Domain package); `xcodebuild ... build`: BUILD SUCCEEDED, `-target ...ios26.0-simulator -swift-version 6`
 - [x] T0.5 First commit + GitHub repository — https://github.com/tomioliveres/keepercent (public)
 - [x] T0.6 Daily update posted in `#daily-updates`
+- [x] T0.7 Documentation pass: architecture explained from first principles in `docs/index.html` §06 (dependency rule, why `Domain/` is a separate package, screaming architecture, ports/adapters, container/presentational split, why no repository over SwiftData, the `StatsEngine`/`ModelContext` invariant), new `docs/index.html` §07 on build methodology (TDD, test scope, RDD vs testing, work-unit commits, sequential branch), decisions table extended, `docs/mvp.md` §8 and `CLAUDE.md` updated to match — direct inline (documentation-only, no source code touched, single author reviewing every line); verified: section numbering sequential (`rg -n '<span class="num">'`), HTML parses (`python3 -c "html.parser..."`), section/h3 tag counts balanced
 
 ## Day 1 — Sun Sep 20 (domain)
 

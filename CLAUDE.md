@@ -39,4 +39,7 @@ Functionality · code quality and cleanliness · creativity · correct use of na
 - Every AI-powered feature has a working non-AI fallback (`SystemLanguageModel.default.availability` is checked).
 - Persist primitive values (codes, doubles); expose rich enums in the domain.
 - Feature-first folder structure. Reuse one linked-view component for both the shooter and the goalkeeper cards.
+- **Container / presentational views**: `@Query` is confined to container views; presentational views only draw domain structs they receive, never touch SwiftData directly.
+- **`StatsEngine` never receives a `ModelContext`**: it takes domain structs, so every statistic stays testable without a simulator.
+- **Testing policy**: TDD is strict on `Domain/` (`swift test`, RED → GREEN → REFACTOR); views are verified visually, not unit-tested.
 - Conventional Commits. Code, comments, UI copy and documentation in English.
