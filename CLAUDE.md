@@ -18,7 +18,7 @@ Product definition and plan: [docs/mvp.md](docs/mvp.md) · Task tracking: [odd/t
 ## Where things are
 
 - `Domain/` — pure Swift package, no dependencies, fully tested.
-- `docs/mvp.md` — product definition, scope and plan. `docs/bitacora.html` — the Spanish study log, updated at the end of each day.
+- `docs/mvp.md` — product definition, scope and plan. `docs/index.html` — the Spanish study log, updated at the end of each day and served at https://tomioliveres.github.io/keepercent/ through GitHub Pages (branch `main`, folder `/docs`). It is ONE incremental page: update it in place, never create a document per day. The repository file is the single source of truth; a push publishes it.
 - `odd/tasks/keepercent.md` — task checklist.
 - `reference/` — **gitignored, local only**: hackathon rules PDF, Discord briefings and screenshots of the reference app (third-party material that must never be published).
 
