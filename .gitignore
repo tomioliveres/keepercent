@@ -22,3 +22,6 @@ Package.resolved
 # Playgrounds
 timeline.xctimeline
 playground.xcworkspace
+
+# Engram local memory config (machine-specific tooling)
+.engram/
