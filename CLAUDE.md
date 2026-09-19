@@ -9,7 +9,7 @@ Product definition and plan: [docs/mvp.md](docs/mvp.md) · Task tracking: [odd/t
 - Anything inside Apple's SDK counts as native: SwiftData, Swift Charts, Foundation Models, Vision, PDFKit, Core ML, AVFoundation…
 - **Development tools are not bound by that rule** (a linter or formatter is fine); the restriction covers what ships in the binary.
 - `URLSession` may call any API, but this app is offline by design.
-- **Target OS version 26** (iOS / iPadOS).
+- **Minimum OS version 26** (iOS / iPadOS). Confirmed by the organizers: 26 is the floor, a newer SDK is allowed. Built with Xcode 27, deployment target iOS 26.
 - Built **from scratch** during the event (Sep 18–27, 2026). No prior code.
 - **Free Apple account**: no CloudKit, no Push Notifications, no Siri capability. HealthKit, MapKit, Background Modes and App Groups are available.
 - Generative AI may be used to write code, but **every line must be explainable by the author**. Do not introduce code the author cannot defend.

@@ -20,7 +20,7 @@ A native iPad-first (universal) app that lets a goalkeeper **record shots in sec
 ## 3. Hackathon Constraints (non-negotiable)
 
 - Swift + SwiftUI, 100% native. Zero third-party code in the app binary.
-- Target OS **26** (iOS / iPadOS).
+- **Minimum OS version 26** (iOS / iPadOS). The organizers confirmed on Sep 19 that 26 is the floor and building against a newer SDK is allowed, so the project is built with Xcode 27 and a deployment target of iOS 26.
 - Built from scratch during the event.
 - Free Apple account: **no CloudKit, no Push Notifications, no Siri capability**. HealthKit, Maps, Background Modes, and App Groups are available.
 - Every line must be explainable to the jury.
@@ -72,6 +72,7 @@ A tap on the frame or outside **fully resolves** the outcome (`post` / `out`). A
 
 - Store the raw normalized tap point, and **derive** the zone from it (so zones can be redefined without data loss).
 - Zones (validated, based on the reference app): **5 radial sectors** fanning out from the goal (left wing, left back, center, right back, right wing) × **2 depths** split by the 9m dashed line (near: 6–9m, far: beyond 9m) = **10 zones**, plus the 7m mark. The pivot is "center, near".
+- **Real court geometry** (the drawing must match what a handball player expects, and the zone math is derived from it): the goal is 3 m wide; the 6 m area and the 9 m line are NOT semicircles — each is two quarter circles centred on the goalposts joined by a straight segment parallel to the goal line; the 7 m mark is a short line 7 m from the goal line, centred.
 - Zone derivation uses **polar coordinates from the goal center**: the angle picks the sector and the distance picks the depth. It is pure geometry and easy to unit-test.
 - Layout: **goal on top, court below, on the same screen**. Court tap and goal tap form one vertical path.
 - A dedicated, clearly visible hit area on the **7m mark** sets `isSevenMeters = true` and skips the origin, with an undoable "7m ✓" chip.
@@ -213,4 +214,4 @@ Rules for the compressed plan:
 2. ~~Court zones~~ → **Resolved: 5 radial sectors × 2 depths + 7m** (§5.2).
 3. ~~Outcomes~~ → **Resolved: blocked shots are not recorded.** They say nothing about the goalkeeper or the shooter's target.
 4. ~~App name~~ → **Resolved: Keepercent**.
-5. **Submission logistics**: the organizers will share the GitHub submission link "later". Confirm that it is available by Friday Sep 25, and that daily updates are not required after submitting.
+5. ~~Submission logistics~~ → **Resolved**: the user can submit from a phone over the weekend if the link arrives late.

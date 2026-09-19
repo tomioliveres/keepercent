@@ -1,0 +1,673 @@
+<title>Bitácora de Keepercent</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+  :root {
+    --ground: #F2F4F7;
+    --surface: #FFFFFF;
+    --surface-sunk: #E8ECF2;
+    --ink: #101A26;
+    --ink-soft: #4A5769;
+    --line: #D3DAE4;
+    --court: #1C5C9E;
+    --court-soft: #C9DCEF;
+    --frame: #D9452F;
+    --net: #8C9AAD;
+    --good: #1F7A5A;
+    --shadow: 0 1px 2px rgba(16, 26, 38, .06), 0 8px 24px rgba(16, 26, 38, .05);
+
+    --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    --font-body: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0C131C;
+      --surface: #141E2A;
+      --surface-sunk: #0A1119;
+      --ink: #EAF0F7;
+      --ink-soft: #9DAEC2;
+      --line: #263447;
+      --court: #4D9BE0;
+      --court-soft: #1B3550;
+      --frame: #FF7259;
+      --net: #55677D;
+      --good: #5FC79C;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .3);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #0C131C;
+    --surface: #141E2A;
+    --surface-sunk: #0A1119;
+    --ink: #EAF0F7;
+    --ink-soft: #9DAEC2;
+    --line: #263447;
+    --court: #4D9BE0;
+    --court-soft: #1B3550;
+    --frame: #FF7259;
+    --net: #55677D;
+    --good: #5FC79C;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .3);
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 17px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 780px;
+    margin-inline: auto;
+    padding-inline: 20px;
+    padding-block: 0 72px;
+  }
+
+  header.masthead {
+    padding-block: 56px 32px;
+    border-bottom: 3px solid var(--ink);
+  }
+
+  .eyebrow {
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--court);
+    margin: 0 0 14px;
+  }
+
+  h1 {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(38px, 8vw, 62px);
+    line-height: .98;
+    letter-spacing: -.02em;
+    margin: 0 0 18px;
+    text-wrap: balance;
+  }
+
+  .lede { font-size: 19px; color: var(--ink-soft); margin: 0; max-width: 60ch; }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 10px;
+    margin-top: 24px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+  .meta span {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 3px 11px;
+    background: var(--surface);
+  }
+
+  section { padding-block: 44px 0; }
+
+  h2 {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(24px, 4.5vw, 32px);
+    letter-spacing: -.015em;
+    line-height: 1.12;
+    margin: 0 0 6px;
+    text-wrap: balance;
+  }
+  h2 .num {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--frame);
+    display: block;
+    margin-bottom: 8px;
+    letter-spacing: .08em;
+  }
+
+  h3 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 19px;
+    letter-spacing: -.005em;
+    margin: 34px 0 8px;
+  }
+
+  p { margin: 0 0 16px; }
+  strong { font-weight: 600; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 22px;
+    box-shadow: var(--shadow);
+    margin: 22px 0;
+  }
+
+  figure { margin: 26px 0; }
+  figure svg { display: block; width: 100%; height: auto; max-width: 100%; }
+  figcaption {
+    font-family: var(--font-display);
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-top: 10px;
+    line-height: 1.5;
+  }
+
+  pre {
+    font-family: var(--font-mono);
+    font-size: 13.5px;
+    line-height: 1.6;
+    background: var(--surface-sunk);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--court);
+    border-radius: 6px;
+    padding: 16px;
+    overflow-x: auto;
+    margin: 18px 0;
+  }
+  code { font-family: var(--font-mono); font-size: .88em; }
+  p code, li code, td code {
+    background: var(--surface-sunk);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 1px 5px;
+  }
+  .c-key { color: var(--frame); font-weight: 600; }
+  .c-com { color: var(--net); }
+  .c-type { color: var(--court); font-weight: 600; }
+
+  .tablewrap { overflow-x: auto; margin: 20px 0; }
+  table { border-collapse: collapse; width: 100%; font-size: 15px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th {
+    font-family: var(--font-display);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: var(--ink-soft);
+    border-bottom: 2px solid var(--ink);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.term { font-family: var(--font-mono); font-size: 13px; color: var(--court); white-space: nowrap; }
+
+  ul.clean { margin: 0 0 16px; padding-left: 20px; }
+  ul.clean li { margin-bottom: 8px; }
+
+  .pill {
+    display: inline-block;
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    padding: 2px 9px;
+    border-radius: 999px;
+    border: 1px solid currentColor;
+  }
+  .pill.done { color: var(--good); }
+  .pill.now { color: var(--frame); }
+  .pill.todo { color: var(--ink-soft); }
+
+  .day {
+    display: grid;
+    grid-template-columns: 92px 1fr;
+    gap: 16px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--line);
+    align-items: start;
+  }
+  .day:last-child { border-bottom: none; }
+  .day .when {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-soft);
+    padding-top: 3px;
+  }
+  .day .what { font-size: 15.5px; }
+  .day .what b { font-family: var(--font-display); font-weight: 600; display: block; margin-bottom: 2px; }
+
+  .why {
+    border-left: 3px solid var(--frame);
+    padding: 2px 0 2px 16px;
+    margin: 18px 0;
+    color: var(--ink-soft);
+    font-size: 16px;
+  }
+  .why b { color: var(--ink); font-family: var(--font-display); font-weight: 600; }
+
+  @media (max-width: 460px) {
+    body { font-size: 16px; }
+    .day { grid-template-columns: 1fr; gap: 4px; }
+    .card { padding: 16px; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="eyebrow">Bitácora técnica · ACoding Hackathon 2026</p>
+    <h1>Keepercent</h1>
+    <p class="lede">Cómo se construye una app de scouting de lanzamientos para arqueros de handball, decisión por decisión, desde los primeros principios.</p>
+    <div class="meta">
+      <span>Swift + SwiftUI · 100% nativo</span>
+      <span>iOS 26</span>
+      <span>Entrega: viernes 25/9</span>
+      <span>Última actualización: día 1</span>
+    </div>
+  </header>
+
+  <section>
+    <h2><span class="num">01</span>Qué problema resuelve</h2>
+    <p>Un arquero de handball estudia a los rivales antes de cada partido: quién lanza, desde dónde, hacia qué parte del arco y cómo termina la jugada. Hoy eso se hace con apps pensadas para entrenadores que llevan la estadística completa del partido.</p>
+    <p>Esas apps tienen un punto ciego. Cuando la pelota pega en el marco, registran un único evento: <em>“palo”</em>. Para un arquero eso es tirar información a la basura, porque no es lo mismo el travesaño que el palo izquierdo abajo. Son dos lecturas distintas de la misma jugada.</p>
+
+    <div class="why">
+      <b>El diferencial de Keepercent.</b> Registrar el marco en nueve segmentos, analizar también al arquero rival para decirle al equipo dónde conviene tirar, y funcionar sin cuenta, sin internet y sin pagar nada.
+    </div>
+
+    <h3>Los dos momentos de uso</h3>
+    <p>Los dos cargan datos al <strong>mismo perfil del rival</strong>, así el conocimiento se acumula en lugar de dispersarse.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Momento</th><th>Cómo se usa</th><th>Qué exige</th></tr></thead>
+        <tbody>
+          <tr><td><strong>En vivo</strong></td><td>Desde el banco, durante el partido</td><td>Velocidad: 3 o 4 toques por lanzamiento</td></tr>
+          <tr><td><strong>Con video</strong></td><td>El día previo, mirando el video en otra pantalla y pausando</td><td>El mismo flujo, con tiempo para los detalles opcionales</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>La app no reproduce video. Esa decisión saca una pantalla entera del alcance y no le quita nada al uso real.</p>
+  </section>
+
+  <section>
+    <h2><span class="num">02</span>El arco, en nueve por nueve por tres</h2>
+    <p>Todo el modelo de datos nace de una pregunta: <strong>¿dónde terminó la pelota?</strong> Y hay exactamente tres respuestas posibles, que no se superponen y no dejan huecos.</p>
+
+    <figure>
+      <svg viewBox="0 0 680 420" role="img" aria-label="Diagrama del arco dividido en grilla de 3 por 3, nueve segmentos de marco y tres direcciones de tiro afuera">
+        <rect x="0" y="0" width="680" height="420" fill="none"/>
+
+        <!-- afuera: flechas -->
+        <text x="36" y="28" font-family="IBM Plex Mono, monospace" font-size="13" fill="var(--net)">afuera</text>
+        <path d="M60 46 L60 120" stroke="var(--net)" stroke-width="2" stroke-dasharray="5 5" fill="none"/>
+        <path d="M54 112 L60 122 L66 112 Z" fill="var(--net)"/>
+        <text x="300" y="28" font-family="IBM Plex Mono, monospace" font-size="13" fill="var(--net)" text-anchor="middle">over · por arriba</text>
+        <path d="M300 40 L300 74" stroke="var(--net)" stroke-width="2" stroke-dasharray="5 5" fill="none"/>
+        <path d="M294 66 L300 76 L306 66 Z" fill="var(--net)"/>
+        <text x="600" y="28" font-family="IBM Plex Mono, monospace" font-size="13" fill="var(--net)" text-anchor="end">afuera</text>
+
+        <!-- marco -->
+        <rect x="90" y="80" width="420" height="250" fill="none" stroke="var(--frame)" stroke-width="14"/>
+        <!-- red -->
+        <rect x="97" y="87" width="406" height="236" fill="var(--court-soft)" opacity=".35"/>
+        <!-- grilla 3x3 -->
+        <g stroke="var(--net)" stroke-width="1.5">
+          <line x1="232" y1="87" x2="232" y2="323"/>
+          <line x1="368" y1="87" x2="368" y2="323"/>
+          <line x1="97" y1="166" x2="503" y2="166"/>
+          <line x1="97" y1="245" x2="503" y2="245"/>
+        </g>
+        <!-- etiquetas grilla -->
+        <g font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--ink-soft)" text-anchor="middle">
+          <text x="164" y="132">arriba</text><text x="164" y="146">izq.</text>
+          <text x="300" y="132">arriba</text><text x="300" y="146">centro</text>
+          <text x="436" y="132">arriba</text><text x="436" y="146">der.</text>
+          <text x="164" y="211">medio</text><text x="164" y="225">izq.</text>
+          <text x="300" y="211">medio</text><text x="300" y="225">centro</text>
+          <text x="436" y="211">medio</text><text x="436" y="225">der.</text>
+          <text x="164" y="290">abajo</text><text x="164" y="304">izq.</text>
+          <text x="300" y="290">abajo</text><text x="300" y="304">centro</text>
+          <text x="436" y="290">abajo</text><text x="436" y="304">der.</text>
+        </g>
+
+        <!-- segmentos del marco marcados -->
+        <g stroke="var(--court)" stroke-width="14" stroke-linecap="butt">
+          <line x1="90" y1="87" x2="90" y2="160"/>
+        </g>
+        <text x="72" y="80" font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--court)" text-anchor="end">palo izq.</text>
+        <text x="72" y="96" font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--court)" text-anchor="end">arriba</text>
+
+        <g stroke="var(--court)" stroke-width="14">
+          <line x1="235" y1="80" x2="365" y2="80"/>
+        </g>
+        <text x="300" y="62" font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--court)" text-anchor="middle">travesaño centro</text>
+
+        <!-- leyenda derecha -->
+        <g font-family="IBM Plex Mono, monospace" font-size="13">
+          <rect x="546" y="96" width="14" height="14" fill="var(--court-soft)" opacity=".7" stroke="var(--net)"/>
+          <text x="568" y="108" fill="var(--ink-soft)">9 zonas</text>
+          <text x="568" y="126" fill="var(--ink-soft)">adentro</text>
+
+          <rect x="546" y="156" width="14" height="14" fill="var(--court)"/>
+          <text x="568" y="168" fill="var(--ink-soft)">9 segmentos</text>
+          <text x="568" y="186" fill="var(--ink-soft)">del marco</text>
+
+          <rect x="546" y="216" width="14" height="14" fill="var(--net)"/>
+          <text x="568" y="228" fill="var(--ink-soft)">3 direcciones</text>
+          <text x="568" y="246" fill="var(--ink-soft)">afuera</text>
+
+          <text x="546" y="300" fill="var(--frame)" font-weight="600">21 destinos</text>
+          <text x="546" y="318" fill="var(--ink-soft)">posibles</text>
+        </g>
+      </svg>
+      <figcaption><strong>El arco siempre se ve desde la perspectiva del tirador.</strong> Su izquierda es la derecha del arquero. La cancha se dibuja con el arco arriba, así el origen y el destino comparten la misma referencia y nunca hay que invertir nada mentalmente.</figcaption>
+    </figure>
+
+    <h3>Por qué esto se llama un «enum con valores asociados»</h3>
+    <p>En Swift, un <code>enum</code> es una lista cerrada de posibilidades. Lo potente acá es que cada posibilidad puede <strong>llevar su propio dato adentro</strong>:</p>
+<pre><span class="c-key">enum</span> <span class="c-type">GoalTarget</span> {
+    <span class="c-key">case</span> inside(<span class="c-type">GoalZone</span>)     <span class="c-com">// adentro: qué celda de la grilla</span>
+    <span class="c-key">case</span> post(<span class="c-type">PostSegment</span>)    <span class="c-com">// en el marco: qué segmento</span>
+    <span class="c-key">case</span> out(<span class="c-type">MissDirection</span>)  <span class="c-com">// afuera: hacia dónde</span>
+}</pre>
+    <p>Un tiro adentro necesita saber la celda; uno al palo necesita el segmento; uno afuera, la dirección. Son datos distintos para casos distintos, y el tipo lo refleja tal cual.</p>
+
+    <div class="why">
+      <b>Lo que te regala el compilador.</b> Cada vez que el código pregunta “¿qué pasó con este tiro?”, Swift te obliga a responder los tres casos. Si mañana agregamos un cuarto, el compilador marca <strong>todos</strong> los lugares que quedaron incompletos. Los errores aparecen al compilar, no en el banco en pleno partido.
+    </div>
+
+    <h3>Nueve zonas que no se pueden desincronizar</h3>
+    <p>La grilla podría haberse escrito como un enum de nueve casos sueltos. No se hizo, y el motivo es práctico:</p>
+<pre><span class="c-key">struct</span> <span class="c-type">GoalZone</span> {
+    <span class="c-key">let</span> row: <span class="c-type">GoalRow</span>        <span class="c-com">// arriba · medio · abajo</span>
+    <span class="c-key">let</span> column: <span class="c-type">GoalColumn</span>  <span class="c-com">// izquierda · centro · derecha</span>
+}</pre>
+    <p>Las nueve zonas <strong>se derivan</strong> de 3 filas × 3 columnas; no hay una lista escrita a mano que pueda quedar vieja. Y para calcular si un lanzamiento fue cruzado alcanza con mirar <code>column</code>; para saber si fue arriba o abajo, <code>row</code>. Con nueve casos sueltos, cada cuenta sería un <code>switch</code> de nueve líneas.</p>
+  </section>
+
+  <section>
+    <h2><span class="num">03</span>La cancha: ángulo y distancia</h2>
+    <p>El origen del lanzamiento no se guarda como “zona”, sino como el <strong>punto exacto</strong> donde tocaste, en coordenadas de 0 a 1. La zona se calcula a partir de ese punto.</p>
+
+    <figure>
+      <svg viewBox="0 0 680 430" role="img" aria-label="Diagrama de media cancha de handball con el área de 6 metros, la línea de 9 metros, la marca de 7 metros y cinco sectores radiales">
+        <!-- piso -->
+        <rect x="40" y="30" width="600" height="396" fill="var(--surface-sunk)"/>
+        <!-- area de 6 m: dos cuartos de circulo con centro en los postes, unidos por un tramo recto -->
+        <path d="M115 30 A180 180 0 0 0 295 210 L385 210 A180 180 0 0 0 565 30 Z"
+              fill="var(--court)" fill-opacity="0.3" stroke="var(--court)" stroke-width="3"/>
+        <!-- linea de 9 m, misma forma, trazo discontinuo -->
+        <path d="M25 30 A270 270 0 0 0 295 300 L385 300 A270 270 0 0 0 655 30"
+              fill="none" stroke="var(--net)" stroke-width="2.5" stroke-dasharray="11 8"/>
+        <!-- lineas laterales y de fondo -->
+        <path d="M40 30 L640 30" stroke="var(--ink-soft)" stroke-width="2.5" fill="none"/>
+        <path d="M40 30 L40 426 M640 30 L640 426" stroke="var(--ink-soft)" stroke-width="2" fill="none"/>
+        <!-- sectores radiales desde el centro del arco -->
+        <g stroke="var(--net)" stroke-width="1.6">
+          <line x1="340" y1="30" x2="203" y2="406"/>
+          <line x1="340" y1="30" x2="477" y2="406"/>
+          <line x1="340" y1="30" x2="12" y2="259"/>
+          <line x1="340" y1="30" x2="668" y2="259"/>
+        </g>
+        <!-- arco -->
+        <rect x="295" y="19" width="90" height="11" fill="var(--frame)"/>
+        <text x="340" y="14" font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--frame)" text-anchor="middle">arco · 3 m</text>
+        <!-- marca de 7 m -->
+        <line x1="322" y1="240" x2="358" y2="240" stroke="var(--frame)" stroke-width="4"/>
+        <text x="340" y="262" font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--frame)" text-anchor="middle">7 m</text>
+        <!-- etiquetas -->
+        <g font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--ink-soft)" text-anchor="middle">
+          <text x="340" y="120" fill="var(--court)">área de 6 m</text>
+          <text x="612" y="196">línea</text><text x="612" y="211">de 9 m</text>
+          <text x="105" y="330">extremo</text><text x="105" y="345">izquierdo</text>
+          <text x="240" y="392">lateral</text><text x="240" y="407">izquierdo</text>
+          <text x="340" y="360">central</text>
+          <text x="440" y="392">lateral</text><text x="440" y="407">derecho</text>
+          <text x="575" y="330">extremo</text><text x="575" y="345">derecho</text>
+        </g>
+        <!-- anotacion polar -->
+        <circle cx="340" cy="30" r="5" fill="var(--frame)"/>
+        <line x1="340" y1="30" x2="470" y2="286" stroke="var(--frame)" stroke-width="2"/>
+        <circle cx="470" cy="286" r="6" fill="var(--frame)"/>
+        <g font-family="IBM Plex Mono, monospace" font-size="12">
+          <text x="486" y="300" fill="var(--frame)">toque</text>
+          <text x="486" y="316" fill="var(--ink-soft)">ángulo → sector</text>
+          <text x="486" y="332" fill="var(--ink-soft)">distancia → cerca o lejos</text>
+        </g>
+      </svg>
+      <figcaption><strong>Cinco sectores en abanico × dos profundidades = diez zonas</strong>, más la marca de 7 m, que es su propia zona táctil. El área de 6 m y la línea de 9 m no son semicírculos: son dos cuartos de círculo con centro en cada poste, unidos por un tramo recto. Como los sectores salen desde el arco, la zona se deduce con el ángulo y la distancia al centro del arco: geometría pura, fácil de testear.</figcaption>
+    </figure>
+
+    <div class="why">
+      <b>Por qué guardar el punto y no la zona.</b> Si mañana cambiamos cómo se dividen los sectores, los datos viejos siguen sirviendo: se recalculan. Si guardáramos solo la zona, cada cambio de criterio tiraría a la basura todos los partidos ya cargados.
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="num">04</span>Un toque que ya sabe el resultado</h2>
+    <p>La app se usa en el banco, con el partido en movimiento. Cada toque de más es un lanzamiento que se pierde. Por eso el destino <strong>resuelve el resultado por sí mismo</strong> siempre que puede.</p>
+
+    <figure>
+      <svg viewBox="0 0 680 220" role="img" aria-label="Flujo de carga de un lanzamiento en cuatro pasos">
+        <g font-family="Archivo, sans-serif" font-size="14">
+          <rect x="8" y="60" width="140" height="56" rx="8" fill="var(--surface)" stroke="var(--line)"/>
+          <text x="78" y="84" fill="var(--ink)" text-anchor="middle" font-weight="600">1 · jugador</text>
+          <text x="78" y="102" fill="var(--ink-soft)" text-anchor="middle" font-size="12">número del rival</text>
+
+          <path d="M152 88 L178 88" stroke="var(--net)" stroke-width="2"/>
+          <path d="M172 82 L182 88 L172 94 Z" fill="var(--net)"/>
+
+          <rect x="186" y="60" width="140" height="56" rx="8" fill="var(--surface)" stroke="var(--line)"/>
+          <text x="256" y="84" fill="var(--ink)" text-anchor="middle" font-weight="600">2 · cancha</text>
+          <text x="256" y="102" fill="var(--ink-soft)" text-anchor="middle" font-size="12">origen o marca de 7 m</text>
+
+          <path d="M330 88 L356 88" stroke="var(--net)" stroke-width="2"/>
+          <path d="M350 82 L360 88 L350 94 Z" fill="var(--net)"/>
+
+          <rect x="364" y="60" width="140" height="56" rx="8" fill="var(--surface)" stroke="var(--line)"/>
+          <text x="434" y="84" fill="var(--ink)" text-anchor="middle" font-weight="600">3 · arco</text>
+          <text x="434" y="102" fill="var(--ink-soft)" text-anchor="middle" font-size="12">destino</text>
+
+          <path d="M508 88 L534 88" stroke="var(--frame)" stroke-width="2"/>
+          <path d="M528 82 L538 88 L528 94 Z" fill="var(--frame)"/>
+
+          <rect x="542" y="36" width="130" height="48" rx="8" fill="var(--surface)" stroke="var(--frame)" stroke-width="2"/>
+          <text x="607" y="56" fill="var(--frame)" text-anchor="middle" font-weight="600">palo o afuera</text>
+          <text x="607" y="73" fill="var(--ink-soft)" text-anchor="middle" font-size="12">listo, sin preguntar</text>
+
+          <rect x="542" y="104" width="130" height="58" rx="8" fill="var(--surface)" stroke="var(--line)"/>
+          <text x="607" y="124" fill="var(--ink)" text-anchor="middle" font-weight="600">adentro</text>
+          <text x="607" y="141" fill="var(--ink-soft)" text-anchor="middle" font-size="12">4 · ¿gol o</text>
+          <text x="607" y="156" fill="var(--ink-soft)" text-anchor="middle" font-size="12">atajada?</text>
+        </g>
+      </svg>
+      <figcaption>Tocar el marco o afuera cierra la carga en tres toques. Solo el tiro que entró al arco necesita la cuarta pregunta.</figcaption>
+    </figure>
+
+    <p>Esa regla no vive en la pantalla, vive en el modelo:</p>
+<pre><span class="c-key">var</span> impliedOutcome: <span class="c-type">ShotOutcome</span>? {
+    <span class="c-key">case</span> .inside: <span class="c-key">nil</span>    <span class="c-com">// falta preguntar: ¿gol o atajada?</span>
+    <span class="c-key">case</span> .post:   .post   <span class="c-com">// resuelto</span>
+    <span class="c-key">case</span> .out:    .out    <span class="c-com">// resuelto</span>
+}</pre>
+    <p>El signo de pregunta en <code>ShotOutcome?</code> significa “esto puede no tener valor”. Es un <strong>opcional</strong>, y acá expresa literalmente una duda pendiente. Swift no te deja usar ese valor sin antes decidir qué hacer cuando no está, así que es imposible olvidarse de preguntar.</p>
+  </section>
+
+  <section>
+    <h2><span class="num">05</span>El puente con la base de datos</h2>
+    <p>SwiftData, la base de datos de Apple, guarda tipos simples: textos, números, fechas. No sabe guardar un enum que lleva datos adentro. La solución es un <strong>código de texto estable</strong>:</p>
+<pre>target.code           <span class="c-com">// "post.crossbarCenter"</span>
+<span class="c-type">GoalTarget</span>(code:)     <span class="c-com">// vuelve al enum, o nil si el texto está roto</span></pre>
+    <p>Adentro de la app se trabaja con el tipo rico, que el compilador controla. En el disco queda un texto legible. Y los tests verifican que <strong>los 21 destinos posibles</strong> van y vuelven intactos, y que un texto inventado devuelve <code>nil</code> en lugar de romper la app.</p>
+
+    <div class="why">
+      <b>Principio general.</b> Guardá lo primitivo, exponé lo rico. La base de datos se lleva lo simple; el dominio se queda con los tipos que evitan errores.
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="num">06</span>Arquitectura: el dominio no conoce la pantalla</h2>
+    <p>El código está separado en capas, y la de abajo es la más importante:</p>
+<pre>Domain/        <span class="c-com">// Swift puro. Cero imports. Todo testeado.</span>
+Persistence/   <span class="c-com">// SwiftData: guardar y leer</span>
+Features/      <span class="c-com">// las pantallas</span>
+Insights/      <span class="c-com">// los textos en lenguaje natural</span></pre>
+    <p>El dominio no importa SwiftUI ni SwiftData. Eso no es una recomendación amable: es un <strong>paquete Swift aparte</strong>, así que si alguien intenta meter una vista adentro, el proyecto no compila.</p>
+
+    <h3>Dónde entra la inteligencia artificial, y dónde no</h3>
+    <p>Los porcentajes, los mapas de calor y las tendencias los calcula código determinístico y testeado. El modelo de lenguaje que corre en el dispositivo <strong>solo redacta</strong> los hechos que ya calculamos.</p>
+    <div class="why">
+      <b>Por qué esta línea es innegociable.</b> Un modelo generativo puede inventar un número con total seguridad. Si la app le dijera a un arquero “ataja el 70% arriba” y ese número estuviera inventado, la herramienta dejaría de servir. Además, cada función con IA tiene una versión de respaldo sin IA, por si el dispositivo no tiene Apple Intelligence disponible.
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="num">07</span>Glosario: del código al handball</h2>
+    <p>El código está en inglés, que es la convención del ecosistema de Apple y lo que espera el jurado. Acá está la traducción de cada término.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>En el código</th><th>Qué significa</th></tr></thead>
+        <tbody>
+          <tr><td class="term">GoalTarget</td><td>Destino del lanzamiento: adentro, en el marco o afuera</td></tr>
+          <tr><td class="term">GoalZone</td><td>Una de las nueve celdas dentro del arco</td></tr>
+          <tr><td class="term">GoalRow</td><td>Fila: <code>top</code> arriba · <code>middle</code> medio · <code>bottom</code> abajo</td></tr>
+          <tr><td class="term">GoalColumn</td><td>Columna: <code>left</code> izquierda · <code>center</code> centro · <code>right</code> derecha</td></tr>
+          <tr><td class="term">PostSegment</td><td>Segmento del marco: palo izquierdo o derecho (arriba, medio, abajo) y travesaño (izquierda, centro, derecha)</td></tr>
+          <tr><td class="term">MissDirection</td><td>Tiro afuera: <code>wideLeft</code> por izquierda · <code>wideRight</code> por derecha · <code>over</code> por arriba</td></tr>
+          <tr><td class="term">ShotOutcome</td><td>Resultado: <code>goal</code> gol · <code>saved</code> atajada · <code>post</code> palo · <code>out</code> afuera</td></tr>
+          <tr><td class="term">impliedOutcome</td><td>Resultado que el destino ya implica por sí solo</td></tr>
+          <tr><td class="term">code</td><td>Texto estable con el que se guarda un destino en la base de datos</td></tr>
+          <tr><td class="term">Shot</td><td>Un lanzamiento registrado</td></tr>
+          <tr><td class="term">Session</td><td>Sesión de carga: un partido en vivo o un video</td></tr>
+          <tr><td class="term">RivalTeam</td><td>Equipo rival</td></tr>
+          <tr><td class="term">shooter</td><td>El jugador que lanzó</td></tr>
+          <tr><td class="term">goalkeeper</td><td>Arquero</td></tr>
+          <tr><td class="term">origin</td><td>Punto de la cancha desde donde salió el tiro</td></tr>
+          <tr><td class="term">delivery</td><td>Cómo se ejecutó: <code>jump</code> en salto · <code>standing</code> a pie firme</td></tr>
+          <tr><td class="term">approach</td><td>De qué lado venía la trayectoria del jugador</td></tr>
+          <tr><td class="term">StatsEngine</td><td>El código que calcula todas las estadísticas</td></tr>
+          <tr><td class="term">InsightWriter</td><td>Lo que convierte los números en frases en castellano</td></tr>
+          <tr><td class="term">CaseIterable</td><td>Capacidad de listar todos los casos posibles de un tipo</td></tr>
+          <tr><td class="term">enum</td><td>Lista cerrada de posibilidades</td></tr>
+          <tr><td class="term">struct</td><td>Estructura que agrupa datos relacionados</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="num">08</span>Decisiones tomadas, y las que descartamos</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Decisión</th><th>Por qué</th><th>Qué se descartó</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Una app para el arquero, no para el entrenador</td>
+            <td>Es el nicho que nadie atiende y es la experiencia real del autor</td>
+            <td>App de organización de equipos: necesitaba sincronizar entre celulares</td>
+          </tr>
+          <tr>
+            <td>Todo local, sin cuentas ni nube</td>
+            <td>La cuenta gratuita de Apple no habilita iCloud ni notificaciones push</td>
+            <td>CloudKit; y un backend propio habría sido un segundo proyecto</td>
+          </tr>
+          <tr>
+            <td>Perspectiva del tirador</td>
+            <td>Una sola referencia para la cancha y el arco, sin invertir nada</td>
+            <td>Perspectiva del arquero</td>
+          </tr>
+          <tr>
+            <td>Los 7 m se detectan tocando su marca</td>
+            <td>Evita un botón previo y un toque extra en cada carga</td>
+            <td>Botón de modo al inicio del flujo</td>
+          </tr>
+          <tr>
+            <td>No se registran los tiros bloqueados por un defensor</td>
+            <td>No dicen nada del arquero ni de hacia dónde apuntaba el tirador</td>
+            <td>Registrarlos como un resultado más</td>
+          </tr>
+          <tr>
+            <td>Los arqueros propios quedan fuera</td>
+            <td>El objetivo es el rival: cómo tiran ellos y dónde ataja su arquero</td>
+            <td>Estadísticas de rendimiento propio</td>
+          </tr>
+          <tr>
+            <td>iOS 26 como versión mínima, construido con Xcode 27</td>
+            <td>Los organizadores confirmaron que 26 es el piso y subir a 27 está permitido</td>
+            <td>Instalar Xcode 26 en paralelo</td>
+          </tr>
+          <tr>
+            <td>Nada se guarda en silencio</td>
+            <td>Un toque equivocado en el palo no puede registrar un lanzamiento sin vuelta atrás</td>
+            <td>Pedir confirmación en cada tiro: un toque extra en todos</td>
+          </tr>
+          <tr>
+            <td>Sin reproductor de video en la app</td>
+            <td>El video se mira en otra pantalla; la carga es idéntica a la de un partido</td>
+            <td>AVKit con tiros enlazados al segundo del video</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="num">09</span>El avance, día por día</h2>
+
+    <div class="day">
+      <div class="when">Sáb 19/9</div>
+      <div class="what">
+        <b>Día 0 · Definición <span class="pill done">hecho</span></b>
+        Problema, alcance y plan escritos. Repositorio público creado con las reglas de la hackathon adentro, para que el contexto viaje con el código.
+      </div>
+    </div>
+
+    <div class="day">
+      <div class="when">Dom 20/9</div>
+      <div class="what">
+        <b>Día 1 · El dominio <span class="pill now">en curso</span></b>
+        Destinos del arco modelados con tests primero: 21 destinos posibles, códigos de guardado que van y vuelven intactos, y el resultado implícito en un toque. <strong>11 tests, 55 casos, todo en verde.</strong> Sigue: las zonas de la cancha.
+      </div>
+    </div>
+
+    <div class="day">
+      <div class="when">Lun 21/9</div>
+      <div class="what">
+        <b>Día 2 · Dibujo y toques <span class="pill todo">pendiente</span></b>
+        El arco y la cancha dibujados en pantalla, con zonas táctiles precisas incluso en los segmentos finos del marco.
+      </div>
+    </div>
+
+    <div class="day">
+      <div class="when">Mar 22/9</div>
+      <div class="what">
+        <b>Día 3 · Carga completa <span class="pill todo">pendiente</span></b>
+        Plantel rival, sesión, arquero rival activo, carga de punta a punta y deshacer.
+      </div>
+    </div>
+
+    <div class="day">
+      <div class="when">Mié 23/9</div>
+      <div class="what">
+        <b>Día 4 · Análisis <span class="pill todo">pendiente</span></b>
+        Motor de estadísticas y las dos fichas: tirador y arquero rival, con mapas que se filtran entre sí.
+      </div>
+    </div>
+
+    <div class="day">
+      <div class="when">Jue 24/9</div>
+      <div class="what">
+        <b>Día 5 · IA y compartir <span class="pill todo">pendiente</span></b>
+        Textos en lenguaje natural en el dispositivo, tarjeta para compartir con el equipo e importación de la planilla del partido. A la noche se congelan las funcionalidades.
+      </div>
+    </div>
+
+    <div class="day">
+      <div class="when">Vie 25/9</div>
+      <div class="what">
+        <b>Día 6 · Entrega <span class="pill todo">pendiente</span></b>
+        Solo corrección de errores, pulido, capturas y envío del repositorio.
+      </div>
+    </div>
+  </section>
+
+</div>
