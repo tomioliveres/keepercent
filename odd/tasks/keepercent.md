@@ -15,7 +15,7 @@ TDD: strict mode enabled for the Domain layer (RED → GREEN → REFACTOR), Swif
 ## Day 1 — Sun Sep 20 (domain)
 
 - [x] T1.1 `GoalTarget`: 3×3 inside grid, post segments, out directions + tests — delegated writer (2+ files); `swift test`: 11 tests / 55 cases passed
-- [ ] T1.2 `CourtZone`: polar derivation (5 sectors × 2 depths) + 7m + tests
+- [x] T1.2 `CourtZone` + `CourtGeometry`: sector from the angle at the goal centre (cuts at ±18°/±54°), depth from the distance to the **goal mouth** so it matches the drawn 9m line, `ShotOrigin` with the 7m case, persistence codes — delegated writer (4 files, TDD RED→GREEN→REFACTOR); `swift test`: 41 tests / 16 suites passed (parent spot check re-ran it); `gentle-ai review assess`: medium, RDD off → writer self-verification + spot check
 - [ ] T1.3 `ShotClassification`: cross-shot vs near-post, height + tests
 - [ ] T1.4 SwiftData models + mapping to domain values (primitive codes)
 - [ ] T1.5 Demo data seed
