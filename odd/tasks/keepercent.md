@@ -14,7 +14,7 @@ TDD: strict mode enabled for the Domain layer (RED → GREEN → REFACTOR), Swif
 
 ## Day 1 — Sun Sep 20 (domain)
 
-- [ ] T1.1 `GoalTarget`: 3×3 inside grid, post segments, out directions + tests
+- [x] T1.1 `GoalTarget`: 3×3 inside grid, post segments, out directions + tests — delegated writer (2+ files); `swift test`: 11 tests / 55 cases passed
 - [ ] T1.2 `CourtZone`: polar derivation (5 sectors × 2 depths) + 7m + tests
 - [ ] T1.3 `ShotClassification`: cross-shot vs near-post, height + tests
 - [ ] T1.4 SwiftData models + mapping to domain values (primitive codes)
