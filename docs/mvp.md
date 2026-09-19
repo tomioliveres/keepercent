@@ -98,7 +98,9 @@ A tap on the frame or outside **fully resolves** the outcome (`post` / `out`). A
 5. **Rival goalkeeper card**: the same linked-view component, read as save rate per zone (strong/weak), with 7m shown separately.
 6. **Team report**: a visual card of "where to shoot / where not to", rendered with `ImageRenderer` and shared with `ShareLink` (e.g. to the team's WhatsApp group).
 
-### 6.1 Reference analysis: Steazzi (`capturas-steazzi/`)
+### 6.1 Reference analysis: Steazzi
+
+Based on screenshots of the app the author already uses. They stay outside this repository (third-party content), in the private context folder `hackaton-acoding/capturas-steazzi/`. A second reference, statzpro.com (a paid handball stats SaaS for coaches), was reviewed too: it also records frame hits as a single "post" event and puts goalkeeper zone stats behind a paid plan, which confirms the differentiator.
 
 | Decision | Item | Notes |
 |---|---|---|
