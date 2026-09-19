@@ -42,4 +42,5 @@ Functionality · code quality and cleanliness · creativity · correct use of na
 - **Container / presentational views**: `@Query` is confined to container views; presentational views only draw domain structs they receive, never touch SwiftData directly.
 - **`StatsEngine` never receives a `ModelContext`**: it takes domain structs, so every statistic stays testable without a simulator.
 - **Testing policy**: TDD is strict on `Domain/` (`swift test`, RED → GREEN → REFACTOR); views are verified visually, not unit-tested.
+- **Review after every work-unit commit**: run `gentle-ai review assess --committed-only --json` on the commit and follow the assessed tier. Risk is decided by the assessment, never by judgement. The candidate is a work-unit commit or a PR slice, never a TODO checkbox.
 - Conventional Commits. Code, comments, UI copy and documentation in English.
