@@ -15,6 +15,13 @@ Product definition and plan: [docs/mvp.md](docs/mvp.md) · Task tracking: [odd/t
 - Generative AI may be used to write code, but **every line must be explainable by the author**. Do not introduce code the author cannot defend.
 - Delivery is a public GitHub repository. No App Store submission.
 
+## Where things are
+
+- `Domain/` — pure Swift package, no dependencies, fully tested.
+- `docs/mvp.md` — product definition, scope and plan. `docs/bitacora.html` — the Spanish study log, updated at the end of each day.
+- `odd/tasks/keepercent.md` — task checklist.
+- `reference/` — **gitignored, local only**: hackathon rules PDF, Discord briefings and screenshots of the reference app (third-party material that must never be published).
+
 ## Judging criteria
 
 Functionality · code quality and cleanliness · creativity · correct use of native Apple APIs.

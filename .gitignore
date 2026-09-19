@@ -25,3 +25,6 @@ playground.xcworkspace
 
 # Engram local memory config (machine-specific tooling)
 .engram/
+
+# Hackathon context: rules, briefings and third-party app screenshots (local only)
+reference/

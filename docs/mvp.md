@@ -102,7 +102,7 @@ A tap on the frame or outside **fully resolves** the outcome (`post` / `out`). A
 
 ### 6.1 Reference analysis: Steazzi
 
-Based on screenshots of the app the author already uses. They stay outside this repository (third-party content), in the private context folder `hackaton-acoding/capturas-steazzi/`. A second reference, statzpro.com (a paid handball stats SaaS for coaches), was reviewed too: it also records frame hits as a single "post" event and puts goalkeeper zone stats behind a paid plan, which confirms the differentiator.
+Based on screenshots of the app the author already uses. They are kept in `reference/capturas-steazzi/`, which is gitignored: third-party content stays local and is never published. A second reference, statzpro.com (a paid handball stats SaaS for coaches), was reviewed too: it also records frame hits as a single "post" event and puts goalkeeper zone stats behind a paid plan, which confirms the differentiator.
 
 | Decision | Item | Notes |
 |---|---|---|
