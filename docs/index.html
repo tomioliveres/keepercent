@@ -261,7 +261,7 @@
       <span>Swift + SwiftUI · 100% nativo</span>
       <span>iOS 26</span>
       <span>Entrega: viernes 25/9</span>
-      <span>Última actualización: día 1</span>
+      <span>Última actualización: día 1 · dominio completo</span>
     </div>
   </header>
 
@@ -438,6 +438,10 @@
     </figure>
 
     <div class="why">
+      <b>El detalle que cambia todo: desde dónde se mide.</b> El <strong>sector</strong> se mide como ángulo desde el centro del arco, y el medio campo se parte en cinco sectores de 36°, con los cortes en ±18° y ±54°. Pero la <strong>profundidad</strong> no se mide desde el centro del arco, sino desde <strong>la boca del arco</strong>, es decir el segmento de 3 m entre los postes. ¿Por qué? Porque la línea de 9 m es, justamente, el conjunto de puntos que están a 9 m de ese segmento: por eso se dibuja como dos cuartos de círculo unidos por una recta. Si midiéramos desde el centro, la frontera sería un círculo, y un tiro que a ojo cae claramente fuera de la línea de 9 m cerca del poste quedaría clasificado como cercano. El dibujo y el cálculo tienen que contar la misma historia.
+    </div>
+
+    <div class="why">
       <b>Por qué guardar el punto y no la zona.</b> Si mañana cambiamos cómo se dividen los sectores, los datos viejos siguen sirviendo: se recalculan. Si guardáramos solo la zona, cada cambio de criterio tiraría a la basura todos los partidos ya cargados.
     </div>
   </section>
@@ -544,6 +548,9 @@ Insights/      <span class="c-com">// los textos en lenguaje natural</span></pre
           <tr><td class="term">origin</td><td>Punto de la cancha desde donde salió el tiro</td></tr>
           <tr><td class="term">delivery</td><td>Cómo se ejecutó: <code>jump</code> en salto · <code>standing</code> a pie firme</td></tr>
           <tr><td class="term">approach</td><td>De qué lado venía la trayectoria del jugador</td></tr>
+          <tr><td class="term">CourtZone</td><td>Zona de la cancha: sector (extremo, lateral o central) más profundidad (cerca o lejos)</td></tr>
+          <tr><td class="term">ShotOrigin</td><td>De dónde salió el tiro: una zona de la cancha o la marca de 7 m</td></tr>
+          <tr><td class="term">CourtGeometry</td><td>La geometría real de la cancha: convierte un toque en sector y profundidad</td></tr>
           <tr><td class="term">StatsEngine</td><td>El código que calcula todas las estadísticas</td></tr>
           <tr><td class="term">InsightWriter</td><td>Lo que convierte los números en frases en castellano</td></tr>
           <tr><td class="term">CaseIterable</td><td>Capacidad de listar todos los casos posibles de un tipo</td></tr>
@@ -617,22 +624,22 @@ Insights/      <span class="c-com">// los textos en lenguaje natural</span></pre
       <div class="when">Sáb 19/9</div>
       <div class="what">
         <b>Día 0 · Definición <span class="pill done">hecho</span></b>
-        Problema, alcance y plan escritos. Repositorio público creado con las reglas de la hackathon adentro, para que el contexto viaje con el código.
+        Problema, alcance y plan escritos. Repositorio público creado con las reglas de la hackathon adentro, para que el contexto viaje con el código, y esta bitácora publicada para leerla desde cualquier dispositivo.
       </div>
     </div>
 
     <div class="day">
       <div class="when">Dom 20/9</div>
       <div class="what">
-        <b>Día 1 · El dominio <span class="pill now">en curso</span></b>
-        Destinos del arco modelados con tests primero: 21 destinos posibles, códigos de guardado que van y vuelven intactos, y el resultado implícito en un toque. <strong>11 tests, 55 casos, todo en verde.</strong> Sigue: las zonas de la cancha.
+        <b>Día 1 · El dominio <span class="pill done">hecho</span></b>
+        Destinos del arco modelados con tests primero: 21 destinos posibles, códigos de guardado que van y vuelven intactos, y el resultado implícito en un toque. Después, las zonas de la cancha con la geometría real: cinco sectores de 36°, profundidad medida desde la boca del arco y el origen de 7 m como caso propio. <strong>41 tests en 16 suites, todo en verde.</strong> Además quedó creado el proyecto de Xcode, universal y con iOS 26 como mínimo, compilando y enlazado al paquete del dominio.
       </div>
     </div>
 
     <div class="day">
       <div class="when">Lun 21/9</div>
       <div class="what">
-        <b>Día 2 · Dibujo y toques <span class="pill todo">pendiente</span></b>
+        <b>Día 2 · Dibujo y toques <span class="pill now">sigue</span></b>
         El arco y la cancha dibujados en pantalla, con zonas táctiles precisas incluso en los segmentos finos del marco.
       </div>
     </div>

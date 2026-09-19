@@ -28,3 +28,6 @@ playground.xcworkspace
 
 # Hackathon context: rules, briefings and third-party app screenshots (local only)
 reference/
+
+# Skill registry cache (local tooling)
+.atl/
