@@ -93,6 +93,7 @@ A tap on the frame or outside **fully resolves** the outcome (`post` / `out`). A
    - Active rival goalkeeper, persistent at the top and inherited by own-team shots.
    - Shooter grid (rival numbers) → court tap → goal tap → goal/saved if needed.
    - Optional chips: jump/standing, approach.
+   - **Mis-tap safety**: `impliedOutcome` saves a tap, it never means "saved and gone". Every recorded shot is echoed back as a card showing exactly what was stored (`#7 · left back · crossbar center · POST`) next to a large **Undo**, with haptic feedback on save. The shot log allows editing or deleting any earlier shot too, because a mistake is often noticed several plays later. Nothing is ever committed silently.
    - Undo of the last shot, always visible.
 4. **Shooter card**: linked views. Selecting a court zone filters the goal heatmap to shots from that zone. Origin→target arrows, 7m shown separately, and insight text.
 5. **Rival goalkeeper card**: the same linked-view component, read as save rate per zone (strong/weak), with 7m shown separately.
