@@ -580,7 +580,11 @@ DesignSystem/      <span class="c-com">// CourtView, GoalView, HeatmapCell, colo
 
     <h3>RDD, y una aclaración necesaria</h3>
     <p>RDD (<em>receipt-driven development</em>) es la revisión adversarial de código de Gentle AI, con constancia de lo revisado: lentes de riesgo, resiliencia, legibilidad y confiabilidad sobre un commit. Vale aclararlo con toda claridad: RDD <strong>no es testear</strong>. RDD nunca corre un solo test. Tests en verde no producen una constancia de revisión, y una constancia de revisión no prueba que la app funcione. Son dos cosas complementarias, ninguna sustituye a la otra.</p>
-    <p>La decisión: RDD está activado de forma selectiva, según el riesgo que calcula <code>gentle-ai review assess</code> sobre cada commit. Riesgo bajo recibe un chequeo estructural silencioso; riesgo medio se acumula en una porción de revisión; riesgo alto se revisa en el momento. El motivo es de agenda: el jurado puntúa calidad de código, pero someter cada commit a la ceremonia completa de revisión no entra en un cronograma de seis días.</p>
+    <p>La decisión: RDD quedó activado, y es el riesgo que calcula <code>gentle-ai review assess</code> sobre cada commit el que decide cuánta ceremonia recibe — no una corazonada. Riesgo bajo recibe un chequeo estructural silencioso; riesgo medio se acumula en una porción de revisión; riesgo alto se revisa en el momento. El motivo es de agenda: el jurado puntúa calidad de código, pero someter cada commit a la ceremonia completa de revisión no entra en un cronograma de seis días.</p>
+
+    <h3>La primera revisión real, y lo que encontró</h3>
+    <p>La primera vez que RDD corrió de verdad fue sobre la clasificación de lanzamientos. Encontró algo que los 54 tests en verde no habían visto, y vale la pena entenderlo porque no era un error: era una garantía puesta en el lugar equivocado. Un <code>switch</code> terminaba en <code>default</code>, la cláusula que atrapa «todo lo demás». El código era correcto para los tres casos existentes. El problema es que <code>default</code> apaga la verificación de exhaustividad del compilador: si mañana se agrega un cuarto caso, ese <code>switch</code> no da error, lo clasifica mal en silencio. Reemplazarlo por los dos casos escritos con nombre no cambió una sola línea de comportamiento — cambió <strong>quién garantiza</strong> que el comportamiento siga siendo correcto. Antes lo garantizaba un test que contaba los casos. Ahora lo garantiza el compilador, que no se olvida.</p>
+    <p>La segunda ronda de revisión, en cambio, marcó un hueco de cobertura que no existía: el caso ya estaba cubierto unas líneas más arriba, fuera del fragmento que el revisor tenía a la vista. Lo interesante es que lo dijo él mismo, que no podía confirmarlo con el diff solo. De ahí sale la regla que queda para el resto del proyecto: <strong>un hallazgo se verifica contra el archivo completo, no se obedece</strong>. Una revisión automática es una segunda opinión informada, no una autoridad.</p>
 
     <h3>Commits como unidad de trabajo</h3>
     <p>Un commit es un comportamiento entregable completo, con sus tests y su documentación adentro. No es “todos los modelos” en un commit, después “todas las vistas” en otro y “todos los tests” al final, porque ninguno de esos tres sirve solo y ninguno se puede revertir de forma independiente sin arrastrar a los otros dos.</p>
@@ -698,6 +702,21 @@ DesignSystem/      <span class="c-com">// CourtView, GoalView, HeatmapCell, colo
             <td>Revisar cada commit, o no revisar ninguno</td>
           </tr>
           <tr>
+            <td>La clasificación cubre también palos y tiros afuera</td>
+            <td>El detalle del palo es lo que diferencia a esta app: un remate al palo largo revela la misma intención que uno que entra</td>
+            <td>Clasificar solo los lanzamientos que terminan adentro del arco</td>
+          </tr>
+          <tr>
+            <td>La altura solo existe donde la banda vertical se conoce</td>
+            <td>Un remate por encima del travesaño no es la banda alta; contarlo ahí inflaría esa banda con tiros que nunca amenazaron el arco</td>
+            <td>Mapear «afuera por arriba» a la banda superior</td>
+          </tr>
+          <tr>
+            <td>Sin <code>default</code> en los <code>switch</code> del dominio</td>
+            <td><code>default</code> apaga la verificación de exhaustividad: un caso nuevo se clasificaría mal en silencio</td>
+            <td>Dejar <code>default</code> y confiar en un test que cuenta los casos</td>
+          </tr>
+          <tr>
             <td>TDD estricto solo en el dominio</td>
             <td>Ahí un error silencioso sale caro; las vistas se verifican mirándolas</td>
             <td>Testear todo, o no testear nada</td>
@@ -727,7 +746,7 @@ DesignSystem/      <span class="c-com">// CourtView, GoalView, HeatmapCell, colo
       <div class="when">Dom 20/9</div>
       <div class="what">
         <b>Día 1 · El dominio <span class="pill done">hecho</span></b>
-        Destinos del arco modelados con tests primero: 21 destinos posibles, códigos de guardado que van y vuelven intactos, y el resultado implícito en un toque. Después, las zonas de la cancha con la geometría real: cinco sectores de 36°, profundidad medida desde la boca del arco y el origen de 7 m como caso propio. <strong>41 tests en 16 suites, todo en verde.</strong> Además quedó creado el proyecto de Xcode, universal y con iOS 26 como mínimo, compilando y enlazado al paquete del dominio.
+        Destinos del arco modelados con tests primero: 21 destinos posibles, códigos de guardado que van y vuelven intactos, y el resultado implícito en un toque. Después, las zonas de la cancha con la geometría real: cinco sectores de 36°, profundidad medida desde la boca del arco y el origen de 7 m como caso propio. Y por último la clasificación del lanzamiento: cruzado o al primer palo, y la altura del remate, derivadas del par origen-destino. <strong>54 tests en 21 suites, todo en verde.</strong> Además quedó creado el proyecto de Xcode, universal y con iOS 26 como mínimo, compilando y enlazado al paquete del dominio, y corrió la primera revisión de código con constancia, que encontró una garantía mal ubicada que ningún test había visto.
       </div>
     </div>
 
