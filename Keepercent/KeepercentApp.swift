@@ -2,6 +2,7 @@
 // shot entry) starts in a later task. See docs/mvp.md.
 
 import SwiftUI
+import SwiftData
 
 @main
 struct KeepercentApp: App {
@@ -9,5 +10,6 @@ struct KeepercentApp: App {
         WindowGroup {
             ContentView()
         }
+        .modelContainer(KeepercentSchema.makeContainer())
     }
 }
