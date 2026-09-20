@@ -192,6 +192,8 @@ struct ShotDecodingTests {
     /// the one field it is about.
     private func decoded(
         attackingSideCode: String = "rival",
+        originX: Double? = 0.3,
+        originY: Double? = 0.4,
         targetCode: String = ShotDecodingTests.target.code,
         outcomeCode: String = "saved",
         deliveryCode: String? = "jump",
@@ -201,8 +203,8 @@ struct ShotDecodingTests {
             attackingSideCode: attackingSideCode,
             shooter: Self.shooter,
             facingGoalkeeper: nil,
-            originX: 0.3,
-            originY: 0.4,
+            originX: originX,
+            originY: originY,
             isSevenMeters: false,
             targetCode: targetCode,
             outcomeCode: outcomeCode,
@@ -240,6 +242,20 @@ struct ShotDecodingTests {
         #expect(shot != nil)
         #expect(shot?.delivery == nil)
         #expect(shot?.approach == nil)
+    }
+
+    /// A stored row can hold one coordinate without the other only if it
+    /// was written wrong. Half a point is not a position, so it is read as
+    /// no recorded origin rather than defaulting the missing half to a
+    /// coordinate the shooter never stood on.
+    @Test("A lone coordinate is read as no recorded origin", arguments: [
+        (x: 0.3 as Double?, y: nil as Double?),
+        (x: nil as Double?, y: 0.4 as Double?)
+    ])
+    func partialCoordinatePairHasNoOrigin(input: (x: Double?, y: Double?)) {
+        let shot = decoded(originX: input.x, originY: input.y)
+        #expect(shot?.originPoint == nil)
+        #expect(shot?.origin == nil)
     }
 }
 
