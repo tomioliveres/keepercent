@@ -88,10 +88,14 @@ public struct Shot: Equatable, Hashable, Sendable {
     public let facingGoalkeeper: Player?
     /// The raw normalized tap the shot originated from, in the `0...1`
     /// court frame `CourtGeometry` derives a `CourtZone` from
-    /// (docs/mvp.md §5.2); `nil` for a 7 m shot.
+    /// (docs/mvp.md §5.2). Always `nil` for a 7 m throw: the initializer
+    /// drops any point passed alongside `isSevenMeters`, so persistence
+    /// code reading this field directly can never resurrect a phantom
+    /// origin that `origin` already ignores.
     public let originPoint: CourtPoint?
     /// Whether this was a 7 m throw, auto-detected from a tap on the 7 m
-    /// mark; when `true`, `originPoint` is skipped entirely.
+    /// mark. A 7 m throw always starts from the same spot, so it has no
+    /// recorded origin point (docs/mvp.md §5).
     public let isSevenMeters: Bool
     /// Where the shot ended up relative to the goal frame.
     public let target: GoalTarget
@@ -119,7 +123,10 @@ public struct Shot: Equatable, Hashable, Sendable {
         self.attackingSide = attackingSide
         self.shooter = shooter
         self.facingGoalkeeper = facingGoalkeeper
-        self.originPoint = originPoint
+        // A 7 m throw has no recorded origin (docs/mvp.md §5). Normalizing
+        // here keeps the contradictory pair unrepresentable instead of
+        // merely ignored by `origin`.
+        self.originPoint = isSevenMeters ? nil : originPoint
         self.isSevenMeters = isSevenMeters
         self.target = target
         self.outcome = outcome

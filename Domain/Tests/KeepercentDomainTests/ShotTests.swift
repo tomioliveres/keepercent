@@ -111,6 +111,12 @@ struct ShotOriginDerivationTests {
         #expect(withoutPoint.origin == .sevenMeters)
     }
 
+    @Test("A 7m shot stores no originPoint, so persistence cannot read a phantom one")
+    func sevenMetersDropsTheOriginPoint() {
+        let recorded = shot(originPoint: point(xMeters: -8, yMeters: 3), isSevenMeters: true)
+        #expect(recorded.originPoint == nil)
+    }
+
     @Test(
         "A non-7m shot derives the zone CourtGeometry would derive from the same point",
         arguments: [
@@ -159,9 +165,19 @@ struct ShotClassificationDerivationTests {
         #expect(recorded.line == .neutral)
     }
 
-    @Test("classification is nil when origin is nil")
+    @Test("line is nil when origin is nil")
     func nilWhenOriginIsNil() {
         let recorded = shot(originPoint: nil, isSevenMeters: false)
         #expect(recorded.line == nil)
+    }
+
+    @Test(
+        "A 7 m throw is neutral whatever it aims at",
+        arguments: [GoalColumn.left, .center, .right]
+    )
+    func sevenMetersIsAlwaysNeutral(column: GoalColumn) {
+        let target = GoalTarget.inside(GoalZone(row: .middle, column: column))
+        let recorded = shot(isSevenMeters: true, target: target)
+        #expect(recorded.line == .neutral)
     }
 }
