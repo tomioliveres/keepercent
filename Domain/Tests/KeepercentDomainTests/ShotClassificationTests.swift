@@ -147,6 +147,7 @@ struct ShotClassificationLineTests {
         #expect(ShotClassification.line(from: Self.leftOrigin, to: .post(.rightPostTop)) == .crossShot)
         #expect(ShotClassification.line(from: Self.rightOrigin, to: .out(.wideRight)) == .nearPost)
         #expect(ShotClassification.line(from: Self.leftOrigin, to: .out(.over)) == .neutral)
+        #expect(ShotClassification.line(from: Self.leftOrigin, to: .post(.crossbarCenter)) == .neutral)
     }
 }
 

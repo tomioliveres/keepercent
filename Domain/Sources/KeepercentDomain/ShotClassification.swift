@@ -132,7 +132,7 @@ extension ShotClassification {
             return .neutral
         case (.left, .left), (.right, .right):
             return .nearPost
-        default:
+        case (.left, .right), (.right, .left):
             return .crossShot
         }
     }
