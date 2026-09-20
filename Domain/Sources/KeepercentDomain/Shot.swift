@@ -159,3 +159,67 @@ extension Shot {
         return ShotClassification.line(from: origin, to: target)
     }
 }
+
+// MARK: - Decoding from persisted primitives
+
+extension Player {
+    /// Rebuilds a player from the primitives a stored row holds.
+    /// Handedness is optional in the domain, so an unrecognized code
+    /// decodes to nil instead of invalidating the whole player: a shirt
+    /// number and a name are still useful scouting.
+    public init(number: Int, name: String?, isGoalkeeper: Bool, handednessCode: String?) {
+        self.init(
+            number: number,
+            name: name,
+            isGoalkeeper: isGoalkeeper,
+            handedness: handednessCode.flatMap(Handedness.init(rawValue:))
+        )
+    }
+}
+
+extension Shot {
+    /// Rebuilds a shot from the primitives a stored row holds, or `nil`
+    /// when an unknown attacking side, target or outcome code makes the
+    /// row corrupt: nil keeps it out of the statistics instead of a
+    /// default that would silently skew them. Unknown optional codes
+    /// decode to nil and the shot survives. Decoding lives here, not in
+    /// the SwiftData layer, because the app target has no test target.
+    public init?(
+        attackingSideCode: String,
+        shooter: Player?,
+        facingGoalkeeper: Player?,
+        originX: Double?,
+        originY: Double?,
+        isSevenMeters: Bool,
+        targetCode: String,
+        outcomeCode: String,
+        deliveryCode: String?,
+        approachCode: String?,
+        date: Date
+    ) {
+        guard let attackingSide = AttackingSide(rawValue: attackingSideCode),
+              let target = GoalTarget(code: targetCode),
+              let outcome = ShotOutcome(rawValue: outcomeCode)
+        else { return nil }
+
+        let originPoint: CourtPoint?
+        if let originX, let originY {
+            originPoint = CourtPoint(x: originX, y: originY)
+        } else {
+            originPoint = nil
+        }
+
+        self.init(
+            attackingSide: attackingSide,
+            shooter: shooter,
+            facingGoalkeeper: facingGoalkeeper,
+            originPoint: originPoint,
+            isSevenMeters: isSevenMeters,
+            target: target,
+            outcome: outcome,
+            delivery: deliveryCode.flatMap(ShotDelivery.init(rawValue:)),
+            approach: approachCode.flatMap(ShotApproach.init(rawValue:)),
+            date: date
+        )
+    }
+}

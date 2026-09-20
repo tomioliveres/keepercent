@@ -181,3 +181,87 @@ struct ShotClassificationDerivationTests {
         #expect(recorded.line == .neutral)
     }
 }
+
+@Suite("Decoding a shot from persisted primitives")
+struct ShotDecodingTests {
+
+    private static let target = GoalTarget.inside(GoalZone(row: .top, column: .left))
+    private static let shooter = Player(number: 7, name: "Ana", isGoalkeeper: false, handedness: .left)
+
+    /// Decodes a row whose codes are all valid, so each test states only
+    /// the one field it is about.
+    private func decoded(
+        attackingSideCode: String = "rival",
+        targetCode: String = ShotDecodingTests.target.code,
+        outcomeCode: String = "saved",
+        deliveryCode: String? = "jump",
+        approachCode: String? = "fromLeft"
+    ) -> Shot? {
+        Shot(
+            attackingSideCode: attackingSideCode,
+            shooter: Self.shooter,
+            facingGoalkeeper: nil,
+            originX: 0.3,
+            originY: 0.4,
+            isSevenMeters: false,
+            targetCode: targetCode,
+            outcomeCode: outcomeCode,
+            deliveryCode: deliveryCode,
+            approachCode: approachCode,
+            date: referenceDate
+        )
+    }
+
+    @Test("A valid row rebuilds exactly the shot its codes describe")
+    func validRowRoundTrips() {
+        let expected = Shot(
+            attackingSide: .rival,
+            shooter: Self.shooter,
+            originPoint: CourtPoint(x: 0.3, y: 0.4),
+            target: Self.target,
+            outcome: .saved,
+            delivery: .jump,
+            approach: .fromLeft,
+            date: referenceDate
+        )
+        #expect(decoded() == expected)
+    }
+
+    @Test("An unknown required code makes the whole row undecodable")
+    func unknownRequiredCodeReturnsNil() {
+        #expect(decoded(attackingSideCode: "sideways") == nil)
+        #expect(decoded(targetCode: "inside.9.9") == nil)
+        #expect(decoded(outcomeCode: "deflected") == nil)
+    }
+
+    @Test("An unknown optional code decodes to nil without losing the shot")
+    func unknownOptionalCodeSurvives() {
+        let shot = decoded(deliveryCode: "cartwheel", approachCode: "sideways")
+        #expect(shot != nil)
+        #expect(shot?.delivery == nil)
+        #expect(shot?.approach == nil)
+    }
+}
+
+@Suite("Decoding a player from persisted primitives")
+struct PlayerDecodingTests {
+
+    @Test("A valid row round-trips back to the player that produced it", arguments: [nil, Handedness.left, .right])
+    func validRowRoundTrips(handedness: Handedness?) {
+        let original = Player(number: 7, name: "Ana", isGoalkeeper: true, handedness: handedness)
+        let rebuilt = Player(
+            number: original.number,
+            name: original.name,
+            isGoalkeeper: original.isGoalkeeper,
+            handednessCode: original.handedness?.rawValue
+        )
+        #expect(rebuilt == original)
+    }
+
+    @Test("An unknown handedness code is forgotten, never fatal")
+    func unknownHandednessDecodesToNil() {
+        let player = Player(number: 3, name: nil, isGoalkeeper: false, handednessCode: "ambidextrous")
+        #expect(player.handedness == nil)
+        #expect(player.number == 3)
+    }
+}

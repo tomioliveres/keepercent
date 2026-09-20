@@ -59,17 +59,16 @@ final class StoredPlayer {
         )
     }
 
-    /// The domain value this row represents. `Handedness` round-trips
-    /// through its compiler-synthesized `init?(rawValue:)` (see
-    /// Shot.swift); an unrecognized or missing code decodes to nil rather
-    /// than invalidating the whole player, since handedness is optional in
-    /// the domain too.
+    /// The domain value this row represents. The handedness decoding rule
+    /// (an unrecognized code is forgotten, never fatal) lives in the
+    /// domain's `Player.init(number:name:isGoalkeeper:handednessCode:)`,
+    /// where it is covered by `swift test`.
     var domainPlayer: Player {
         Player(
             number: number,
             name: name,
             isGoalkeeper: isGoalkeeper,
-            handedness: handednessCode.flatMap(Handedness.init(rawValue:))
+            handednessCode: handednessCode
         )
     }
 }

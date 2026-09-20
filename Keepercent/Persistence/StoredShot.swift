@@ -85,39 +85,22 @@ final class StoredShot {
         )
     }
 
-    /// The domain value this row represents, or nil when a required code
-    /// fails to decode: an unknown `targetCode`, `outcomeCode` or
-    /// `attackingSideCode` means the row is corrupt and cannot become a
-    /// valid `Shot`. Optional codes (`deliveryCode`, `approachCode`, and
-    /// the shooter/goalkeeper's `handednessCode`) decode to nil instead of
-    /// invalidating the shot, matching how the domain itself treats them as
-    /// optional.
+    /// The domain value this row represents, or nil when the row is
+    /// corrupt. The decoding rules themselves live in the domain
+    /// (`Shot.init?(attackingSideCode:...)`), where `swift test` can prove
+    /// them; this property only hands over the stored primitives.
     var domainShot: Shot? {
-        guard let attackingSide = AttackingSide(rawValue: attackingSideCode),
-              let target = GoalTarget(code: targetCode),
-              let outcome = ShotOutcome(rawValue: outcomeCode)
-        else { return nil }
-
-        // Both coordinates are required together: a lone x or y is not a
-        // usable point, so a partial pair is treated the same as no
-        // recorded origin rather than defaulting the missing half.
-        let originPoint: CourtPoint?
-        if let originX, let originY {
-            originPoint = CourtPoint(x: originX, y: originY)
-        } else {
-            originPoint = nil
-        }
-
-        return Shot(
-            attackingSide: attackingSide,
+        Shot(
+            attackingSideCode: attackingSideCode,
             shooter: shooter?.domainPlayer,
             facingGoalkeeper: facingGoalkeeper?.domainPlayer,
-            originPoint: originPoint,
+            originX: originX,
+            originY: originY,
             isSevenMeters: isSevenMeters,
-            target: target,
-            outcome: outcome,
-            delivery: deliveryCode.flatMap(ShotDelivery.init(rawValue:)),
-            approach: approachCode.flatMap(ShotApproach.init(rawValue:)),
+            targetCode: targetCode,
+            outcomeCode: outcomeCode,
+            deliveryCode: deliveryCode,
+            approachCode: approachCode,
             date: date
         )
     }
