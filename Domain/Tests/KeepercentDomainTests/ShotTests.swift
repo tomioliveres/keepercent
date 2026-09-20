@@ -194,6 +194,7 @@ struct ShotDecodingTests {
         attackingSideCode: String = "rival",
         originX: Double? = 0.3,
         originY: Double? = 0.4,
+        isSevenMeters: Bool = false,
         targetCode: String = ShotDecodingTests.target.code,
         outcomeCode: String = "saved",
         deliveryCode: String? = "jump",
@@ -205,7 +206,7 @@ struct ShotDecodingTests {
             facingGoalkeeper: nil,
             originX: originX,
             originY: originY,
-            isSevenMeters: false,
+            isSevenMeters: isSevenMeters,
             targetCode: targetCode,
             outcomeCode: outcomeCode,
             deliveryCode: deliveryCode,
@@ -252,10 +253,20 @@ struct ShotDecodingTests {
         (x: 0.3 as Double?, y: nil as Double?),
         (x: nil as Double?, y: 0.4 as Double?)
     ])
-    func partialCoordinatePairHasNoOrigin(input: (x: Double?, y: Double?)) {
-        let shot = decoded(originX: input.x, originY: input.y)
-        #expect(shot?.originPoint == nil)
-        #expect(shot?.origin == nil)
+    func partialCoordinatePairHasNoOrigin(input: (x: Double?, y: Double?)) throws {
+        // Unwrapped rather than chained: `shot?.originPoint == nil` would
+        // also hold if the whole decode returned nil, so the assertion
+        // would pass while hiding exactly the regression it exists for.
+        let shot = try #require(decoded(originX: input.x, originY: input.y))
+        #expect(shot.originPoint == nil)
+        #expect(shot.origin == nil)
+    }
+
+    @Test("A decoded 7 m row drops the origin point its codes still carry")
+    func sevenMetersRowDropsTheOriginPoint() throws {
+        let shot = try #require(decoded(isSevenMeters: true))
+        #expect(shot.originPoint == nil)
+        #expect(shot.origin == .sevenMeters)
     }
 }
 
