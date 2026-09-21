@@ -469,10 +469,15 @@ struct CourtGeometrySevenMeterHitAreaTests {
     @Test("Just outside the rectangle resolves to .zone(center, near), not .sevenMeters")
     func justOutsideResolvesToCenterNearZone() {
         let region = geometry.sevenMeterMarkRegion
+        // All four sides: `origin(at:)` tests the left and right `x`
+        // bounds with two structurally separate comparisons, so leaving
+        // either one out leaves that edge of the hit area unproved.
         let justLeft = CourtPoint(x: region.x - 0.01, y: 0.5)
+        let justRight = CourtPoint(x: region.x + region.width + 0.01, y: 0.5)
         let justAbove = CourtPoint(x: 0.5, y: region.y - 0.01)
         let justBelow = CourtPoint(x: 0.5, y: region.y + region.height + 0.01)
         #expect(geometry.origin(at: justLeft) == .zone(CourtZone(sector: .center, depth: .near)))
+        #expect(geometry.origin(at: justRight) == .zone(CourtZone(sector: .center, depth: .near)))
         #expect(geometry.origin(at: justAbove) == .zone(CourtZone(sector: .center, depth: .near)))
         #expect(geometry.origin(at: justBelow) == .zone(CourtZone(sector: .center, depth: .near)))
     }

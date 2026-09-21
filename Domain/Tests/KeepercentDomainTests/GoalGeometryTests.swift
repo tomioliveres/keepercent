@@ -390,4 +390,22 @@ struct GoalGeometryNonDefaultGeometryTests {
         let y = -geometry.normalizedFrameBandThicknessY * 2
         #expect(geometry.target(at: GoalPoint(x: 0.5, y: y)) == .out(.over))
     }
+
+    // `GoalPoint` deliberately does not clamp, so a `y` below the ground
+    // line reaches `target(at:)` unchanged and the resolution onto the
+    // floor happens inside it. The two tests below pin that BEHAVIOUR —
+    // the ball cannot pass under the floor — rather than whichever
+    // internal step currently upholds it, so the guarantee survives a
+    // refactor of the clamping itself.
+
+    @Test("A point below the ground line, inside the mouth, resolves onto the floor")
+    func belowGroundLineInsideMouthResolvesToBottomRow() {
+        #expect(geometry.target(at: GoalPoint(x: 0.5, y: 1.5)) == .inside(GoalZone(row: .bottom, column: .center)))
+    }
+
+    @Test("A point below the ground line, in a post band, resolves to that post's bottom segment")
+    func belowGroundLineInPostBandResolvesToBottomSegment() {
+        let x = -geometry.normalizedFrameBandThicknessX / 2
+        #expect(geometry.target(at: GoalPoint(x: x, y: 1.5)) == .post(.leftPostBottom))
+    }
 }
