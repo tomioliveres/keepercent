@@ -1,6 +1,8 @@
-// Deliberately minimal placeholder. Product UI (court and goal views) starts
-// in a later task; this screen only proves the app target links and runs
-// against KeepercentDomain. See docs/mvp.md.
+// Deliberately minimal scaffold. This is NOT the real shot-entry screen —
+// that is T3.3. It exists only so GoalView's drawing and hit-testing can be
+// verified on the simulator right now, ahead of the real screen being
+// built. It shows GoalView and, as plain text, the code of the last target
+// that was tapped.
 
 import SwiftUI
 import KeepercentDomain
@@ -10,12 +12,26 @@ struct ContentView: View {
     /// at runtime, not just at build time.
     private let goalTargetCount = GoalTarget.allCases.count
 
+    /// The last tapped target's code (e.g. "inside.top.left"), shown as
+    /// plain text so a tap can be verified on the simulator. This is a
+    /// scaffold concern only — GoalView itself stays stateless.
+    @State private var lastTappedTargetCode: String?
+
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 16) {
             Text("Keepercent")
                 .font(.largeTitle.bold())
             Text("\(goalTargetCount) possible goal targets modeled")
                 .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            GoalView { target in
+                lastTappedTargetCode = target.code
+            }
+            .padding(.horizontal)
+
+            Text(lastTappedTargetCode.map { "Last tap: \($0)" } ?? "Tap the goal to try it")
+                .font(.callout.monospaced())
                 .foregroundStyle(.secondary)
         }
         .padding()
