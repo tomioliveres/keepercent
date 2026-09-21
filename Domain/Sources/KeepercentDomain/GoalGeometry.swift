@@ -103,6 +103,21 @@ public struct GoalGeometry: Equatable, Hashable, Sendable {
         heightInMeters: Double = 2,
         frameBandInMeters: Double = 0.25
     ) {
+        // A zero or negative mouth dimension is a programmer error, not a
+        // legitimate geometry: `normalizedFrameBandThicknessX/Y` would
+        // divide by it and yield infinity, which then compares true
+        // against every band-membership check in `target(at:)` — so the
+        // failure mode is not a crash, it is that EVERY tap silently
+        // resolves as a frame-band hit, corrupting every recorded shot
+        // from then on. A negative frame band is equally nonsensical (a
+        // hit band with negative thickness). Trapping here, at
+        // construction, is strictly better than that quiet wrong answer:
+        // it surfaces the bug at the one call site that built the bad
+        // geometry, instead of silently mis-scoring whatever shot
+        // happens to be tapped next.
+        precondition(widthInMeters > 0, "GoalGeometry.widthInMeters must be positive")
+        precondition(heightInMeters > 0, "GoalGeometry.heightInMeters must be positive")
+        precondition(frameBandInMeters >= 0, "GoalGeometry.frameBandInMeters must not be negative")
         self.widthInMeters = widthInMeters
         self.heightInMeters = heightInMeters
         self.frameBandInMeters = frameBandInMeters
@@ -271,7 +286,13 @@ extension GoalGeometry {
         }
 
         // --- 2. Inside the mouth --------------------------------------------
-        let insideMouthY = y >= -tolerance && y <= 1 + tolerance
+        // No upper bound on `y` here: `groundResolvedY`, applied
+        // unconditionally at the top of this function, already clamped
+        // `y` to `<= 1`, so that bound always holds by the time this line
+        // runs. If `groundResolvedY` is ever weakened or removed, this
+        // check's correctness breaks with it — a future reader changing
+        // that clamp must also revisit this line.
+        let insideMouthY = y >= -tolerance
         if insideMouthX && insideMouthY {
             return .inside(GoalZone(row: rowFor(y), column: columnFor(x)))
         }

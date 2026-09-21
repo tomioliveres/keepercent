@@ -358,3 +358,36 @@ struct GoalGeometryRegionRoundTripTests {
         #expect(tolerant(crossbarCenter.height, geometry.normalizedFrameBandThicknessY))
     }
 }
+
+@Suite("GoalGeometry target(at:) on a non-default geometry")
+struct GoalGeometryNonDefaultGeometryTests {
+
+    // A 4x2 mouth with a 0.5 m frame band — deliberately not `.standard`,
+    // so these tests catch a regression that only shows up once `target(at:)`
+    // is exercised on band thicknesses other than the default ones
+    // (normalizedFrameBandThicknessX = 0.125, normalizedFrameBandThicknessY = 0.25).
+    let geometry = GoalGeometry(widthInMeters: 4, heightInMeters: 2, frameBandInMeters: 0.5)
+
+    @Test("A point inside the mouth resolves to the expected zone")
+    func insideMouthResolvesToExpectedZone() {
+        #expect(geometry.target(at: GoalPoint(x: 0.5, y: 0.5)) == .inside(GoalZone(row: .middle, column: .center)))
+    }
+
+    @Test("A point in the left post band resolves to the expected post segment")
+    func leftPostBandResolvesToExpectedSegment() {
+        let x = -geometry.normalizedFrameBandThicknessX / 2
+        #expect(geometry.target(at: GoalPoint(x: x, y: 0.5)) == .post(.leftPostMiddle))
+    }
+
+    @Test("A point beyond the left post band resolves to wideLeft")
+    func beyondLeftPostBandResolvesToWideLeft() {
+        let x = -geometry.normalizedFrameBandThicknessX * 2
+        #expect(geometry.target(at: GoalPoint(x: x, y: 0.5)) == .out(.wideLeft))
+    }
+
+    @Test("A point above the crossbar band, inside the mouth, resolves to over")
+    func aboveCrossbarBandResolvesToOver() {
+        let y = -geometry.normalizedFrameBandThicknessY * 2
+        #expect(geometry.target(at: GoalPoint(x: 0.5, y: y)) == .out(.over))
+    }
+}
