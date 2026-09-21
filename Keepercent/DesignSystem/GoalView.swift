@@ -36,18 +36,10 @@ struct GoalView: View {
     /// rather than nearly disappearing next to it.
     private let outBandFraction: Double = 0.18
 
-    /// The visible post/crossbar stroke width, in points, drawn INSIDE the
-    /// frame hit-band's normalized thickness.
-    ///
-    /// This is intentionally much thinner than the hit band itself — see
-    /// `GoalGeometry.frameBandInMeters`'s comment: the band is sized as a
-    /// comfortable touch target, not as what a real post looks like. Making
-    /// the drawn stroke this much thinner leaves a visible gap between the
-    /// painted post/crossbar and the edge of its actual touch area, which is
-    /// the whole point of separating "what you see" from "what you can tap".
-    /// 10pt reads as a solid frame at typical phone/tablet sizes without
-    /// looking like a slab.
-    private let framePostStrokeWidth: CGFloat = 10
+    /// How much of the frame band's thickness the drawn goal line on the
+    /// floor takes. The floor is not a frame member, so it must read as
+    /// clearly lighter than a post while still closing the mouth.
+    private let groundLineThicknessOfBand: Double = 0.3
 
     /// How many net cells span the mouth horizontally. The vertical count
     /// is derived from the goal's real proportions, so the net's cells stay
@@ -184,7 +176,6 @@ struct GoalView: View {
         context.fill(Path(mouthRect), with: .color(Color(.systemBackground)))
         drawNet(in: &context, mouthRect: mouthRect)
         drawGridLines(in: &context, canvasSize: canvasSize)
-        context.stroke(Path(mouthRect), with: .color(.secondary), lineWidth: 1)
     }
 
     /// Decorative net texture: an evenly spaced grid of thin lines. Purely
@@ -231,12 +222,21 @@ struct GoalView: View {
         }
     }
 
-    /// The frame: a solid post/crossbar stroke, drawn along the mouth edge
-    /// but visually THINNER than the frame hit-band (`framePostStrokeWidth`
-    /// vs. `geometry.normalizedFrameBandThicknessX/Y`). That gap between
-    /// the drawn stroke and the actual touch area is deliberate — see
-    /// `framePostStrokeWidth`'s comment: the hit band is a comfortable
-    /// touch target, not a literal rendering of the post's width.
+    /// The frame: the posts and the crossbar, painted as EXACTLY the band
+    /// that `GoalGeometry.target(at:)` resolves to a `.post(...)`.
+    ///
+    /// An earlier version drew a thin stroke centred on the mouth's edge
+    /// and tinted a wider invisible hit band around it. That was wrong in
+    /// two ways, both of which showed up the moment it was tapped. A stroke
+    /// centred on the boundary puts half its own width INSIDE the mouth, so
+    /// tapping what looked like the post recorded a shot inside the frame.
+    /// And a painted stroke plus a tinted band plus the out band read as
+    /// three different things, so nobody could tell where the post ended.
+    ///
+    /// The rule now is that what you see is what you tap: one post, one
+    /// inside, one out. The drawn post is deliberately not to scale — a
+    /// real post is about 8 cm against a 3 m mouth, which no finger could
+    /// hit — but it is exactly the region that records a post.
     private func drawFrame(in context: inout GraphicsContext, size: CGSize) {
         let mouthRect = pixelRect(for: GoalRegion(x: 0, y: 0, width: 1, height: 1), in: size)
         let bandX = geometry.normalizedFrameBandThicknessX
@@ -246,33 +246,44 @@ struct GoalView: View {
             in: size
         )
 
-        // Tint the whole hit-band area (post + crossbar) faintly, so the
-        // touch target itself is visible even though the painted post is
-        // thinner than it.
-        var bandPath = Path(frameOuterRect)
-        bandPath.addPath(Path(mouthRect))
-        context.fill(bandPath, with: .color(.secondary.opacity(0.28)), style: FillStyle(eoFill: true))
+        var framePath = Path(frameOuterRect)
+        framePath.addPath(Path(mouthRect))
+        context.fill(framePath, with: .color(.primary), style: FillStyle(eoFill: true))
 
-        // The visible post/crossbar stroke itself: a U-shape (left post,
-        // crossbar, right post) traced along the mouth's own edge.
-        var frameStroke = Path()
-        frameStroke.move(to: CGPoint(x: mouthRect.minX, y: mouthRect.maxY))
-        frameStroke.addLine(to: CGPoint(x: mouthRect.minX, y: mouthRect.minY))
-        frameStroke.addLine(to: CGPoint(x: mouthRect.maxX, y: mouthRect.minY))
-        frameStroke.addLine(to: CGPoint(x: mouthRect.maxX, y: mouthRect.maxY))
-        context.stroke(frameStroke, with: .color(.primary), lineWidth: framePostStrokeWidth)
+        drawFrameSegmentSeparators(in: &context, size: size)
+        drawGroundLine(in: &context, mouthRect: mouthRect, size: size)
+    }
 
-        // The goal line on the floor. A real goal has no bottom member, but
-        // the mouth still needs closing or the posts read as cut off at the
-        // edge of the view. Drawn thinner than the posts, and inset by half
-        // a stroke so it sits fully inside the drawn area: it is the floor,
-        // not part of the frame. It also marks where `GoalGeometry` resolves
-        // any tap from below — the ball cannot pass under it.
-        let groundY = mouthRect.maxY - framePostStrokeWidth / 2
+    /// Faint separators between the nine frame segments, each traced from
+    /// `geometry.region(for:)` so they land exactly where a tap changes
+    /// which segment it records. Without them the frame is one solid mass
+    /// and nothing suggests that a post has a top, a middle and a bottom.
+    private func drawFrameSegmentSeparators(in context: inout GraphicsContext, size: CGSize) {
+        for segment in PostSegment.allCases {
+            let rect = pixelRect(for: geometry.region(for: segment), in: size)
+            context.stroke(
+                Path(rect),
+                with: .color(Color(.systemBackground).opacity(0.45)),
+                lineWidth: 0.5
+            )
+        }
+    }
+
+    /// The goal line on the floor. A real goal has no bottom member, so
+    /// this is deliberately NOT painted as part of the frame: it is thinner
+    /// and lighter, and it only closes the mouth so the posts do not read
+    /// as cut off at the edge of the view. It also marks where
+    /// `GoalGeometry` resolves a tap from below — the ball cannot pass
+    /// under the floor.
+    private func drawGroundLine(in context: inout GraphicsContext, mouthRect: CGRect, size: CGSize) {
+        let bandPixels = geometry.normalizedFrameBandThicknessY * layout(in: size).scaleY
+        let thickness = bandPixels * groundLineThicknessOfBand
+        let groundY = mouthRect.maxY - thickness / 2
+
         var groundLine = Path()
         groundLine.move(to: CGPoint(x: mouthRect.minX, y: groundY))
         groundLine.addLine(to: CGPoint(x: mouthRect.maxX, y: groundY))
-        context.stroke(groundLine, with: .color(.secondary), lineWidth: framePostStrokeWidth / 2)
+        context.stroke(groundLine, with: .color(.secondary), lineWidth: thickness)
     }
 
     // MARK: - Hit-testing
