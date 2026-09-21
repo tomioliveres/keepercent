@@ -26,6 +26,8 @@ Product definition and plan: [docs/mvp.md](docs/mvp.md) · Task tracking: [odd/t
 
 Functionality · code quality and cleanliness · creativity · correct use of native Apple APIs.
 
+There is **one winner per language category**, so Keepercent competes inside the Spanish track.
+
 ## Deadlines
 
 - Personal deadline: **Friday Sep 25, 2026** (no availability on the weekend).
