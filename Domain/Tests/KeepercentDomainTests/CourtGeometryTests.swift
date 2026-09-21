@@ -271,3 +271,224 @@ struct CourtGeometrySevenMeterPointTests {
         #expect(geometry.zone(at: p) == CourtZone(sector: .center, depth: .near))
     }
 }
+
+@Suite("CourtGeometry aspect ratio")
+struct CourtGeometryAspectRatioTests {
+
+    @Test("aspectRatio is widthInMeters / depthInMeters, so x and y can share one drawing scale")
+    func aspectRatioIsWidthOverDepth() {
+        let geometry = CourtGeometry(widthInMeters: 20, depthInMeters: 15)
+        #expect(tolerant(geometry.aspectRatio, 20.0 / 15.0))
+    }
+
+    @Test("A non-default geometry derives its own aspect ratio")
+    func nonDefaultGeometryDerivesItsOwnRatio() {
+        let geometry = CourtGeometry(widthInMeters: 16, depthInMeters: 20)
+        #expect(tolerant(geometry.aspectRatio, 0.8))
+    }
+}
+
+@Suite("CourtGeometry drawable distance line")
+struct CourtGeometryLineTests {
+
+    let geometry = CourtGeometry.standard
+
+    @Test("Every point on the 9m line is at distance 9m from the goal mouth, matching depth(at:)'s own definition")
+    func ninelineIsAtNineMetersFromGoalMouth() {
+        let points = geometry.line(atDistanceInMeters: 9)
+        #expect(!points.isEmpty)
+        for point in points {
+            #expect(tolerant(geometry.distanceToGoalMouth(for: point), 9, tolerance: 1e-6))
+        }
+    }
+
+    @Test("Every point on the 6m line is at distance 6m from the goal mouth")
+    func sixLineIsAtSixMetersFromGoalMouth() {
+        let points = geometry.line(atDistanceInMeters: 6)
+        #expect(!points.isEmpty)
+        for point in points {
+            #expect(tolerant(geometry.distanceToGoalMouth(for: point), 6, tolerance: 1e-6))
+        }
+    }
+
+    @Test("The 9m line is a continuous polyline: no jump between consecutive points is larger than a small bound")
+    func ninelineIsContinuous() {
+        let points = geometry.line(atDistanceInMeters: 9)
+        for i in 1..<points.count {
+            let dx = geometry.xMeters(for: points[i]) - geometry.xMeters(for: points[i - 1])
+            let dy = geometry.yMeters(for: points[i]) - geometry.yMeters(for: points[i - 1])
+            let jump = (dx * dx + dy * dy).squareRoot()
+            #expect(jump < 1.0)
+        }
+    }
+
+    @Test("The 6m line is a continuous polyline")
+    func sixLineIsContinuous() {
+        let points = geometry.line(atDistanceInMeters: 6)
+        for i in 1..<points.count {
+            let dx = geometry.xMeters(for: points[i]) - geometry.xMeters(for: points[i - 1])
+            let dy = geometry.yMeters(for: points[i]) - geometry.yMeters(for: points[i - 1])
+            let jump = (dx * dx + dy * dy).squareRoot()
+            #expect(jump < 1.0)
+        }
+    }
+
+    @Test("The 9m line is symmetric: mirroring every point about the centre line yields the same point set")
+    func ninelineIsSymmetric() {
+        let points = geometry.line(atDistanceInMeters: 9)
+        let mirroredXs = points.map { 1 - $0.x }.sorted()
+        let originalXs = points.map(\.x).sorted()
+        #expect(mirroredXs.count == originalXs.count)
+        for (a, b) in zip(mirroredXs, originalXs) {
+            #expect(tolerant(a, b, tolerance: 1e-6))
+        }
+    }
+
+    @Test("A non-positive distance produces no line")
+    func nonPositiveDistanceProducesNoLine() {
+        #expect(geometry.line(atDistanceInMeters: 0).isEmpty)
+        #expect(geometry.line(atDistanceInMeters: -1).isEmpty)
+    }
+}
+
+@Suite("CourtGeometry sector boundary rays")
+struct CourtGeometrySectorBoundaryRayTests {
+
+    let geometry = CourtGeometry.standard
+
+    @Test("Every ray starts at the goal centre")
+    func everyRayStartsAtGoalCentre() {
+        for ray in geometry.sectorBoundaryRays {
+            #expect(tolerant(ray.from.x, 0.5))
+            #expect(tolerant(ray.from.y, 0))
+        }
+    }
+
+    @Test("There are exactly four rays, one per sector cut")
+    func thereAreFourRays() {
+        #expect(geometry.sectorBoundaryRays.count == 4)
+    }
+
+    @Test("Each ray's endpoint sits at the same angle sector(at:) uses as a boundary (18 or 54 degrees), so drawing and hit-testing share the same cut")
+    func rayAnglesMatchSectorBoundaries() {
+        let angles = geometry.sectorBoundaryRays.map { geometry.angleDegrees(for: $0.to) }.sorted()
+        let expected = [-54.0, -18.0, 18.0, 54.0]
+        #expect(angles.count == expected.count)
+        for (a, e) in zip(angles, expected) {
+            #expect(tolerant(a, e, tolerance: 1e-6))
+        }
+    }
+
+    @Test("Each ray's endpoint leaves the drawn court exactly at its edge (a touchline or the far depth edge)")
+    func rayEndpointsLeaveAtTheCourtEdge() {
+        for ray in geometry.sectorBoundaryRays {
+            let onTouchline = tolerant(ray.to.x, 0) || tolerant(ray.to.x, 1)
+            let onFarEdge = tolerant(ray.to.y, 1)
+            #expect(onTouchline || onFarEdge)
+        }
+    }
+
+    @Test(
+        "A point just on the central side of each ray's angle resolves to the more central sector, and just on the far side resolves to the neighbouring sector",
+        arguments: [
+            (rayAngle: 18.0, innerExpected: CourtSector.center, outerExpected: CourtSector.rightBack),
+            (rayAngle: -18.0, innerExpected: CourtSector.center, outerExpected: CourtSector.leftBack),
+            (rayAngle: 54.0, innerExpected: CourtSector.rightBack, outerExpected: CourtSector.rightWing),
+            (rayAngle: -54.0, innerExpected: CourtSector.leftBack, outerExpected: CourtSector.leftWing)
+        ]
+    )
+    func pointsJustInsideRayAngleResolveToExpectedSectorOnEachSide(input: (rayAngle: Double, innerExpected: CourtSector, outerExpected: CourtSector)) {
+        // Derives the angle to probe from sectorBoundaryRays itself, rather
+        // than the raw 18/54 literals, so this would catch the rays
+        // drifting away from the constants sector(at:) actually uses.
+        let ray = geometry.sectorBoundaryRays.first { tolerant(geometry.angleDegrees(for: $0.to), input.rayAngle, tolerance: 1e-6) }
+        #expect(ray != nil)
+
+        let inner = point(angleDegrees: input.rayAngle - (input.rayAngle < 0 ? -0.5 : 0.5), yMeters: 5, geometry: geometry)
+        let outer = point(angleDegrees: input.rayAngle + (input.rayAngle < 0 ? -0.5 : 0.5), yMeters: 5, geometry: geometry)
+        #expect(geometry.sector(at: inner) == input.innerExpected)
+        #expect(geometry.sector(at: outer) == input.outerExpected)
+    }
+}
+
+@Suite("CourtGeometry goal mouth")
+struct CourtGeometryGoalMouthTests {
+
+    let geometry = CourtGeometry.standard
+
+    @Test("The goal mouth spans exactly the goal width, on the goal line")
+    func goalMouthSpansGoalWidthOnGoalLine() {
+        let mouth = geometry.goalMouth
+        #expect(tolerant(geometry.xMeters(for: mouth.from), -geometry.goalWidthInMeters / 2))
+        #expect(tolerant(geometry.xMeters(for: mouth.to), geometry.goalWidthInMeters / 2))
+        #expect(tolerant(geometry.yMeters(for: mouth.from), 0))
+        #expect(tolerant(geometry.yMeters(for: mouth.to), 0))
+    }
+
+    @Test("goalMouth.from is the shooter's left post, goalMouth.to is the shooter's right post")
+    func goalMouthOrderingMatchesShooterPerspective() {
+        let mouth = geometry.goalMouth
+        #expect(mouth.from.x < mouth.to.x)
+    }
+}
+
+@Suite("CourtGeometry seven meter mark hit area")
+struct CourtGeometrySevenMeterHitAreaTests {
+
+    let geometry = CourtGeometry.standard
+
+    @Test("Defaults are 1.4m wide by 1.0m deep")
+    func defaultsAreDocumented() {
+        #expect(tolerant(geometry.sevenMeterMarkWidthInMeters, 1.4))
+        #expect(tolerant(geometry.sevenMeterMarkDepthInMeters, 1.0))
+    }
+
+    @Test("The normalized region matches the metric rectangle centred on sevenMeterPoint")
+    func normalizedRegionMatchesMetricRectangle() {
+        let region = geometry.sevenMeterMarkRegion
+        #expect(tolerant(region.x, 0.465))
+        #expect(tolerant(region.width, 0.07))
+        #expect(tolerant(region.y, 6.5 / 15.0))
+        #expect(tolerant(region.height, 1.0 / 15.0))
+    }
+
+    @Test("sevenMeterPoint itself resolves to .sevenMeters")
+    func sevenMeterPointResolvesToSevenMeters() {
+        #expect(geometry.origin(at: geometry.sevenMeterPoint) == .sevenMeters)
+    }
+
+    @Test("The rectangle's boundary is inclusive: a point exactly on an edge is .sevenMeters")
+    func boundaryIsInclusive() {
+        let region = geometry.sevenMeterMarkRegion
+        #expect(geometry.origin(at: CourtPoint(x: region.x, y: region.y)) == .sevenMeters)
+        #expect(geometry.origin(at: CourtPoint(x: region.x + region.width, y: region.y + region.height)) == .sevenMeters)
+        #expect(geometry.origin(at: CourtPoint(x: 0.5, y: region.y)) == .sevenMeters)
+        #expect(geometry.origin(at: CourtPoint(x: 0.5, y: region.y + region.height)) == .sevenMeters)
+    }
+
+    @Test("Just outside the rectangle resolves to .zone(center, near), not .sevenMeters")
+    func justOutsideResolvesToCenterNearZone() {
+        let region = geometry.sevenMeterMarkRegion
+        let justLeft = CourtPoint(x: region.x - 0.01, y: 0.5)
+        let justAbove = CourtPoint(x: 0.5, y: region.y - 0.01)
+        let justBelow = CourtPoint(x: 0.5, y: region.y + region.height + 0.01)
+        #expect(geometry.origin(at: justLeft) == .zone(CourtZone(sector: .center, depth: .near)))
+        #expect(geometry.origin(at: justAbove) == .zone(CourtZone(sector: .center, depth: .near)))
+        #expect(geometry.origin(at: justBelow) == .zone(CourtZone(sector: .center, depth: .near)))
+    }
+
+    @Test("Well outside the rectangle still resolves through zone(at:) normally")
+    func wellOutsideResolvesNormally() {
+        let p = point(xMeters: -8.0, yMeters: 3.0, geometry: geometry)
+        #expect(geometry.origin(at: p) == .zone(CourtZone(sector: .leftWing, depth: .near)))
+    }
+
+    @Test("Custom dimensions are honored by both the region and origin(at:)")
+    func customDimensionsAreHonored() {
+        let custom = CourtGeometry(sevenMeterMarkWidthInMeters: 2.0, sevenMeterMarkDepthInMeters: 2.0)
+        let region = custom.sevenMeterMarkRegion
+        #expect(tolerant(region.width, 2.0 / custom.widthInMeters))
+        #expect(tolerant(region.height, 2.0 / custom.depthInMeters))
+        #expect(custom.origin(at: custom.sevenMeterPoint) == .sevenMeters)
+    }
+}
