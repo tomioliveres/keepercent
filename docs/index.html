@@ -261,7 +261,7 @@
       <span>Swift + SwiftUI · 100% nativo</span>
       <span>iOS 26</span>
       <span>Entrega: viernes 25/9</span>
-      <span>Última actualización: día 1 · dominio completo</span>
+      <span>Última actualización: día 1 · dominio y datos completos</span>
     </div>
   </header>
 
@@ -506,6 +506,16 @@
     <div class="why">
       <b>Principio general.</b> Guardá lo primitivo, exponé lo rico. La base de datos se lleva lo simple; el dominio se queda con los tipos que evitan errores.
     </div>
+
+    <h3>Los tipos <code>@Model</code>, y por qué el mapeo no vive ahí</h3>
+    <p>Cada entidad persistida —equipo rival, jugador, sesión, lanzamiento— tiene su tipo <code>@Model</code> en <code>Persistence/</code>, y guarda exactamente lo mismo que <code>GoalTarget</code>: valores primitivos. Un <code>StoredShot</code> no guarda un <code>GoalTarget</code> ni un <code>Player</code>; guarda los códigos de texto y los números de los que esos tipos se reconstruyen.</p>
+    <p>La decodificación —<code>Shot.init?(attackingSideCode:...)</code>, <code>Player.init(...handednessCode:)</code>— no vive en <code>Persistence/</code>: vive en <code>Domain/</code>, al lado de <code>GoalTarget.init?(code:)</code>. La razón es concreta, no una preferencia estética: el proyecto de Xcode tiene un solo target, la app, y ningún target de tests. Todo lo que necesita quedar bajo test tiene que poder correr con <code>swift test</code>, sin simulador. Si la decodificación viviera en <code>Persistence/</code>, que sí importa SwiftData, no habría forma de testearla. Viviendo en <code>Domain/</code>, se testea igual que cualquier otra regla del dominio.</p>
+
+    <h3>El detalle de SwiftData que hay que conocer: el inverso explícito</h3>
+    <p>Un hallazgo técnico de hoy, verificado contra la documentación de Apple antes de darlo por bueno: en SwiftData, una regla de borrado solo llega a las filas que referencian un registro cuando el <code>@Relationship</code> declara un <strong>inverso</strong> explícito. Sin ese inverso, borrar el equipo rival no pone en <code>nil</code> la referencia del jugador —SwiftData no sabe que la relación también corre en el otro sentido, y el nullify simplemente no ocurre.</p>
+    <div class="why">
+      <b>Por qué se verificó antes de aceptarlo.</b> Un sub-agente había afirmado que el nullify funcionaba sin declarar el inverso. No era cierto, y quedó confirmado contra la documentación de Apple, no contra la palabra de quien lo escribió. Es la misma regla que deja la sección 07: un hallazgo se verifica contra la fuente, no se obedece.
+    </div>
   </section>
 
   <section>
@@ -585,6 +595,11 @@ DesignSystem/      <span class="c-com">// CourtView, GoalView, HeatmapCell, colo
     <h3>La primera revisión real, y lo que encontró</h3>
     <p>La primera vez que RDD corrió de verdad fue sobre la clasificación de lanzamientos. Encontró algo que los 54 tests en verde no habían visto, y vale la pena entenderlo porque no era un error: era una garantía puesta en el lugar equivocado. Un <code>switch</code> terminaba en <code>default</code>, la cláusula que atrapa «todo lo demás». El código era correcto para los tres casos existentes. El problema es que <code>default</code> apaga la verificación de exhaustividad del compilador: si mañana se agrega un cuarto caso, ese <code>switch</code> no da error, lo clasifica mal en silencio. Reemplazarlo por los dos casos escritos con nombre no cambió una sola línea de comportamiento — cambió <strong>quién garantiza</strong> que el comportamiento siga siendo correcto. Antes lo garantizaba un test que contaba los casos. Ahora lo garantiza el compilador, que no se olvida.</p>
     <p>La segunda ronda de revisión, en cambio, marcó un hueco de cobertura que no existía: el caso ya estaba cubierto unas líneas más arriba, fuera del fragmento que el revisor tenía a la vista. Lo interesante es que lo dijo él mismo, que no podía confirmarlo con el diff solo. De ahí sale la regla que queda para el resto del proyecto: <strong>un hallazgo se verifica contra el archivo completo, no se obedece</strong>. Una revisión automática es una segunda opinión informada, no una autoridad.</p>
+
+    <h3>Corrección requerida versus sugerencia: no son el mismo nivel</h3>
+    <p>El día de persistencia y datos de muestra dejó dos revisiones con desenlaces opuestos, y el contraste es la lección. La porción de persistencia volvió con <strong>corrección requerida</strong> y dos hallazgos críticos: el mapeo entre los códigos guardados y los tipos del dominio no tenía un solo test. Era un defecto real y frenó el trabajo con razón. Una corrección acotada respondió a los dos hallazgos, y recién entonces la revisión aprobó.</p>
+    <p>La porción de datos de muestra volvió <strong>aprobada</strong>, con dos sugerencias no bloqueantes, y las dos se rechazaron después de verificarlas contra el código. Una marcaba que armar un diccionario por número de camiseta explota si dos jugadores comparten número —cierto, pero el plantel es una fixture estática escrita a mano, así que un número repetido es un error de quien la escribió, y que explote en el primer arranque lo hace visible en el momento. La alternativa propuesta habría descartado en silencio a un jugador y le habría atribuido mal cada estadística derivada de él. La otra marcaba un <code>force-unwrap</code> sobre una fecha armada con literales enteros en un calendario gregoriano —una rama que no se puede tomar. Reemplazarla habría exigido inventar una fecha de repuesto sin ningún sentido.</p>
+    <p>«Aprobado con sugerencia» y «corrección requerida con crítico» no piden la misma exigencia: el primero es una opinión para evaluar, el segundo es un defecto para arreglar. Y la pregunta que decide cualquier sugerencia es siempre la misma: <strong>¿cambia una falla ruidosa y correcta por una silenciosa y equivocada?</strong> Si la respuesta es sí, se rechaza. Esto extiende la regla que ya dejó la primera revisión: un hallazgo se verifica contra el archivo completo, no se obedece.</p>
 
     <h3>Commits como unidad de trabajo</h3>
     <p>Un commit es un comportamiento entregable completo, con sus tests y su documentación adentro. No es “todos los modelos” en un commit, después “todas las vistas” en otro y “todos los tests” al final, porque ninguno de esos tres sirve solo y ninguno se puede revertir de forma independiente sin arrastrar a los otros dos.</p>
@@ -745,8 +760,8 @@ DesignSystem/      <span class="c-com">// CourtView, GoalView, HeatmapCell, colo
     <div class="day">
       <div class="when">Dom 20/9</div>
       <div class="what">
-        <b>Día 1 · El dominio <span class="pill done">hecho</span></b>
-        Destinos del arco modelados con tests primero: 21 destinos posibles, códigos de guardado que van y vuelven intactos, y el resultado implícito en un toque. Después, las zonas de la cancha con la geometría real: cinco sectores de 36°, profundidad medida desde la boca del arco y el origen de 7 m como caso propio. Y por último la clasificación del lanzamiento: cruzado o al primer palo, y la altura del remate, derivadas del par origen-destino. <strong>54 tests en 21 suites, todo en verde.</strong> Además quedó creado el proyecto de Xcode, universal y con iOS 26 como mínimo, compilando y enlazado al paquete del dominio, y corrió la primera revisión de código con constancia, que encontró una garantía mal ubicada que ningún test había visto.
+        <b>Día 1 · Dominio y datos <span class="pill done">hecho</span></b>
+        Destinos del arco modelados con tests primero: 21 destinos posibles, códigos de guardado que van y vuelven intactos, y el resultado implícito en un toque. Después, las zonas de la cancha con la geometría real: cinco sectores de 36°, profundidad medida desde la boca del arco y el origen de 7 m como caso propio. Luego la clasificación del lanzamiento: cruzado o al primer palo, y la altura del remate, derivadas del par origen-destino. Con el dominio resuelto, se sumó la capa de persistencia: los tipos <code>@Model</code> de SwiftData guardando solo primitivos, con la decodificación de vuelta al dominio viviendo en <code>Domain/</code> porque el proyecto no tiene target de tests, y el hallazgo de que un <code>@Relationship</code> necesita un inverso explícito para que el borrado llegue a las filas relacionadas. Por último, un dataset de muestra completo —un equipo rival, un plantel de doce y una sesión en vivo entera— construido sin <code>Date()</code> ni azar, para que la app abra siempre con datos reales para mirar. <strong>106 tests en 38 suites, todo en verde.</strong> Además quedó creado el proyecto de Xcode, universal y con iOS 26 como mínimo, compilando y enlazado al paquete del dominio, y corrieron revisiones de código con constancia sobre cada porción: la del dominio encontró una garantía mal ubicada que ningún test había visto, la de persistencia frenó por un mapeo sin testear y solo aprobó tras una corrección, y la de datos de muestra aprobó directo, con dos sugerencias que se rechazaron después de verificarlas contra el código.
       </div>
     </div>
 
