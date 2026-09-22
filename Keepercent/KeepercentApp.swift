@@ -1,5 +1,8 @@
-// The app entry point. Kept intentionally minimal: real UI (court, goal,
-// shot entry) starts in a later task. See docs/mvp.md.
+// The app entry point. Opens on TeamsView (T3.1 item 7) — the teams list
+// plus roster editor is now the app's real front door. ContentView is kept
+// as the T2.x GoalView/CourtView hand-verification scaffold, reachable
+// from TeamsView's toolbar rather than as the launch screen; see
+// TeamsView.swift's header comment for why. See docs/mvp.md.
 
 import SwiftUI
 import SwiftData
@@ -8,7 +11,7 @@ import SwiftData
 struct KeepercentApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            TeamsView()
         }
         .modelContainer(KeepercentSchema.makeContainer())
     }

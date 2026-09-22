@@ -8,6 +8,10 @@
 // passes it back down as `selection` so a tap now also highlights, and
 // prints the tapped value's code as plain text so a tap can still be
 // verified without reading the drawing.
+//
+// Since T3.1, the app's launch screen is TeamsView, not this file — this
+// scaffold is reachable from there via a secondary toolbar action
+// ("Drawing Scaffold (T2.x)"), unchanged otherwise.
 
 import SwiftUI
 import KeepercentDomain
