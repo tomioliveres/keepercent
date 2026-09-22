@@ -4,10 +4,12 @@ import Testing
 
 /// Builds a fixed Gregorian calendar pinned to `identifier`, so a test that
 /// cares about time-zone behaviour states its zone explicitly rather than
-/// depending on wherever the test runner happens to execute.
-private func calendar(_ identifier: String) -> Calendar {
+/// depending on wherever the test runner happens to execute. Throws through
+/// `#require` rather than force-unwrapping, so a mistyped zone identifier
+/// fails the test that used it instead of crashing the whole run.
+private func calendar(_ identifier: String) throws -> Calendar {
     var calendar = Calendar(identifier: .gregorian)
-    calendar.timeZone = TimeZone(identifier: identifier)!
+    calendar.timeZone = try #require(TimeZone(identifier: identifier))
     return calendar
 }
 
@@ -21,7 +23,7 @@ private func date(
     hour: Int = 12,
     minute: Int = 0,
     in calendar: Calendar
-) -> Date {
+) throws -> Date {
     var components = DateComponents()
     components.year = year
     components.month = month
@@ -29,17 +31,21 @@ private func date(
     components.hour = hour
     components.minute = minute
     components.timeZone = calendar.timeZone
-    return calendar.date(from: components)!
+    return try #require(calendar.date(from: components))
 }
 
 @Suite("Session.init")
 struct SessionInitTests {
-    private let utc = calendar("UTC")
+    private let utc: Calendar
+
+    init() throws {
+        utc = try calendar("UTC")
+    }
 
     @Test("A match date on an earlier calendar day than today is accepted", arguments: [SessionKind.live, .video])
     func pastDayAccepted(kind: SessionKind) throws {
-        let today = date(year: 2026, month: 9, day: 20, in: utc)
-        let matchDate = date(year: 2026, month: 9, day: 18, hour: 21, minute: 30, in: utc)
+        let today = try date(year: 2026, month: 9, day: 20, in: utc)
+        let matchDate = try date(year: 2026, month: 9, day: 18, hour: 21, minute: 30, in: utc)
 
         let session = try Session(kind: kind, matchDate: matchDate, today: today, calendar: utc)
 
@@ -48,8 +54,8 @@ struct SessionInitTests {
 
     @Test("Today at the very start of the day is accepted")
     func todayMidnightAccepted() throws {
-        let today = date(year: 2026, month: 9, day: 20, hour: 15, minute: 0, in: utc)
-        let matchDate = date(year: 2026, month: 9, day: 20, hour: 0, minute: 0, in: utc)
+        let today = try date(year: 2026, month: 9, day: 20, hour: 15, minute: 0, in: utc)
+        let matchDate = try date(year: 2026, month: 9, day: 20, hour: 0, minute: 0, in: utc)
 
         let session = try Session(kind: .live, matchDate: matchDate, today: today, calendar: utc)
 
@@ -58,8 +64,8 @@ struct SessionInitTests {
 
     @Test("Today at the very end of the day is accepted")
     func todayLastMinuteAccepted() throws {
-        let today = date(year: 2026, month: 9, day: 20, hour: 6, minute: 0, in: utc)
-        let matchDate = date(year: 2026, month: 9, day: 20, hour: 23, minute: 59, in: utc)
+        let today = try date(year: 2026, month: 9, day: 20, hour: 6, minute: 0, in: utc)
+        let matchDate = try date(year: 2026, month: 9, day: 20, hour: 23, minute: 59, in: utc)
 
         let session = try Session(kind: .live, matchDate: matchDate, today: today, calendar: utc)
 
@@ -68,8 +74,8 @@ struct SessionInitTests {
 
     @Test("Tomorrow at the very start of the day is rejected")
     func tomorrowMidnightRejected() throws {
-        let today = date(year: 2026, month: 9, day: 20, hour: 23, minute: 0, in: utc)
-        let matchDate = date(year: 2026, month: 9, day: 21, hour: 0, minute: 0, in: utc)
+        let today = try date(year: 2026, month: 9, day: 20, hour: 23, minute: 0, in: utc)
+        let matchDate = try date(year: 2026, month: 9, day: 21, hour: 0, minute: 0, in: utc)
 
         #expect(throws: SessionError.matchDateInFuture) {
             try Session(kind: .live, matchDate: matchDate, today: today, calendar: utc)
@@ -85,22 +91,22 @@ struct SessionInitTests {
         // UTC+2, `today` has already rolled to Sep 21 too, so the very same
         // pair of instants must be accepted: the outcome depends on the
         // injected calendar's zone, not on comparing the instants directly.
-        let today = date(year: 2026, month: 9, day: 20, hour: 23, minute: 30, in: utc)
-        let matchDate = date(year: 2026, month: 9, day: 21, hour: 0, minute: 30, in: utc)
+        let today = try date(year: 2026, month: 9, day: 20, hour: 23, minute: 30, in: utc)
+        let matchDate = try date(year: 2026, month: 9, day: 21, hour: 0, minute: 30, in: utc)
 
         #expect(throws: SessionError.matchDateInFuture) {
             try Session(kind: .live, matchDate: matchDate, today: today, calendar: utc)
         }
 
-        let plusTwo = calendar("Europe/Paris") // UTC+2 in September (DST)
+        let plusTwo = try calendar("Europe/Paris") // UTC+2 in September (DST)
         let session = try Session(kind: .live, matchDate: matchDate, today: today, calendar: plusTwo)
         #expect(session.matchDate == matchDate)
     }
 
     @Test("The stored kind matches the input")
     func storesKind() throws {
-        let today = date(year: 2026, month: 9, day: 20, in: utc)
-        let matchDate = date(year: 2026, month: 9, day: 20, in: utc)
+        let today = try date(year: 2026, month: 9, day: 20, in: utc)
+        let matchDate = try date(year: 2026, month: 9, day: 20, in: utc)
 
         let session = try Session(kind: .video, matchDate: matchDate, today: today, calendar: utc)
 

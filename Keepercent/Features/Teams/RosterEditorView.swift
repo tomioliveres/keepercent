@@ -268,6 +268,11 @@ struct RosterEditorView: View {
             isAddingUnknown = false
             addUnknownErrorMessage = nil
         } catch {
+            // Undo whatever this action already applied to the context: a
+            // failed save must not leave a row on screen next to the error
+            // that says it was not stored. Every action saves immediately,
+            // so there are never other pending changes for this to discard.
+            modelContext.rollback()
             addUnknownErrorMessage = rosterErrorMessage(error)
         }
     }
@@ -287,6 +292,7 @@ struct RosterEditorView: View {
             try modelContext.save()
             editingPlayer = nil
         } catch {
+            modelContext.rollback()
             actionError = RosterActionError(error)
         }
     }
@@ -306,6 +312,7 @@ struct RosterEditorView: View {
             try modelContext.save()
             editingPlayer = nil
         } catch {
+            modelContext.rollback()
             actionError = RosterActionError(error)
         }
     }
@@ -334,6 +341,7 @@ struct RosterEditorView: View {
             newSessionErrorMessage = nil
             path.append(stored.persistentModelID)
         } catch {
+            modelContext.rollback()
             newSessionErrorMessage = sessionErrorMessage(error)
         }
     }

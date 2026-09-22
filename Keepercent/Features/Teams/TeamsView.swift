@@ -149,6 +149,9 @@ struct TeamsView: View {
             isPresentingNewTeamSheet = false
             newTeamErrorMessage = nil
         } catch {
+            // Same reasoning as RosterEditorView's actions: a failed save
+            // must not leave the new team in the list beside its error.
+            modelContext.rollback()
             newTeamErrorMessage = rosterErrorMessage(error)
         }
     }
