@@ -116,6 +116,19 @@ struct RosterRemoveTests {
             try roster.remove(number: 9, recordedShotCount: 0)
         }
     }
+
+    @Test("A missing player is reported as missing even when a shot count is passed")
+    func missingPlayerWinsOverShotCount() {
+        // The existence guard runs before the shot-count guard, so this
+        // reports the number nobody wears rather than claiming that a
+        // player who is not here has shots. The order is what the editor
+        // actually shows the user, so it is pinned rather than left to
+        // whichever guard happens to come first after a future edit.
+        let roster = Roster()
+        #expect(throws: RosterError.playerNotFound(number: 9)) {
+            try roster.remove(number: 9, recordedShotCount: 5)
+        }
+    }
 }
 
 @Suite("Roster.update")
@@ -172,6 +185,19 @@ struct RosterUpdateTests {
         let roster = Roster()
         #expect(throws: RosterError.playerNotFound(number: 4)) {
             try roster.update(number: 4, to: Player(number: 4, name: "Ghost"))
+        }
+    }
+
+    @Test("A missing player is reported as missing even when the new number is also out of range")
+    func missingPlayerWinsOverOutOfRange() {
+        // Two rules are broken at once. The existence guard runs before
+        // validate(number:replacing:), so the answer names the player who
+        // is not there rather than the range — the first thing the user
+        // has to fix, not the second. Same reason as the remove ordering
+        // above: this is observable behaviour, so it gets a test.
+        let roster = Roster()
+        #expect(throws: RosterError.playerNotFound(number: 4)) {
+            try roster.update(number: 4, to: Player(number: 100, name: "Ghost"))
         }
     }
 
