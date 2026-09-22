@@ -373,6 +373,71 @@ extension GoalGeometry {
         }
     }
 
+    /// The normalized rect a `MissDirection` highlights, in the SAME frame
+    /// `target(at:)` reads from.
+    ///
+    /// Unlike `region(for: GoalZone)`/`region(for: PostSegment)`, a miss
+    /// direction's TRUE hit-test area is unbounded in `target(at:)` — see
+    /// `GoalPoint`'s header comment, `GoalPoint` deliberately never
+    /// clamps, so e.g. `wideLeft` matches every `x < 0` outside the post
+    /// band, however far out. A `GoalRegion` cannot represent an unbounded
+    /// rect (the view that eventually draws it needs a finite size), so
+    /// each returned region is a finite, ALWAYS-CORRECT subset of the true
+    /// area: every point inside it really does resolve to that direction,
+    /// even though points further out (still classified the same way by
+    /// `target(at:)`) fall outside it. That is why these three regions are
+    /// only required to tile WITHOUT OVERLAPPING each other — never to
+    /// cover the whole miss area the way `region(for: GoalZone)` covers
+    /// the whole mouth.
+    ///
+    /// The finite width/height chosen for the outward-facing edge is
+    /// `bandX`/`bandY` again — the SAME frame band thickness `target(at:)`
+    /// already uses for the post/crossbar bands — rather than a new,
+    /// unrelated literal: one more band-width of margin beyond the frame,
+    /// which keeps every dimension here traceable to the one constant the
+    /// classifier reads, never a re-derived or re-typed number.
+    ///
+    /// `.over`'s `x` is restricted to the MOUTH's own horizontal extent
+    /// (`0...1`), NOT the wider frame band extent the doc-comment prose
+    /// for this task described. Reading `target(at:)`'s final fallback
+    /// (`if x < -tolerance { .wideLeft }`, `if x > 1 + tolerance {
+    /// .wideRight }`, else `.over`) shows the wide/over split sits at the
+    /// MOUTH edge, not the frame band edge: a tap with `x` anywhere
+    /// negative — even still inside the post band's own `x` range, as
+    /// long as its `y` is above the post band (see the "high and wide"
+    /// precedence rule in `target(at:)`) — resolves to `.wideLeft`, never
+    /// `.over`. An `.over` region reaching out to `-bandX` would therefore
+    /// include points that actually round-trip to `.wideLeft`, breaking
+    /// this function's own contract. The code is the source of truth here
+    /// over the task's prose describing the frame's outer span.
+    public func region(for direction: MissDirection) -> GoalRegion {
+        let bandX = normalizedFrameBandThicknessX
+        let bandY = normalizedFrameBandThicknessY
+
+        switch direction {
+        case .wideLeft:
+            return GoalRegion(x: -2 * bandX, y: -bandY, width: bandX, height: 1 + bandY)
+        case .wideRight:
+            return GoalRegion(x: 1 + bandX, y: -bandY, width: bandX, height: 1 + bandY)
+        case .over:
+            return GoalRegion(x: 0, y: -2 * bandY, width: 1, height: bandY)
+        }
+    }
+
+    /// One call site for every `GoalTarget` case, so a caller (the view)
+    /// never needs its own `switch` over `.inside`/`.post`/`.out` just to
+    /// find the region to highlight.
+    public func region(for target: GoalTarget) -> GoalRegion {
+        switch target {
+        case .inside(let zone):
+            return region(for: zone)
+        case .post(let segment):
+            return region(for: segment)
+        case .out(let direction):
+            return region(for: direction)
+        }
+    }
+
     private func columnIndex(_ column: GoalColumn) -> Int {
         switch column {
         case .left: return 0

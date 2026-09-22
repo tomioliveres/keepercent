@@ -409,3 +409,98 @@ struct GoalGeometryNonDefaultGeometryTests {
         #expect(geometry.target(at: GoalPoint(x: x, y: 1.5)) == .post(.leftPostBottom))
     }
 }
+
+@Suite("GoalGeometry MissDirection region round-trip")
+struct GoalGeometryMissDirectionRegionRoundTripTests {
+
+    let geometry = GoalGeometry.standard
+
+    /// A grid of points strictly inside a region, inset from every edge —
+    /// the same idea `GoalGeometryRegionRoundTripTests.edgeInsetPoints`
+    /// applies to zone/post regions, generalized to a small grid instead
+    /// of just the four edge midpoints, since a MissDirection region is
+    /// not guaranteed to be a simple third-of-the-mouth rectangle.
+    private func insetGridPoints(in region: GoalRegion, columns: Int = 4, rows: Int = 4) -> [GoalPoint] {
+        let insetX = min(region.width * 0.1, 0.01)
+        let insetY = min(region.height * 0.1, 0.01)
+        let usableWidth = region.width - 2 * insetX
+        let usableHeight = region.height - 2 * insetY
+        guard usableWidth > 0, usableHeight > 0 else {
+            return [GoalPoint(x: region.x + region.width / 2, y: region.y + region.height / 2)]
+        }
+        var points: [GoalPoint] = []
+        for column in 0...columns {
+            for row in 0...rows {
+                let x = region.x + insetX + usableWidth * Double(column) / Double(columns)
+                let y = region.y + insetY + usableHeight * Double(row) / Double(rows)
+                points.append(GoalPoint(x: x, y: y))
+            }
+        }
+        return points
+    }
+
+    @Test(
+        "Every point strictly inside region(for:) for a MissDirection resolves back to that same direction",
+        arguments: MissDirection.allCases
+    )
+    func directionRegionRoundTrips(direction: MissDirection) {
+        let region = geometry.region(for: direction)
+        for point in insetGridPoints(in: region) {
+            #expect(geometry.target(at: point) == .out(direction))
+        }
+    }
+
+    @Test("The three MissDirection regions do not overlap")
+    func directionRegionsDoNotOverlap() {
+        let regions = MissDirection.allCases.map { geometry.region(for: $0) }
+        for i in 0..<regions.count {
+            for j in (i + 1)..<regions.count {
+                #expect(!regions[i].overlaps(regions[j]), "\(MissDirection.allCases[i]) overlaps \(MissDirection.allCases[j])")
+            }
+        }
+    }
+
+    @Test("Direction regions round-trip on a non-default geometry too")
+    func directionRegionsRoundTripOnNonDefaultGeometry() {
+        let custom = GoalGeometry(widthInMeters: 4, heightInMeters: 2, frameBandInMeters: 0.5)
+        for direction in MissDirection.allCases {
+            let region = custom.region(for: direction)
+            for point in insetGridPoints(in: region) {
+                #expect(custom.target(at: point) == .out(direction))
+            }
+        }
+    }
+}
+
+@Suite("GoalGeometry region(for: GoalTarget) dispatcher")
+struct GoalGeometryTargetDispatcherTests {
+
+    let geometry = GoalGeometry.standard
+
+    @Test("Dispatching on .inside matches region(for: GoalZone)")
+    func dispatchesInsideToZoneRegion() {
+        let zone = GoalZone(row: .top, column: .left)
+        #expect(geometry.region(for: GoalTarget.inside(zone)) == geometry.region(for: zone))
+    }
+
+    @Test("Dispatching on .post matches region(for: PostSegment)")
+    func dispatchesPostToSegmentRegion() {
+        #expect(geometry.region(for: GoalTarget.post(.crossbarCenter)) == geometry.region(for: PostSegment.crossbarCenter))
+    }
+
+    @Test("Dispatching on .out matches region(for: MissDirection)")
+    func dispatchesOutToDirectionRegion() {
+        #expect(geometry.region(for: GoalTarget.out(.wideLeft)) == geometry.region(for: MissDirection.wideLeft))
+    }
+}
+
+private extension GoalRegion {
+    /// Whether this region's rectangle shares any interior area with
+    /// `other` — used only by the non-overlap test above, never by
+    /// production code (which never needs to compare two regions).
+    func overlaps(_ other: GoalRegion) -> Bool {
+        let xOverlap = x < other.x + other.width && other.x < x + width
+        let yOverlap = y < other.y + other.height && other.y < y + height
+        return xOverlap && yOverlap
+    }
+}
