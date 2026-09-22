@@ -410,97 +410,159 @@ struct GoalGeometryNonDefaultGeometryTests {
     }
 }
 
-@Suite("GoalGeometry MissDirection region round-trip")
-struct GoalGeometryMissDirectionRegionRoundTripTests {
+@Suite("GoalGeometry regions(for: MissDirection, within:) — bounded tiling")
+struct GoalGeometryMissDirectionRegionsTests {
 
     let geometry = GoalGeometry.standard
 
-    /// A grid of points strictly inside a region, inset from every edge —
-    /// the same idea `GoalGeometryRegionRoundTripTests.edgeInsetPoints`
-    /// applies to zone/post regions, generalized to a small grid instead
-    /// of just the four edge midpoints, since a MissDirection region is
-    /// not guaranteed to be a simple third-of-the-mouth rectangle.
-    private func insetGridPoints(in region: GoalRegion, columns: Int = 4, rows: Int = 4) -> [GoalPoint] {
-        let insetX = min(region.width * 0.1, 0.01)
-        let insetY = min(region.height * 0.1, 0.01)
-        let usableWidth = region.width - 2 * insetX
-        let usableHeight = region.height - 2 * insetY
-        guard usableWidth > 0, usableHeight > 0 else {
-            return [GoalPoint(x: region.x + region.width / 2, y: region.y + region.height / 2)]
-        }
+    /// A drawable bounds standing in for whatever finite area a caller
+    /// (the view) actually draws into — generous enough to reach well past
+    /// the frame band on every side, the way `GoalView`'s own canvas does.
+    private func generousBounds(for geometry: GoalGeometry, margin: Double = 0.5) -> GoalRegion {
+        let bandX = geometry.normalizedFrameBandThicknessX
+        let bandY = geometry.normalizedFrameBandThicknessY
+        return GoalRegion(
+            x: -(bandX + margin),
+            y: -(bandY + margin),
+            width: 1 + 2 * (bandX + margin),
+            height: 1 + bandY + margin
+        )
+    }
+
+    /// A dense grid over `bounds`, offset by an irrational fraction so it
+    /// almost never lands exactly on a boundary — the same technique
+    /// `CourtGeometryShapeTests.denseGridPoints` uses for `shape(for:)`.
+    private func denseGridPoints(in bounds: GoalRegion, columns: Int = 231, rows: Int = 197) -> [GoalPoint] {
         var points: [GoalPoint] = []
-        for column in 0...columns {
-            for row in 0...rows {
-                let x = region.x + insetX + usableWidth * Double(column) / Double(columns)
-                let y = region.y + insetY + usableHeight * Double(row) / Double(rows)
+        for column in 0..<columns {
+            for row in 0..<rows {
+                let x = bounds.x + bounds.width * (Double(column) + 0.31) / Double(columns)
+                let y = bounds.y + bounds.height * (Double(row) + 0.31) / Double(rows)
                 points.append(GoalPoint(x: x, y: y))
             }
         }
         return points
     }
 
+    /// Half-open containment ([x, x+width) x [y, y+height)), matching how
+    /// the returned rects are meant to tile without overlapping at a
+    /// shared edge.
+    private func isPointInRegion(_ point: GoalPoint, _ region: GoalRegion) -> Bool {
+        point.x >= region.x && point.x < region.x + region.width &&
+        point.y >= region.y && point.y < region.y + region.height
+    }
+
     @Test(
-        "Every point strictly inside region(for:) for a MissDirection resolves back to that same direction",
+        "Every point inside a regions(for:within:) rect resolves through target(at:) back to that same direction (round-trip)",
         arguments: MissDirection.allCases
     )
-    func directionRegionRoundTrips(direction: MissDirection) {
-        let region = geometry.region(for: direction)
-        for point in insetGridPoints(in: region) {
-            #expect(geometry.target(at: point) == .out(direction))
+    func directionRegionsRoundTrip(direction: MissDirection) {
+        let bounds = generousBounds(for: geometry)
+        let rects = geometry.regions(for: direction, within: bounds)
+        #expect(!rects.isEmpty, "\(direction) returned no rects for a generous bounds")
+
+        for rect in rects {
+            var sampledAtLeastOnePoint = false
+            for point in denseGridPoints(in: bounds) where isPointInRegion(point, rect) {
+                sampledAtLeastOnePoint = true
+                #expect(
+                    geometry.target(at: point) == .out(direction),
+                    "\(point) inside \(direction)'s rect \(rect) resolved to \(geometry.target(at: point))"
+                )
+            }
+            #expect(sampledAtLeastOnePoint, "no sampled point landed inside \(direction)'s rect \(rect) — bounds/grid too coarse")
         }
     }
 
-    @Test("The three MissDirection regions do not overlap")
-    func directionRegionsDoNotOverlap() {
-        let regions = MissDirection.allCases.map { geometry.region(for: $0) }
-        for i in 0..<regions.count {
-            for j in (i + 1)..<regions.count {
-                #expect(!regions[i].overlaps(regions[j]), "\(MissDirection.allCases[i]) overlaps \(MissDirection.allCases[j])")
+    @Test(
+        "Every point in bounds that target(at:) resolves to a miss lands inside exactly one rect of that direction's set — no gap, no overlap"
+    )
+    func missPointsTileExactlyOneRect() {
+        let bounds = generousBounds(for: geometry)
+        let rectsByDirection = Dictionary(
+            uniqueKeysWithValues: MissDirection.allCases.map { ($0, geometry.regions(for: $0, within: bounds)) }
+        )
+
+        for point in denseGridPoints(in: bounds) {
+            guard case .out(let direction) = geometry.target(at: point) else { continue }
+
+            // The gap half is the regression test for the original defect:
+            // a miss point that landed in NONE of its own direction's
+            // rects, left undrawn in the plain gray margin while still
+            // hit-testing as that miss.
+            let ownMatches = (rectsByDirection[direction] ?? []).filter { isPointInRegion(point, $0) }
+            #expect(ownMatches.count == 1, "\(point), resolved to \(direction), landed in \(ownMatches.count) of its own rects (expected exactly 1)")
+
+            // The overlap half: the same point must never also land inside
+            // a DIFFERENT direction's rect.
+            for otherDirection in MissDirection.allCases where otherDirection != direction {
+                let otherMatches = (rectsByDirection[otherDirection] ?? []).filter { isPointInRegion(point, $0) }
+                #expect(otherMatches.isEmpty, "\(point), resolved to \(direction), also landed inside \(otherDirection)'s rect \(otherMatches)")
             }
         }
     }
 
-    @Test("Direction regions round-trip on a non-default geometry too")
-    func directionRegionsRoundTripOnNonDefaultGeometry() {
+    @Test("regions(for:within:) round-trips and tiles on a non-default geometry too")
+    func regionsTileOnNonDefaultGeometry() {
         let custom = GoalGeometry(widthInMeters: 4, heightInMeters: 2, frameBandInMeters: 0.5)
-        for direction in MissDirection.allCases {
-            let region = custom.region(for: direction)
-            for point in insetGridPoints(in: region) {
-                #expect(custom.target(at: point) == .out(direction))
-            }
+        let bounds = generousBounds(for: custom)
+        let rectsByDirection = Dictionary(
+            uniqueKeysWithValues: MissDirection.allCases.map { ($0, custom.regions(for: $0, within: bounds)) }
+        )
+
+        for point in denseGridPoints(in: bounds, columns: 151, rows: 127) {
+            guard case .out(let direction) = custom.target(at: point) else { continue }
+            let ownMatches = (rectsByDirection[direction] ?? []).filter { isPointInRegion(point, $0) }
+            #expect(ownMatches.count == 1, "\(point), resolved to \(direction), landed in \(ownMatches.count) rects on a non-default geometry")
         }
+    }
+
+    @Test("A bounds that never reaches past the frame band returns no rects for any direction — not an invented fallback rect")
+    func degenerateBoundsReturnsNoRects() {
+        // Bounds exactly the mouth plus the frame band itself, no margin
+        // beyond it: there is no drawable miss area left to tile.
+        let bandX = geometry.normalizedFrameBandThicknessX
+        let bandY = geometry.normalizedFrameBandThicknessY
+        let tightBounds = GoalRegion(x: -bandX, y: -bandY, width: 1 + 2 * bandX, height: 1 + bandY)
+
+        #expect(geometry.regions(for: .wideLeft, within: tightBounds).isEmpty)
+        #expect(geometry.regions(for: .wideRight, within: tightBounds).isEmpty)
+        #expect(geometry.regions(for: .over, within: tightBounds).isEmpty)
+    }
+
+    @Test("A bounds a hair past the frame band still returns the documented rect count — two per wide side, one for over")
+    func slightlyPastFrameBandReturnsExpectedRectCount() {
+        let bounds = generousBounds(for: geometry, margin: 0.05)
+        #expect(geometry.regions(for: .wideLeft, within: bounds).count == 2)
+        #expect(geometry.regions(for: .wideRight, within: bounds).count == 2)
+        #expect(geometry.regions(for: .over, within: bounds).count == 1)
     }
 }
 
-@Suite("GoalGeometry region(for: GoalTarget) dispatcher")
+@Suite("GoalGeometry regions(for: GoalTarget, within:) dispatcher")
 struct GoalGeometryTargetDispatcherTests {
 
     let geometry = GoalGeometry.standard
+    // An arbitrary generous bounds; only that it reaches well past the
+    // frame band on every side matters for these tests.
+    let bounds = GoalRegion(x: -0.6, y: -0.6, width: 2.2, height: 1.6)
 
-    @Test("Dispatching on .inside matches region(for: GoalZone)")
+    @Test("Dispatching on .inside matches region(for: GoalZone), as a single-element list")
     func dispatchesInsideToZoneRegion() {
         let zone = GoalZone(row: .top, column: .left)
-        #expect(geometry.region(for: GoalTarget.inside(zone)) == geometry.region(for: zone))
+        #expect(geometry.regions(for: GoalTarget.inside(zone), within: bounds) == [geometry.region(for: zone)])
     }
 
-    @Test("Dispatching on .post matches region(for: PostSegment)")
+    @Test("Dispatching on .post matches region(for: PostSegment), as a single-element list")
     func dispatchesPostToSegmentRegion() {
-        #expect(geometry.region(for: GoalTarget.post(.crossbarCenter)) == geometry.region(for: PostSegment.crossbarCenter))
+        #expect(geometry.regions(for: GoalTarget.post(.crossbarCenter), within: bounds) == [geometry.region(for: PostSegment.crossbarCenter)])
     }
 
-    @Test("Dispatching on .out matches region(for: MissDirection)")
-    func dispatchesOutToDirectionRegion() {
-        #expect(geometry.region(for: GoalTarget.out(.wideLeft)) == geometry.region(for: MissDirection.wideLeft))
-    }
-}
-
-private extension GoalRegion {
-    /// Whether this region's rectangle shares any interior area with
-    /// `other` — used only by the non-overlap test above, never by
-    /// production code (which never needs to compare two regions).
-    func overlaps(_ other: GoalRegion) -> Bool {
-        let xOverlap = x < other.x + other.width && other.x < x + width
-        let yOverlap = y < other.y + other.height && other.y < y + height
-        return xOverlap && yOverlap
+    @Test("Dispatching on .out matches regions(for: MissDirection, within:)")
+    func dispatchesOutToDirectionRegions() {
+        #expect(
+            geometry.regions(for: GoalTarget.out(.wideLeft), within: bounds)
+                == geometry.regions(for: MissDirection.wideLeft, within: bounds)
+        )
     }
 }

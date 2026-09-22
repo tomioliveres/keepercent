@@ -373,69 +373,132 @@ extension GoalGeometry {
         }
     }
 
-    /// The normalized rect a `MissDirection` highlights, in the SAME frame
-    /// `target(at:)` reads from.
+    /// The normalized rects a `MissDirection` highlights, clipped to
+    /// `bounds`, in the SAME frame `target(at:)` reads from.
     ///
-    /// Unlike `region(for: GoalZone)`/`region(for: PostSegment)`, a miss
-    /// direction's TRUE hit-test area is unbounded in `target(at:)` — see
-    /// `GoalPoint`'s header comment, `GoalPoint` deliberately never
-    /// clamps, so e.g. `wideLeft` matches every `x < 0` outside the post
-    /// band, however far out. A `GoalRegion` cannot represent an unbounded
-    /// rect (the view that eventually draws it needs a finite size), so
-    /// each returned region is a finite, ALWAYS-CORRECT subset of the true
-    /// area: every point inside it really does resolve to that direction,
-    /// even though points further out (still classified the same way by
-    /// `target(at:)`) fall outside it. That is why these three regions are
-    /// only required to tile WITHOUT OVERLAPPING each other — never to
-    /// cover the whole miss area the way `region(for: GoalZone)` covers
-    /// the whole mouth.
+    /// This used to return one always-correct-but-partial `GoalRegion`: a
+    /// finite subset of the true, unbounded miss area (see `GoalPoint`'s
+    /// header comment — `GoalPoint` deliberately never clamps, so e.g.
+    /// `wideLeft` matches every `x < 0` outside the post band, however far
+    /// out). That subset was a correct statement about an unbounded area,
+    /// but the wrong choice for a DRAWABLE one: `GoalView` tinted exactly
+    /// that small rect, so the rest of the drawn margin read as
+    /// undifferentiated gray while still hit-testing as that same miss
+    /// direction — a tap there recorded a miss nowhere near where the
+    /// highlight would land. That is the same "what you see is what you
+    /// tap" defect `GoalView.drawFrame`'s header comment documents fixing
+    /// once already, for the frame band.
     ///
-    /// The finite width/height chosen for the outward-facing edge is
-    /// `bandX`/`bandY` again — the SAME frame band thickness `target(at:)`
-    /// already uses for the post/crossbar bands — rather than a new,
-    /// unrelated literal: one more band-width of margin beyond the frame,
-    /// which keeps every dimension here traceable to the one constant the
-    /// classifier reads, never a re-derived or re-typed number.
+    /// `bounds` is the one piece of context a `GoalRegion`-returning API
+    /// was missing: the true miss area has no finite extent to report
+    /// without a caller-supplied drawable area to clip it to (typically
+    /// the view's own canvas, in these same normalized units). Within
+    /// `bounds`, the returned rects TILE exactly — every point in `bounds`
+    /// that `target(at:)` resolves to this `direction` lands in exactly
+    /// one of them, with no gap and no overlap — rather than the old
+    /// subset's weaker "no overlap, maybe a gap" guarantee.
     ///
-    /// `.over`'s `x` is restricted to the MOUTH's own horizontal extent
-    /// (`0...1`), NOT the wider frame band extent the doc-comment prose
-    /// for this task described. Reading `target(at:)`'s final fallback
-    /// (`if x < -tolerance { .wideLeft }`, `if x > 1 + tolerance {
-    /// .wideRight }`, else `.over`) shows the wide/over split sits at the
-    /// MOUTH edge, not the frame band edge: a tap with `x` anywhere
-    /// negative — even still inside the post band's own `x` range, as
-    /// long as its `y` is above the post band (see the "high and wide"
-    /// precedence rule in `target(at:)`) — resolves to `.wideLeft`, never
-    /// `.over`. An `.over` region reaching out to `-bandX` would therefore
-    /// include points that actually round-trip to `.wideLeft`, breaking
-    /// this function's own contract. The code is the source of truth here
-    /// over the task's prose describing the frame's outer span.
-    public func region(for direction: MissDirection) -> GoalRegion {
+    /// The tiling reads directly off `target(at:)`'s own miss fallback
+    /// (reached only once a point is not in a post band, not in the
+    /// crossbar band, and not inside the mouth): `x < -tolerance` ->
+    /// `.wideLeft`, `x > 1 + tolerance` -> `.wideRight`, else `.over`.
+    /// "Wide" is the MOUTH's own `0...1` extent, not the narrower frame
+    /// band, which is what makes the "high AND wide" precedence rule (see
+    /// `target(at:)`'s own comment) fall out with no special case here
+    /// either:
+    ///
+    /// - `.wideLeft` is two rects: everything left of `-bandX`, at ANY `y`
+    ///   (the post band's own `x` check already excludes that column, so
+    ///   `target(at:)` never resolves it to `.post` regardless of `y`) —
+    ///   plus the corner strip `x` in `[-bandX, 0)` with `y < -bandY`, the
+    ///   part of the left post band's `x`-range that sits above the post
+    ///   band's own `y` bound (see `target(at:)`'s corner-rule comment),
+    ///   which is therefore never `.post` either and falls through to
+    ///   `.wideLeft`.
+    /// - `.wideRight` mirrors both rects across `x = 1`.
+    /// - `.over` is one rect: `x` in `0...1` (the mouth's own horizontal
+    ///   extent — `target(at:)` only reaches `.over` when `x` is inside
+    ///   it; outside it, the "high and wide" rule above already claimed
+    ///   the point), `y < -bandY`.
+    ///
+    /// Each rect is clipped to `bounds`; a rect that does not intersect
+    /// `bounds` at all is simply omitted, so a degenerate or very small
+    /// `bounds` (e.g. one that does not reach past the frame band) can
+    /// legitimately return fewer rects than usual, or none at all — that
+    /// is the correct answer for "no drawable area exists there", not a
+    /// fallback rect to invent.
+    public func regions(for direction: MissDirection, within bounds: GoalRegion) -> [GoalRegion] {
         let bandX = normalizedFrameBandThicknessX
         let bandY = normalizedFrameBandThicknessY
 
         switch direction {
         case .wideLeft:
-            return GoalRegion(x: -2 * bandX, y: -bandY, width: bandX, height: 1 + bandY)
+            return [
+                Self.clip(maxX: -bandX, to: bounds),
+                Self.clip(minX: -bandX, maxX: 0, maxY: -bandY, to: bounds)
+            ].compactMap { $0 }
         case .wideRight:
-            return GoalRegion(x: 1 + bandX, y: -bandY, width: bandX, height: 1 + bandY)
+            return [
+                Self.clip(minX: 1 + bandX, to: bounds),
+                Self.clip(minX: 1, maxX: 1 + bandX, maxY: -bandY, to: bounds)
+            ].compactMap { $0 }
         case .over:
-            return GoalRegion(x: 0, y: -2 * bandY, width: 1, height: bandY)
+            return [
+                Self.clip(minX: 0, maxX: 1, maxY: -bandY, to: bounds)
+            ].compactMap { $0 }
         }
     }
 
     /// One call site for every `GoalTarget` case, so a caller (the view)
     /// never needs its own `switch` over `.inside`/`.post`/`.out` just to
-    /// find the region to highlight.
-    public func region(for target: GoalTarget) -> GoalRegion {
+    /// find the region(s) to highlight. `.inside`/`.post` regions are
+    /// already finite — `bounds` plays no part and the list always has
+    /// exactly one element; `.out` defers to `regions(for: MissDirection,
+    /// within:)`, which can legitimately return fewer rects, or none, for
+    /// a degenerate `bounds` (see that function's doc comment).
+    public func regions(for target: GoalTarget, within bounds: GoalRegion) -> [GoalRegion] {
         switch target {
         case .inside(let zone):
-            return region(for: zone)
+            return [region(for: zone)]
         case .post(let segment):
-            return region(for: segment)
+            return [region(for: segment)]
         case .out(let direction):
-            return region(for: direction)
+            return regions(for: direction, within: bounds)
         }
+    }
+
+    /// Intersects the rectangle described by its raw edges — any left at
+    /// its `infinity` default means "unbounded on this side" — with
+    /// `bounds`, in the same normalized frame. Returns `nil` when the
+    /// intersection is empty rather than a zero/negative-size `GoalRegion`:
+    /// an empty rect is not a rect worth returning, and every caller above
+    /// already `compactMap`s this away.
+    ///
+    /// Guards against `> x0`/`> y0` with `boundaryTolerance`, not a bare
+    /// `>`: when a caller's `bounds` edge is built from the same irrational
+    /// division as `bandX`/`bandY` (e.g. `-bandX` and `1 + 2 * bandX`,
+    /// exactly what a "no margin past the frame" `bounds` looks like), the
+    /// two do not round-trip to the exact same `Double` — `x1` can land a
+    /// couple of ULPs past `x0` instead of exactly on it. A bare `>` would
+    /// then return a sliver rect a few times `Double.ulpOfOne` wide, which
+    /// draws nothing a person could see and tiles no `target(at:)` point a
+    /// grid could ever sample, but still fails `isEmpty`. The same
+    /// tolerance `target(at:)`'s own boundary comparisons already use
+    /// treats that sliver as the empty intersection it actually is.
+    private static func clip(
+        minX: Double = -.infinity,
+        minY: Double = -.infinity,
+        maxX: Double = .infinity,
+        maxY: Double = .infinity,
+        to bounds: GoalRegion
+    ) -> GoalRegion? {
+        let tolerance = Self.boundaryTolerance
+        let x0 = max(minX, bounds.x)
+        let y0 = max(minY, bounds.y)
+        let x1 = min(maxX, bounds.x + bounds.width)
+        let y1 = min(maxY, bounds.y + bounds.height)
+        guard x1 - x0 > tolerance, y1 - y0 > tolerance else { return nil }
+        return GoalRegion(x: x0, y: y0, width: x1 - x0, height: y1 - y0)
     }
 
     private func columnIndex(_ column: GoalColumn) -> Int {
