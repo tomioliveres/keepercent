@@ -497,3 +497,259 @@ struct CourtGeometrySevenMeterHitAreaTests {
         #expect(custom.origin(at: custom.sevenMeterPoint) == .sevenMeters)
     }
 }
+
+/// Standard even-odd ray-casting point-in-polygon test, run in normalized
+/// `CourtPoint` coordinates. Valid here even though `x` and `y` span
+/// different real distances (20 m vs 15 m by default): ray casting only
+/// ever compares coordinates against each other on the SAME axis, and
+/// normalizing each axis independently (dividing by its own span) is a
+/// monotonic per-axis rescaling, which preserves every such comparison.
+/// The polygon is treated as implicitly closed (last point connects back
+/// to the first), matching `CourtGeometry.shape(for:)`'s own documented
+/// convention.
+private func isPointInPolygon(_ point: CourtPoint, _ polygon: [CourtPoint]) -> Bool {
+    guard polygon.count >= 3 else { return false }
+    var inside = false
+    var j = polygon.count - 1
+    for i in 0..<polygon.count {
+        let xi = polygon[i].x, yi = polygon[i].y
+        let xj = polygon[j].x, yj = polygon[j].y
+        if (yi > point.y) != (yj > point.y) {
+            let xIntersect = xi + (point.y - yi) / (yj - yi) * (xj - xi)
+            if point.x < xIntersect {
+                inside.toggle()
+            }
+        }
+        j = i
+    }
+    return inside
+}
+
+/// The distance, in metres, from a normalized `CourtPoint` to the goal mouth
+/// segment — re-derived here (rather than calling the `internal`
+/// `CourtGeometry.distanceToGoalMouth(for:)`, which this test target cannot
+/// see even with `@testable import`, since it is `private`) using the exact
+/// same formula documented on that function: clamp the metric x-offset onto
+/// the goal mouth's own half-width, then take the hypotenuse.
+private func distanceToGoalMouthMeters(_ point: CourtPoint, geometry: CourtGeometry) -> Double {
+    let x = (point.x - 0.5) * geometry.widthInMeters
+    let y = point.y * geometry.depthInMeters
+    let halfGoal = geometry.goalWidthInMeters / 2
+    let nearestX = min(max(x, -halfGoal), halfGoal)
+    return hypot(x - nearestX, y)
+}
+
+/// Above the measured worst-case chord-vs-arc error (the "sagitta") that
+/// `shape(for:)`'s polygon carries even after every real piecewise join is
+/// forced to be an exact vertex, and an order of magnitude below the ~15 cm
+/// gap a MISSING critical angle used to leave at the court's own corner
+/// before that fix (see `CourtGeometry.swift`'s `radialArcPoints` and
+/// `shape(for:)` comments for the fix itself).
+///
+/// Measured with a throwaway script: for the standard geometry and every
+/// non-default fixture `shapeRoundTripsOnNonDefaultGeometry` uses, sweep
+/// the same dense grid this file already samples, and for every point that
+/// still fails the strict round-trip/tiling check, record its distance to
+/// the 9 m curve. The worst observed value across all six fixtures was
+/// ~0.36 mm (on the 30 m-wide, 8 m-deep fixture) - matching the analytic
+/// sagitta of a circular arc of radius 9 m sampled every ~1 degree,
+/// `r * (1 - cos(0.5 deg)) ~= 0.343 mm`, the one irreducible error
+/// `radialArcPoints`'s header explains no polygon can remove (no polygon
+/// equals an arc). 5 mm sits >10x above that measured 0.36 mm and >10x
+/// below the ~15 cm structural gap.
+private let boundaryToleranceMeters = 0.005
+
+/// True when `point` sits within tolerance of the ONLY boundary of
+/// `shape(for:)` that is genuinely curved: the 9 m near/far line, whose
+/// post-centred quarter arcs a polygon can only ever chord. A round-trip
+/// or tiling assertion skips a point here - never anywhere else - because
+/// the polygon's edge there carries the unavoidable sagitta
+/// `boundaryToleranceMeters` documents, not because the classification or
+/// the polygon is wrong.
+///
+/// Deliberately no tolerance for the sector cuts or the court edges, even
+/// though both are also polygon boundaries. Both are straight, and both
+/// are sampled at their own exact angle, so the polygon's edge IS the
+/// analytic boundary there and no sagitta exists to forgive. This was not
+/// assumed: each clause was written, then removed after the whole suite
+/// stayed green without it. A tolerance nothing needs is a tolerance that
+/// only hides the next defect - the same reasoning that removed the dead
+/// upper bound from `GoalGeometry.insideMouthY` in T2.1. Re-typing the 18
+/// and 54 degree cuts here to build such a clause would also re-introduce
+/// exactly the drift `centerBoundaryDegrees`/`backBoundaryDegrees` exist
+/// to prevent, in the one file whose job is to catch that drift.
+private func isNearTheNineMeterCurve(_ point: CourtPoint, geometry: CourtGeometry) -> Bool {
+    abs(distanceToGoalMouthMeters(point, geometry: geometry) - geometry.nineMeterLine) <= boundaryToleranceMeters
+}
+
+@Suite("CourtGeometry shape(for: CourtZone)")
+struct CourtGeometryShapeTests {
+
+    /// A dense grid over the court, deliberately offset by an irrational
+    /// fraction so it almost never lands exactly on a sector ray, the 9 m
+    /// curve, or a court edge — the same class of boundary this file's
+    /// other tests probe explicitly with hand-picked points, avoided here
+    /// so a coverage/round-trip test over the WHOLE court does not trip on
+    /// floating-point boundary noise instead of a real defect.
+    private func denseGridPoints(columns: Int = 401, rows: Int = 307) -> [CourtPoint] {
+        var points: [CourtPoint] = []
+        for column in 0..<columns {
+            for row in 0..<rows {
+                let x = (Double(column) + 0.31) / Double(columns)
+                let y = (Double(row) + 0.31) / Double(rows)
+                points.append(CourtPoint(x: x, y: y))
+            }
+        }
+        return points
+    }
+
+    @Test(
+        "Every point strictly inside shape(for:) for a CourtZone resolves back to that same zone (round-trip)",
+        arguments: CourtZone.allCases
+    )
+    func zoneShapeRoundTrips(zone: CourtZone) {
+        let geometry = CourtGeometry.standard
+        let polygon = geometry.shape(for: zone)
+        var sampledAtLeastOnePoint = false
+        for point in denseGridPoints() where isPointInPolygon(point, polygon) {
+            sampledAtLeastOnePoint = true
+            // A point strictly inside the polygon but within tolerance
+            // of the 9 m curve can legitimately fall on the wrong side of
+            // that curve - see `boundaryToleranceMeters` for why this is
+            // the unavoidable sagitta, not a defect.
+            guard !isNearTheNineMeterCurve(point, geometry: geometry) else { continue }
+            #expect(geometry.zone(at: point) == zone, "\(point) inside \(zone)'s polygon resolved to \(geometry.zone(at: point))")
+        }
+        #expect(sampledAtLeastOnePoint, "no sampled point landed inside \(zone)'s polygon — it may be empty or malformed")
+    }
+
+    @Test("The 10 zone polygons tile the whole court: every sampled point's zone(at:) result contains that point in its own polygon")
+    func zonePolygonsCoverTheCourt() {
+        let geometry = CourtGeometry.standard
+        let shapes = Dictionary(uniqueKeysWithValues: CourtZone.allCases.map { ($0, geometry.shape(for: $0)) })
+        for point in denseGridPoints() {
+            let zone = geometry.zone(at: point)
+            guard let polygon = shapes[zone] else {
+                Issue.record("no polygon recorded for \(zone)")
+                continue
+            }
+            guard !isNearTheNineMeterCurve(point, geometry: geometry) else { continue }
+            #expect(isPointInPolygon(point, polygon), "\(point) classified as \(zone) but falls outside its own polygon")
+        }
+    }
+
+    @Test(
+        "shape(for:) round-trips and tiles on a non-default geometry too",
+        arguments: [
+            CourtGeometry(widthInMeters: 16, depthInMeters: 10),
+            CourtGeometry(widthInMeters: 30, depthInMeters: 8),
+            CourtGeometry(widthInMeters: 12, depthInMeters: 22),
+            CourtGeometry(widthInMeters: 20, depthInMeters: 15, goalWidthInMeters: 1.0, nineMeterLine: 6),
+            // A deliberate degenerate probe: the 9 m line never occurs on a
+            // 15 m deep court (`nineMeterLine` exceeds `depthInMeters`), so
+            // every point is `.near` and every `.far` polygon legitimately
+            // collapses to empty. No grid point is ever classified into a
+            // `.far` zone here, so `shapes[zone]` for those zones is looked
+            // up but never asked to contain a point — an empty polygon for
+            // a zone nothing classifies into is fine, not a fixture to
+            // soften away.
+            CourtGeometry(widthInMeters: 20, depthInMeters: 15, nineMeterLine: 20)
+        ]
+    )
+    func shapeRoundTripsOnNonDefaultGeometry(geometry: CourtGeometry) {
+        let shapes = Dictionary(uniqueKeysWithValues: CourtZone.allCases.map { ($0, geometry.shape(for: $0)) })
+        for point in denseGridPoints(columns: 137, rows: 101) {
+            let zone = geometry.zone(at: point)
+            guard let polygon = shapes[zone] else {
+                Issue.record("no polygon recorded for \(zone)")
+                continue
+            }
+            guard !isNearTheNineMeterCurve(point, geometry: geometry) else { continue }
+            #expect(isPointInPolygon(point, polygon), "\(point) classified as \(zone) but falls outside its own polygon on \(geometry)")
+        }
+    }
+
+    @Test("shape(for:) never cuts a hole for the 7 m mark: a point inside the mark's hit area still belongs to its ordinary zone's polygon")
+    func shapeDoesNotExcludeTheSevenMeterMark() {
+        let geometry = CourtGeometry.standard
+        let point = geometry.sevenMeterPoint
+        let zone = geometry.zone(at: point)
+        #expect(zone == CourtZone(sector: .center, depth: .near))
+        let polygon = geometry.shape(for: zone)
+        #expect(isPointInPolygon(point, polygon))
+    }
+
+    @Test("Every returned polygon has at least 3 vertices")
+    func everyPolygonHasAtLeastThreeVertices() {
+        let geometry = CourtGeometry.standard
+        for zone in CourtZone.allCases {
+            #expect(geometry.shape(for: zone).count >= 3, "\(zone)'s polygon is degenerate")
+        }
+    }
+
+    @Test("Every vertex of the center sector's near/far boundary sits at exactly nineMeterLine from the goal mouth")
+    func nearFarBoundaryVerticesSitExactlyOnTheNineMeterLine() {
+        let geometry = CourtGeometry.standard
+        // The center sector never gets clamped to the court's own edge
+        // before reaching the 9 m line on the standard geometry (straight
+        // ahead, the far depth edge alone is 15 m away — well past 9 m),
+        // so EVERY vertex of both its near/far boundary polygons must sit
+        // exactly on `radiusAtGoalMouthDistance`'s solved radius, i.e.
+        // exactly `distanceToGoalMouth == nineMeterLine` (up to float
+        // epsilon, not the sagitta tolerance above — this is the exact
+        // equation being solved, not a sampled curve).
+        for zone in [CourtZone(sector: .center, depth: .near), CourtZone(sector: .center, depth: .far)] {
+            let polygon = geometry.shape(for: zone)
+            // Each polygon also carries one non-boundary point: `.near`'s
+            // single goal-centre inner point (distance 0), `.far`'s
+            // court-exit outer arc (distance > nineMeterLine). Both are
+            // identified by NOT sitting near `nineMeterLine`, so filtering
+            // to points that DO isolates exactly the shared boundary.
+            let boundaryVertices = polygon.filter { tolerant(distanceToGoalMouthMeters($0, geometry: geometry), geometry.nineMeterLine, tolerance: 1e-6) }
+            #expect(!boundaryVertices.isEmpty, "\(zone)'s polygon has no vertex on the 9 m line")
+            for vertex in boundaryVertices {
+                let distance = distanceToGoalMouthMeters(vertex, geometry: geometry)
+                #expect(tolerant(distance, geometry.nineMeterLine), "\(vertex) at distance \(distance) is not exactly on the 9 m curve")
+            }
+        }
+    }
+
+    @Test("Every vertex of every zone's polygon lies on or inside the drawn court")
+    func everyVertexLiesOnOrInsideTheDrawnCourt() {
+        let geometry = CourtGeometry.standard
+        for zone in CourtZone.allCases {
+            for vertex in geometry.shape(for: zone) {
+                #expect(vertex.x >= 0 && vertex.x <= 1, "\(vertex) in \(zone)'s polygon has x outside 0...1")
+                #expect(vertex.y >= 0 && vertex.y <= 1, "\(vertex) in \(zone)'s polygon has y outside 0...1")
+            }
+        }
+    }
+
+    @Test("The court's own corner is an actual vertex of the polygon of the zone that owns it")
+    func courtCornerIsAnActualVertexOfItsOwnZonesPolygon() {
+        let geometry = CourtGeometry.standard
+        // The right corner is exactly (1, 1) in normalized coordinates by
+        // construction of `xMeters(for:)`/`yMeters(for:)` (x = 0.5 at the
+        // goal centre, spanning to 1 at the right touchline; y = 0 at the
+        // goal line, spanning to 1 at the far depth edge) — no internal
+        // access needed to state it. Before the critical-angle fix, this
+        // exact point was never a sample of `shape(for:)`'s polygon: it
+        // fell between two ~1-degree samples, so the chord cut this corner
+        // off by ~15 cm. It must now be an actual vertex.
+        let rightCorner = CourtPoint(x: 1, y: 1)
+        let zone = geometry.zone(at: rightCorner)
+        let polygon = geometry.shape(for: zone)
+        #expect(
+            polygon.contains { tolerant($0.x, rightCorner.x) && tolerant($0.y, rightCorner.y) },
+            "\(zone)'s polygon has no vertex at the court corner \(rightCorner); vertices: \(polygon)"
+        )
+
+        let leftCorner = CourtPoint(x: 0, y: 1)
+        let mirroredZone = geometry.zone(at: leftCorner)
+        let mirroredPolygon = geometry.shape(for: mirroredZone)
+        #expect(
+            mirroredPolygon.contains { tolerant($0.x, leftCorner.x) && tolerant($0.y, leftCorner.y) },
+            "\(mirroredZone)'s polygon has no vertex at the court corner \(leftCorner); vertices: \(mirroredPolygon)"
+        )
+    }
+}

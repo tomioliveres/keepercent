@@ -457,3 +457,288 @@ extension CourtGeometry {
     /// round-trip noise through `CourtPoint`'s own storage is the same.
     private static let boundaryToleranceNormalized: Double = 1e-9
 }
+
+extension CourtGeometry {
+    /// The two angle bounds (degrees, `angleDegrees(for:)`'s own
+    /// convention) a `CourtSector` occupies, from the SAME
+    /// `centerBoundaryDegrees`/`backBoundaryDegrees` constants
+    /// `sector(at:)` classifies against — never a re-typed 18/54 literal.
+    /// The outer wing bound is the mathematical extreme `atan2` can reach
+    /// for an on-court point (`y >= 0`), never a ray: see `shape(for:)`'s
+    /// header comment for why a wing has no such ray.
+    private static func angleBoundsDegrees(for sector: CourtSector) -> (low: Double, high: Double) {
+        switch sector {
+        case .leftWing: return (-90, -backBoundaryDegrees)
+        case .leftBack: return (-backBoundaryDegrees, -centerBoundaryDegrees)
+        case .center: return (-centerBoundaryDegrees, centerBoundaryDegrees)
+        case .rightBack: return (centerBoundaryDegrees, backBoundaryDegrees)
+        case .rightWing: return (backBoundaryDegrees, 90)
+        }
+    }
+
+    /// The distance `r`, along the ray at `angle` degrees from the goal
+    /// centre, at which that ray crosses `distanceToGoalMouth == distance`
+    /// — i.e. the exact same equation `distanceToGoalMouth(for:)` (and
+    /// therefore `depth(at:)`) evaluates, solved for `r` instead of
+    /// sampled, so a point at this radius always agrees with `depth(at:)`
+    /// about which side of `distance` it falls on.
+    ///
+    /// Mirrors `distanceToGoalMouth(for:)`'s own two cases: while the
+    /// ray's horizontal offset stays within the goal mouth's own half
+    /// width, the nearest point on the mouth segment is directly ahead, so
+    /// distance is just the forward offset (`r * cos(angle)`); beyond it,
+    /// the nearest point is the fixed post, and distance is the
+    /// hypotenuse to that point, giving a quadratic in `r`. Returns
+    /// `.infinity` when `distance` is smaller than the post's own offset
+    /// at this angle (no positive `r` reaches it) — for the 9 m line this
+    /// never happens with any plausible geometry, but the fallback keeps
+    /// `min(_:courtExitRadius:)` callers correct regardless.
+    private func radiusAtGoalMouthDistance(angleDegrees angle: Double, distance: Double) -> Double {
+        let radians = angle * .pi / 180
+        let sinValue = sin(radians)
+        let cosValue = cos(radians)
+        let halfGoal = goalWidthInMeters / 2
+
+        if abs(cosValue) > 1e-12 {
+            let straightR = distance / cosValue
+            if straightR >= 0, abs(straightR * sinValue) <= halfGoal + Self.boundaryToleranceMeters {
+                return straightR
+            }
+        }
+
+        let postX = sinValue < 0 ? -halfGoal : halfGoal
+        // Solving `(r*sinValue - postX)^2 + (r*cosValue)^2 = distance^2`
+        // for `r`, the same distance-to-a-fixed-point equation
+        // `distanceToGoalMouth(for:)` falls back to once the nearest mouth
+        // point clamps to a post.
+        let linearCoefficient = sinValue * postX
+        let discriminant = distance * distance - postX * postX * cosValue * cosValue
+        guard discriminant >= 0 else { return .infinity }
+        return max(0, linearCoefficient + discriminant.squareRoot())
+    }
+
+    /// The distance, along the ray at `angle` degrees from the goal
+    /// centre, to wherever that ray leaves the drawn court — reusing
+    /// `sectorRayEndpoint(atAngleDegrees:)` (the exact function
+    /// `sectorBoundaryRays` itself draws from) rather than recomputing the
+    /// touchline/far-edge distances a second time.
+    private func courtExitRadius(atAngleDegrees angle: Double) -> Double {
+        let endpoint = sectorRayEndpoint(atAngleDegrees: angle)
+        return hypot(xMeters(for: endpoint), yMeters(for: endpoint))
+    }
+
+    /// Samples the arc at radius `radius(angle)` for `angle` swept from
+    /// `angleLow` to `angleHigh`, roughly 1 degree per step (the same
+    /// sampling density `quarterArcPoints` uses for the drawn 6 m/9 m
+    /// lines), PLUS every angle in `criticalAngles` that falls strictly
+    /// inside `angleLow...angleHigh` — the shared building block
+    /// `shape(for:)` uses for both a zone's near-side and far-side
+    /// boundary.
+    ///
+    /// `radius` is piecewise (a `min(...)` of several sub-functions, each
+    /// possibly itself a `min(...)`): a uniform angle grid samples each
+    /// piece smoothly but almost never lands exactly on the angle where two
+    /// pieces meet, so the chord between the two samples straddling that
+    /// join cuts the corner off instead of passing through it. Forcing
+    /// every join's exact angle to itself be a sample point turns that
+    /// corner into an actual vertex, leaving only the unavoidable
+    /// chord-vs-arc error (the sagitta) on a genuinely curved piece — see
+    /// `shape(for:)`'s own critical-angle derivations for what each one
+    /// joins and why closed-form angles are cheap here while the
+    /// near/far-vs-court-exit join is not.
+    private func radialArcPoints(angleLow: Double, angleHigh: Double, criticalAngles: [Double] = [], radius: (Double) -> Double) -> [CourtPoint] {
+        guard angleHigh > angleLow else { return [] }
+        let steps = max(1, Int((angleHigh - angleLow).rounded()))
+        let uniformAngles = (0...steps).map { i in
+            angleLow + (angleHigh - angleLow) * Double(i) / Double(steps)
+        }
+        let insideCriticalAngles = criticalAngles.filter { $0 > angleLow && $0 < angleHigh }
+        let angles = Set(uniformAngles + insideCriticalAngles).sorted()
+        return angles.map { angle in
+            let r = max(0, radius(angle))
+            let radians = angle * .pi / 180
+            return normalizedPoint(xMeters: r * sin(radians), yMeters: r * cos(radians))
+        }
+    }
+
+    /// The angle, in degrees off straight-ahead, where `courtExitRadius`'s
+    /// own `min(...)` switches which edge is closer — the touchline
+    /// (`halfWidth / |sin|`) and the far depth edge (`depthInMeters /
+    /// cos`) are equal exactly where `tan(angle) == halfWidth /
+    /// depthInMeters`, i.e. at `atan2(halfWidth, depthInMeters)`. Below
+    /// this angle the touchline is farther away (the far edge wins);
+    /// above it, the far edge is farther away (the touchline wins). This
+    /// is the court's own physical corner, so it is the same angle on
+    /// both sides of straight-ahead — callers add `±` as needed.
+    private func cornerAngleDegrees() -> Double {
+        atan2(widthInMeters / 2, depthInMeters) * 180 / .pi
+    }
+
+    /// The angle, in degrees off straight-ahead, where
+    /// `radiusAtGoalMouthDistance(angleDegrees:distance:)`'s own straight
+    /// piece (nearest mouth point straight ahead) hands off to its arc
+    /// piece (nearest mouth point is the fixed post): exactly where the
+    /// straight piece's sideways reach, `distance * tan(angle)`, equals
+    /// the goal's own half width, i.e. at `atan2(halfGoal, distance)`.
+    /// Same reasoning as `cornerAngleDegrees()` — a closed-form `tan`
+    /// equation, so the exact angle is cheap to compute rather than
+    /// search for.
+    private func mouthTransitionAngleDegrees(distance: Double) -> Double {
+        atan2(goalWidthInMeters / 2, distance) * 180 / .pi
+    }
+
+    /// Every angle, strictly between `angleLow` and `angleHigh`, where
+    /// `arcRadius` and `exitRadius` cross — i.e. where
+    /// `nearFarBoundaryRadius`'s own `min(...)` switches which side wins
+    /// (the 9 m curve itself, vs. the court boundary the 9 m curve would
+    /// otherwise poke through). Unlike `cornerAngleDegrees()` and
+    /// `mouthTransitionAngleDegrees(distance:)`, this join has no closed
+    /// form: both sides are themselves piecewise, so there is no single
+    /// equation to solve for the angle.
+    ///
+    /// Found by sampling the same roughly-1-degree grid
+    /// `radialArcPoints(angleLow:angleHigh:criticalAngles:radius:)` itself
+    /// walks, then bisecting wherever two adjacent samples disagree about
+    /// the sign of `arcRadius - exitRadius` — that disagreement brackets
+    /// exactly one crossing, because both functions are continuous. 60
+    /// bisection steps roughly halve a starting bracket of at most 1
+    /// degree sixty times, landing the angle far below any float noise
+    /// that could matter here.
+    private func nearFarExitCrossings(
+        angleLow: Double,
+        angleHigh: Double,
+        arcRadius: (Double) -> Double,
+        exitRadius: (Double) -> Double
+    ) -> [Double] {
+        guard angleHigh > angleLow else { return [] }
+        let steps = max(1, Int((angleHigh - angleLow).rounded()))
+        let grid = (0...steps).map { i in
+            angleLow + (angleHigh - angleLow) * Double(i) / Double(steps)
+        }
+
+        func difference(_ angle: Double) -> Double {
+            arcRadius(angle) - exitRadius(angle)
+        }
+
+        var crossings: [Double] = []
+        for i in 1..<grid.count {
+            var low = grid[i - 1]
+            var high = grid[i]
+            var lowValue = difference(low)
+            let highValue = difference(high)
+            guard lowValue != 0 || highValue != 0 else { continue }
+            guard (lowValue < 0) != (highValue < 0) else { continue }
+
+            for _ in 0..<60 {
+                let mid = (low + high) / 2
+                let midValue = difference(mid)
+                if midValue == 0 {
+                    low = mid
+                    high = mid
+                    break
+                }
+                if (midValue < 0) == (lowValue < 0) {
+                    low = mid
+                    lowValue = midValue
+                } else {
+                    high = mid
+                }
+            }
+            crossings.append((low + high) / 2)
+        }
+        return crossings
+    }
+
+    /// The closed polygon `zone(at:)` classifies as `zone` — the area the
+    /// view fills to highlight a selected court zone. The first point is
+    /// NOT repeated at the end: a caller closing the shape connects the
+    /// last point back to the first.
+    ///
+    /// Built by sweeping `zone.sector`'s angle range (from the SAME
+    /// `centerBoundaryDegrees`/`backBoundaryDegrees` constants
+    /// `sector(at:)` reads) and, at every angle, computing the radius
+    /// where the zone's near/far boundary sits — `radiusAtGoalMouthDistance`
+    /// solves the exact equation `distanceToGoalMouth(for:)` evaluates, so
+    /// this can never disagree with `depth(at:)`, the way sampling the
+    /// drawn `line(atDistanceInMeters:)` polyline and interpolating
+    /// between its points could.
+    ///
+    /// At every angle the boundary radius is clamped to
+    /// `courtExitRadius(atAngleDegrees:)`: this is what keeps a wing's
+    /// outer edge on the court's own touchline/far edge — never a ray,
+    /// exactly matching the documented rule that wings have no outer ray
+    /// — and what shrinks a sector's far zone to a degenerate sliver at
+    /// whichever angle its ray already leaves the court before ever
+    /// reaching the 9 m line (this happens for every wing, and depends on
+    /// the geometry's own proportions, never hard-coded).
+    ///
+    /// For `.near`, the inner boundary is always the single goal-centre
+    /// point (every angle's own "distance 0" point is that same point);
+    /// for `.far`, the inner boundary is the near/far boundary itself,
+    /// walked back the opposite way so the outer-then-inner point list
+    /// traces one continuous loop.
+    public func shape(for zone: CourtZone) -> [CourtPoint] {
+        let (angleLow, angleHigh) = Self.angleBoundsDegrees(for: zone.sector)
+        let boundaryDistance = nineMeterLine
+
+        func nearFarBoundaryRadius(_ angle: Double) -> Double {
+            min(radiusAtGoalMouthDistance(angleDegrees: angle, distance: boundaryDistance), courtExitRadius(atAngleDegrees: angle))
+        }
+
+        // The three joins that a uniform angle grid alone would sample
+        // around rather than through — see `radialArcPoints`'s header for
+        // why that turns a real vertex into a cut-off corner:
+        //
+        // 1. `cornerAngle`/`-cornerAngle`: where `courtExitRadius` itself
+        //    hands off between the touchline and the far depth edge (the
+        //    court's own physical corner). Relevant to BOTH boundary
+        //    functions below, because `nearFarBoundaryRadius` clamps to
+        //    `courtExitRadius` too.
+        // 2. `mouthTransition`/`-mouthTransition`: where
+        //    `radiusAtGoalMouthDistance` hands off from the mouth-straight
+        //    piece to the post-centred arc. Only meaningful for
+        //    `nearFarBoundaryRadius`, since `courtExitRadius` never calls
+        //    `radiusAtGoalMouthDistance`.
+        // 3. `nearFarExitCrossings`: where the 9 m curve and the court's
+        //    own edge cross — only meaningful for `nearFarBoundaryRadius`,
+        //    for the same reason.
+        let cornerAngle = cornerAngleDegrees()
+        let mouthTransition = mouthTransitionAngleDegrees(distance: boundaryDistance)
+        let exitCrossings = nearFarExitCrossings(
+            angleLow: angleLow,
+            angleHigh: angleHigh,
+            arcRadius: { radiusAtGoalMouthDistance(angleDegrees: $0, distance: boundaryDistance) },
+            exitRadius: { courtExitRadius(atAngleDegrees: $0) }
+        )
+        let nearFarCriticalAngles = [cornerAngle, -cornerAngle, mouthTransition, -mouthTransition] + exitCrossings
+        let exitCriticalAngles = [cornerAngle, -cornerAngle]
+
+        let outerRadius: (Double) -> Double
+        let outerCriticalAngles: [Double]
+        let innerPoints: [CourtPoint]
+
+        switch zone.depth {
+        case .near:
+            outerRadius = nearFarBoundaryRadius
+            outerCriticalAngles = nearFarCriticalAngles
+            innerPoints = [normalizedPoint(xMeters: 0, yMeters: 0)]
+        case .far:
+            outerRadius = { courtExitRadius(atAngleDegrees: $0) }
+            outerCriticalAngles = exitCriticalAngles
+            innerPoints = radialArcPoints(
+                angleLow: angleLow,
+                angleHigh: angleHigh,
+                criticalAngles: nearFarCriticalAngles,
+                radius: nearFarBoundaryRadius
+            ).reversed()
+        }
+
+        let outerPoints = radialArcPoints(
+            angleLow: angleLow,
+            angleHigh: angleHigh,
+            criticalAngles: outerCriticalAngles,
+            radius: outerRadius
+        )
+        return outerPoints + innerPoints
+    }
+}
