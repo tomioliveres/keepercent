@@ -525,20 +525,6 @@ private func isPointInPolygon(_ point: CourtPoint, _ polygon: [CourtPoint]) -> B
     return inside
 }
 
-/// The distance, in metres, from a normalized `CourtPoint` to the goal mouth
-/// segment — re-derived here (rather than calling the `internal`
-/// `CourtGeometry.distanceToGoalMouth(for:)`, which this test target cannot
-/// see even with `@testable import`, since it is `private`) using the exact
-/// same formula documented on that function: clamp the metric x-offset onto
-/// the goal mouth's own half-width, then take the hypotenuse.
-private func distanceToGoalMouthMeters(_ point: CourtPoint, geometry: CourtGeometry) -> Double {
-    let x = (point.x - 0.5) * geometry.widthInMeters
-    let y = point.y * geometry.depthInMeters
-    let halfGoal = geometry.goalWidthInMeters / 2
-    let nearestX = min(max(x, -halfGoal), halfGoal)
-    return hypot(x - nearestX, y)
-}
-
 /// Above the measured worst-case chord-vs-arc error (the "sagitta") that
 /// `shape(for:)`'s polygon carries even after every real piecewise join is
 /// forced to be an exact vertex, and an order of magnitude below the ~15 cm
@@ -579,7 +565,7 @@ private let boundaryToleranceMeters = 0.005
 /// exactly the drift `centerBoundaryDegrees`/`backBoundaryDegrees` exist
 /// to prevent, in the one file whose job is to catch that drift.
 private func isNearTheNineMeterCurve(_ point: CourtPoint, geometry: CourtGeometry) -> Bool {
-    abs(distanceToGoalMouthMeters(point, geometry: geometry) - geometry.nineMeterLine) <= boundaryToleranceMeters
+    abs(geometry.distanceToGoalMouth(for: point) - geometry.nineMeterLine) <= boundaryToleranceMeters
 }
 
 @Suite("CourtGeometry shape(for: CourtZone)")
@@ -705,10 +691,10 @@ struct CourtGeometryShapeTests {
             // court-exit outer arc (distance > nineMeterLine). Both are
             // identified by NOT sitting near `nineMeterLine`, so filtering
             // to points that DO isolates exactly the shared boundary.
-            let boundaryVertices = polygon.filter { tolerant(distanceToGoalMouthMeters($0, geometry: geometry), geometry.nineMeterLine, tolerance: 1e-6) }
+            let boundaryVertices = polygon.filter { tolerant(geometry.distanceToGoalMouth(for: $0), geometry.nineMeterLine, tolerance: 1e-6) }
             #expect(!boundaryVertices.isEmpty, "\(zone)'s polygon has no vertex on the 9 m line")
             for vertex in boundaryVertices {
-                let distance = distanceToGoalMouthMeters(vertex, geometry: geometry)
+                let distance = geometry.distanceToGoalMouth(for: vertex)
                 #expect(tolerant(distance, geometry.nineMeterLine), "\(vertex) at distance \(distance) is not exactly on the 9 m curve")
             }
         }
