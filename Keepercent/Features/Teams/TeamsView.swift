@@ -46,6 +46,17 @@ struct TeamsView: View {
     @State private var newTeamErrorMessage: String?
     @State private var isShowingScaffold = false
     @State private var seedErrorMessage: String?
+    /// Drives whether the sidebar column is visible. T3.3 needs the team
+    /// list hidden while a shot-entry session is open, on iPad, so the
+    /// three-column entry layout gets the whole screen instead of sharing
+    /// it with a now-irrelevant team list. `NavigationSplitView`'s own
+    /// `columnVisibility` binding is the mechanism: `RosterEditorView`
+    /// (below) drives it to `.detailOnly` whenever ITS internal
+    /// `NavigationPath` has a session pushed, and back to `.automatic` when
+    /// it pops — see that file for why `path` is the signal. This view
+    /// only owns the `@State` storage; it never reads or writes the value
+    /// itself.
+    @State private var columnVisibility: NavigationSplitViewVisibility = .automatic
 
     private var selectedTeam: StoredRivalTeam? {
         guard let selectedTeamID else { return nil }
@@ -53,7 +64,7 @@ struct TeamsView: View {
     }
 
     var body: some View {
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: $columnVisibility) {
             List(teams, selection: $selectedTeamID) { team in
                 Text(team.name)
             }
@@ -79,7 +90,7 @@ struct TeamsView: View {
                 // One identity per team: without it SwiftUI reuses the same
                 // editor when the selection changes, and its navigation path
                 // would still hold the previous team's open session.
-                RosterEditorView(team: selectedTeam)
+                RosterEditorView(team: selectedTeam, columnVisibility: $columnVisibility)
                     .id(selectedTeam.persistentModelID)
             } else {
                 ContentUnavailableView(

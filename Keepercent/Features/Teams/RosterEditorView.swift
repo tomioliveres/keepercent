@@ -62,6 +62,12 @@ import KeepercentDomain
 
 struct RosterEditorView: View {
     let team: StoredRivalTeam
+    /// See `TeamsView`'s own comment on this same `@State`: this view drives
+    /// it, `TeamsView` only stores it. `path` (below) already tells this
+    /// view exactly when a session is open — it is the one place besides
+    /// `TeamsView` that decides where the user is — so reusing it as the
+    /// signal, via `.onChange(of:)`, needs no second source of truth.
+    @Binding var columnVisibility: NavigationSplitViewVisibility
     @Environment(\.modelContext) private var modelContext
 
     @State private var editingPlayer: StoredPlayer?
@@ -140,12 +146,7 @@ struct RosterEditorView: View {
             }
             .navigationDestination(for: PersistentIdentifier.self) { sessionID in
                 if let session = team.sessions.first(where: { $0.persistentModelID == sessionID }) {
-                    SessionView(
-                        teamName: team.name,
-                        kind: session.kind,
-                        matchDate: session.date,
-                        shotCount: session.shots.count
-                    )
+                    SessionView(team: team, session: session)
                 } else {
                     ContentUnavailableView(
                         "Session Not Found",
@@ -154,6 +155,14 @@ struct RosterEditorView: View {
                     )
                 }
             }
+        }
+        // T3.3, decision ③: the team sidebar is hidden while a session is
+        // open, so the entry screen's three-column layout gets the whole
+        // iPad width. `path` is non-empty exactly when a session is pushed
+        // (the only thing ever appended to it), so it is already the
+        // signal this view needs — no separate "is a session open" flag.
+        .onChange(of: path) {
+            columnVisibility = path.isEmpty ? .automatic : .detailOnly
         }
         .sheet(item: $editingPlayer) { stored in
             let originalNumber = stored.number

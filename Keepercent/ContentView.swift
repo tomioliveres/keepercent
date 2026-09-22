@@ -47,7 +47,7 @@ struct ContentView: View {
                 .font(.callout.monospaced())
                 .foregroundStyle(.secondary)
 
-            CourtView(selection: lastTappedOrigin) { origin in
+            CourtView(selection: lastTappedOrigin) { origin, _ in
                 lastTappedOrigin = origin
             }
             .padding(.horizontal)

@@ -158,7 +158,11 @@ struct GoalView: View {
     /// mouth width, one unit of `y` the whole 2 m mouth height. Converting
     /// both back to metres before dividing is what makes the drawn mouth a
     /// real 3:2 goal instead of a square one.
-    private var overallAspectRatio: Double {
+    ///
+    /// Internal rather than private so a container laying the goal out next
+    /// to another view (the entry screen's middle column) reads the ratio the
+    /// goal actually draws with, instead of a copied literal that drifts.
+    var overallAspectRatio: Double {
         (overallWidth * geometry.widthInMeters) / (overallHeight * geometry.heightInMeters)
     }
 

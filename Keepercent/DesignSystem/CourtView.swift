@@ -42,7 +42,19 @@ struct CourtView: View {
     /// caller — see this file's header comment for why it is not local
     /// `@State`. `nil` draws no highlight.
     let selection: ShotOrigin?
-    let onOriginTapped: (ShotOrigin) -> Void
+    /// Reports both the classified `ShotOrigin` AND the raw normalized tap
+    /// (T3.3, docs/mvp.md §5.2: "store the raw normalized tap point, and
+    /// derive the zone from it"). Before T3.3 this view only reported the
+    /// classified `ShotOrigin`, discarding the point `handleTap` had
+    /// already computed — `Shot.originPoint` needs exactly that point, not
+    /// a re-derivation from the zone, which would be lossy (a zone cannot
+    /// be inverted back to one point). A 7 m tap reports `nil` for the
+    /// point: `.sevenMeters` always starts from the same spot, so
+    /// `Shot.record` drops any point passed alongside it anyway (see
+    /// `Shot.init`'s own normalization) — reporting `nil` here keeps that
+    /// invariant visible at the call site instead of relying on the
+    /// caller to know to ignore it.
+    let onOriginTapped: (ShotOrigin, CourtPoint?) -> Void
 
     /// Shared "this is the current selection" tint with `GoalView`'s own
     /// identical constant. No shared palette file exists (CLAUDE.md), so
@@ -56,7 +68,7 @@ struct CourtView: View {
     init(
         geometry: CourtGeometry = .standard,
         selection: ShotOrigin? = nil,
-        onOriginTapped: @escaping (ShotOrigin) -> Void
+        onOriginTapped: @escaping (ShotOrigin, CourtPoint?) -> Void
     ) {
         self.geometry = geometry
         self.selection = selection
@@ -273,19 +285,28 @@ struct CourtView: View {
         guard canvasSize.width > 0, canvasSize.height > 0 else { return }
         let point = courtPoint(fromViewLocation: location, canvasSize: canvasSize)
         let origin = geometry.origin(at: point)
-        onOriginTapped(origin)
+        switch origin {
+        case .sevenMeters:
+            // No origin point for a 7 m throw — see this file's header
+            // comment on `onOriginTapped` for why `nil` is reported rather
+            // than the raw tap (which landed inside the mark's region, not
+            // at any meaningful court coordinate).
+            onOriginTapped(origin, nil)
+        case .zone:
+            onOriginTapped(origin, point)
+        }
     }
 }
 
 #Preview("CourtView") {
-    CourtView { origin in
+    CourtView { origin, _ in
         print("Tapped: \(origin.code)")
     }
     .padding()
 }
 
 #Preview("CourtView - Dark") {
-    CourtView { origin in
+    CourtView { origin, _ in
         print("Tapped: \(origin.code)")
     }
     .padding()
@@ -293,7 +314,7 @@ struct CourtView: View {
 }
 
 #Preview("CourtView - Selected") {
-    CourtView(selection: .zone(CourtZone(sector: .leftWing, depth: .near))) { origin in
+    CourtView(selection: .zone(CourtZone(sector: .leftWing, depth: .near))) { origin, _ in
         print("Tapped: \(origin.code)")
     }
     .padding()
