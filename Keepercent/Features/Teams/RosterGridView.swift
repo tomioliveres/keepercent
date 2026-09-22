@@ -11,6 +11,14 @@ struct RosterGridView: View {
     let players: [Player]
     let onSelectPlayer: (Player) -> Void
     let onTapAddUnknown: () -> Void
+    /// When true (the default, and every existing call site), this view
+    /// owns its own vertical scrolling, exactly as before T3.2. T3.2's
+    /// `RosterEditorView` now shows the grid above a session list on the
+    /// same screen, and nesting two same-axis `ScrollView`s there would
+    /// leave both with ambiguous content height; passing `false` there
+    /// lets the grid lay out its content directly, so the screen's own
+    /// outer `ScrollView` is the only one that scrolls.
+    var isScrollable: Bool = true
 
     /// Adaptive columns, each at least the roster tile's own minimum tap
     /// target, so the grid reflows from a narrow iPhone to a wide iPad
@@ -18,24 +26,32 @@ struct RosterGridView: View {
     private let columns = [GridItem(.adaptive(minimum: rosterTileMinimumDimension + 32, maximum: 110), spacing: 12)]
 
     var body: some View {
-        ScrollView {
-            LazyVGrid(columns: columns, spacing: 16) {
-                ForEach(players, id: \.number) { player in
-                    Button {
-                        onSelectPlayer(player)
-                    } label: {
-                        PlayerTileView(player: player)
-                    }
-                    .buttonStyle(.plain)
-                }
+        if isScrollable {
+            ScrollView {
+                gridContent
+            }
+        } else {
+            gridContent
+        }
+    }
 
-                Button(action: onTapAddUnknown) {
-                    AddPlayerTileView()
+    private var gridContent: some View {
+        LazyVGrid(columns: columns, spacing: 16) {
+            ForEach(players, id: \.number) { player in
+                Button {
+                    onSelectPlayer(player)
+                } label: {
+                    PlayerTileView(player: player)
                 }
                 .buttonStyle(.plain)
             }
-            .padding()
+
+            Button(action: onTapAddUnknown) {
+                AddPlayerTileView()
+            }
+            .buttonStyle(.plain)
         }
+        .padding()
     }
 }
 

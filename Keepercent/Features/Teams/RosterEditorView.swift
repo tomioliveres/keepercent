@@ -39,6 +39,22 @@
 // The validated `Roster` returned by step 1 is deliberately discarded
 // after use — it exists to make the domain's rules run, not to be
 // "applied" wholesale.
+//
+// ## Sessions (T3.2)
+//
+// This same screen also lists the team's sessions and starts new ones,
+// following the same validate-then-write-one-row shape as the roster
+// actions above: `startSession` builds `KeepercentDomain.Session` FIRST
+// (which owns the "no future match date" rule), and only inserts a
+// `StoredSession` if that succeeds. A session is started FROM a team's
+// screen (Session.swift's header), so the rival team is never a field the
+// user picks — `startSession` always attaches the new session to `team`.
+//
+// `path` is a `NavigationPath` local to this view, wrapped in its own
+// `NavigationStack`, so tapping a session (or finishing "Start") can push
+// straight to `SessionView` inside `TeamsView`'s existing
+// `NavigationSplitView` detail column without that view needing to know
+// about session navigation at all.
 
 import SwiftUI
 import SwiftData
@@ -52,6 +68,11 @@ struct RosterEditorView: View {
     @State private var isAddingUnknown = false
     @State private var addUnknownErrorMessage: String?
     @State private var actionError: RosterActionError?
+    @State private var isPresentingNewSessionSheet = false
+    @State private var newSessionKind: SessionKind = .live
+    @State private var newSessionMatchDate: Date = .now
+    @State private var newSessionErrorMessage: String?
+    @State private var path = NavigationPath()
 
     /// A fresh `Roster` built from this team's current `StoredPlayer` rows,
     /// or the error that building it hit. Building can fail if the stored
@@ -68,29 +89,72 @@ struct RosterEditorView: View {
         try Roster(players: team.players.map(\.domainPlayer))
     }
 
+    /// This team's sessions, newest match date first (T3.2 item 4).
+    private var sortedSessions: [StoredSession] {
+        team.sessions.sorted { $0.date > $1.date }
+    }
+
     var body: some View {
-        Group {
-            switch rosterResult {
-            case .success(let roster):
-                RosterGridView(
-                    players: roster.players,
-                    onSelectPlayer: { player in
-                        editingPlayer = team.players.first { $0.number == player.number }
-                    },
-                    onTapAddUnknown: {
-                        addUnknownErrorMessage = nil
-                        isAddingUnknown = true
+        NavigationStack(path: $path) {
+            Group {
+                switch rosterResult {
+                case .success(let roster):
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 24) {
+                            RosterGridView(
+                                players: roster.players,
+                                onSelectPlayer: { player in
+                                    editingPlayer = team.players.first { $0.number == player.number }
+                                },
+                                onTapAddUnknown: {
+                                    addUnknownErrorMessage = nil
+                                    isAddingUnknown = true
+                                },
+                                isScrollable: false
+                            )
+
+                            sessionsSection
+                        }
+                        .padding(.bottom)
                     }
-                )
-            case .failure(let error):
-                ContentUnavailableView {
-                    Label("Roster Data Problem", systemImage: "exclamationmark.triangle")
-                } description: {
-                    Text("This team's roster couldn't be loaded (\(error.localizedDescription)). Recorded shots are unaffected.")
+                case .failure(let error):
+                    ContentUnavailableView {
+                        Label("Roster Data Problem", systemImage: "exclamationmark.triangle")
+                    } description: {
+                        Text("This team's roster couldn't be loaded (\(error.localizedDescription)). Recorded shots are unaffected.")
+                    }
+                }
+            }
+            .navigationTitle(team.name)
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        newSessionKind = .live
+                        newSessionMatchDate = .now
+                        newSessionErrorMessage = nil
+                        isPresentingNewSessionSheet = true
+                    } label: {
+                        Label("New Session", systemImage: "plus.circle")
+                    }
+                }
+            }
+            .navigationDestination(for: PersistentIdentifier.self) { sessionID in
+                if let session = team.sessions.first(where: { $0.persistentModelID == sessionID }) {
+                    SessionView(
+                        teamName: team.name,
+                        kind: session.kind,
+                        matchDate: session.date,
+                        shotCount: session.shots.count
+                    )
+                } else {
+                    ContentUnavailableView(
+                        "Session Not Found",
+                        systemImage: "exclamationmark.triangle",
+                        description: Text("This session may have been removed.")
+                    )
                 }
             }
         }
-        .navigationTitle(team.name)
         .sheet(item: $editingPlayer) { stored in
             let originalNumber = stored.number
             PlayerEditorView(
@@ -126,6 +190,63 @@ struct RosterEditorView: View {
                 errorMessage: addUnknownErrorMessage,
                 onAdd: { number in addUnknown(number: number) }
             )
+        }
+        // Same reasoning as the `editingPlayer` sheet above: the alert is
+        // chained onto the presented `NewSessionSheet`, not onto this
+        // view, so a rejected start leaves the sheet's own kind/date
+        // picks on screen instead of SwiftUI dismissing the sheet to show
+        // the alert.
+        .sheet(isPresented: $isPresentingNewSessionSheet) {
+            NewSessionSheet(kind: $newSessionKind, matchDate: $newSessionMatchDate, onStart: startSession)
+                .alert(
+                    "Couldn't Start Session",
+                    isPresented: Binding(
+                        get: { newSessionErrorMessage != nil },
+                        set: { isPresented in if !isPresented { newSessionErrorMessage = nil } }
+                    )
+                ) {
+                    Button("OK", role: .cancel) { newSessionErrorMessage = nil }
+                } message: {
+                    Text(newSessionErrorMessage ?? "")
+                }
+        }
+    }
+
+    /// The session list drawn below the roster grid (T3.2 item 4):
+    /// newest match date first, each row a plain `SessionRowView` pushed
+    /// via `path` rather than a `NavigationLink`, so the same push target
+    /// is reachable from `startSession` too.
+    private var sessionsSection: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Sessions")
+                .font(.headline)
+                .padding(.horizontal)
+
+            if sortedSessions.isEmpty {
+                Text("No sessions yet. Start one above.")
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal)
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(sortedSessions, id: \.persistentModelID) { session in
+                        Button {
+                            path.append(session.persistentModelID)
+                        } label: {
+                            SessionRowView(
+                                kind: session.kind,
+                                matchDate: session.date,
+                                shotCount: session.shots.count
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.horizontal)
+
+                        if session.persistentModelID != sortedSessions.last?.persistentModelID {
+                            Divider().padding(.horizontal)
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -186,6 +307,34 @@ struct RosterEditorView: View {
             editingPlayer = nil
         } catch {
             actionError = RosterActionError(error)
+        }
+    }
+
+    /// "Start": builds `Session(kind:matchDate:today:calendar:)` FIRST —
+    /// the only place the "no future match date" rule is enforced — and
+    /// only inserts a `StoredSession` if that succeeds. `.current` and
+    /// `.now` are read here, at the SwiftUI edge, exactly once; the
+    /// domain itself never reads ambient system state (Session.swift).
+    /// On success the new session is pushed onto `path` immediately, so
+    /// starting a session opens it the same way tapping an existing one
+    /// does.
+    private func startSession() {
+        do {
+            let session = try Session(
+                kind: newSessionKind,
+                matchDate: newSessionMatchDate,
+                today: .now,
+                calendar: .current
+            )
+            let stored = StoredSession(date: session.matchDate, kindCode: session.kind.rawValue, rivalTeam: team)
+            team.sessions.append(stored)
+            modelContext.insert(stored)
+            try modelContext.save()
+            isPresentingNewSessionSheet = false
+            newSessionErrorMessage = nil
+            path.append(stored.persistentModelID)
+        } catch {
+            newSessionErrorMessage = sessionErrorMessage(error)
         }
     }
 }

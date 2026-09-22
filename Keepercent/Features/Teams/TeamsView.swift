@@ -76,7 +76,11 @@ struct TeamsView: View {
             }
         } detail: {
             if let selectedTeam {
+                // One identity per team: without it SwiftUI reuses the same
+                // editor when the selection changes, and its navigation path
+                // would still hold the previous team's open session.
                 RosterEditorView(team: selectedTeam)
+                    .id(selectedTeam.persistentModelID)
             } else {
                 ContentUnavailableView(
                     "Select a Team",
