@@ -5,9 +5,12 @@
 // domain structs it receives and reports what happened through a closure.
 // No SwiftData, no @Query, no ModelContext, no persistence import.
 //
-// Selection highlighting ("currently selected origin") is explicitly NOT
-// this view's job — that is T2.3, same as GoalView. CourtView stays
-// stateless.
+// Selection highlighting ("currently selected origin") is drawn from the
+// `selection` property (T2.3), passed IN by the caller rather than held in
+// local `@State` — same reasoning as `GoalView`'s own header comment: an
+// internal `@State` would make it impossible for a caller (T4.2's linked
+// court-goal view) to highlight an origin that was never tapped in THIS
+// view. CourtView still has no `@State` of its own.
 //
 // Layout is simpler than GoalView's. The goal needed two INDEPENDENT axis
 // scales because its normalized box mixed an out band with two different
@@ -35,10 +38,28 @@ import KeepercentDomain
 
 struct CourtView: View {
     let geometry: CourtGeometry
+    /// The origin this view should currently highlight, passed in by the
+    /// caller — see this file's header comment for why it is not local
+    /// `@State`. `nil` draws no highlight.
+    let selection: ShotOrigin?
     let onOriginTapped: (ShotOrigin) -> Void
 
-    init(geometry: CourtGeometry = .standard, onOriginTapped: @escaping (ShotOrigin) -> Void) {
+    /// Shared "this is the current selection" tint with `GoalView`'s own
+    /// identical constant. No shared palette file exists (CLAUDE.md), so
+    /// this literal is kept in sync with `GoalView.swift` by convention,
+    /// not by import. Blue reads as selection across iOS and does not
+    /// collide with this file's own surface green or 7 m mark orange.
+    /// 0.45 matches `drawSevenMeterMark`'s own opacity, already proven not
+    /// to swallow the dashed zone grid or the 9 m line underneath it.
+    private let selectionHighlightColor = Color(.systemBlue).opacity(0.45)
+
+    init(
+        geometry: CourtGeometry = .standard,
+        selection: ShotOrigin? = nil,
+        onOriginTapped: @escaping (ShotOrigin) -> Void
+    ) {
         self.geometry = geometry
+        self.selection = selection
         self.onOriginTapped = onOriginTapped
     }
 
@@ -115,6 +136,7 @@ struct CourtView: View {
         drawSixMeterLine(in: &context, size: size)
         drawZoneGrid(in: &context, size: size)
         drawSevenMeterMark(in: &context, size: size)
+        drawSelectionHighlight(in: &context, size: size)
         drawOutline(in: &context, size: size)
         drawGoalMouth(in: &context, size: size)
     }
@@ -204,6 +226,34 @@ struct CourtView: View {
         context.fill(Path(rect), with: .color(Color(.systemOrange).opacity(0.45)))
     }
 
+    /// Fills the region the currently `selection`ed origin corresponds to.
+    /// Drawn after the zone grid, 6 m/9 m lines and 7 m mark, so the
+    /// translucent highlight sits on top of them (still legible through it,
+    /// same opacity as `drawSevenMeterMark`'s own fill) — but before
+    /// `drawOutline`/`drawGoalMouth`, so those crisp boundary strokes stay
+    /// on top of the highlight rather than getting tinted themselves.
+    ///
+    /// `.sevenMeters` reuses `geometry.sevenMeterMarkRegion` — the exact
+    /// rect `drawSevenMeterMark` already fills and `origin(at:)` already
+    /// hit-tests against. `.zone(z)` highlights `geometry.shape(for: z)`,
+    /// the closed polygon `zone(at:)` classifies as that zone; `shape(for:)`
+    /// does not repeat its first point, so `closeSubpath()` is what closes
+    /// it here, connecting the last point back to the first as its own
+    /// header comment documents.
+    private func drawSelectionHighlight(in context: inout GraphicsContext, size: CGSize) {
+        guard let selection else { return }
+
+        switch selection {
+        case .sevenMeters:
+            let rect = pixelRect(for: geometry.sevenMeterMarkRegion, in: size)
+            context.fill(Path(rect), with: .color(selectionHighlightColor))
+        case .zone(let zone):
+            var shape = path(for: geometry.shape(for: zone), in: size)
+            shape.closeSubpath()
+            context.fill(shape, with: .color(selectionHighlightColor))
+        }
+    }
+
     // MARK: - Hit-testing
 
     /// The single place a tap's view-pixel location becomes a normalized
@@ -240,4 +290,11 @@ struct CourtView: View {
     }
     .padding()
     .preferredColorScheme(.dark)
+}
+
+#Preview("CourtView - Selected") {
+    CourtView(selection: .zone(CourtZone(sector: .leftWing, depth: .near))) { origin in
+        print("Tapped: \(origin.code)")
+    }
+    .padding()
 }

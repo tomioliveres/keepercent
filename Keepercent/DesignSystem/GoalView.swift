@@ -4,18 +4,33 @@
 // draws domain structs it receives and reports what happened through a
 // closure. No SwiftData, no @Query, no ModelContext, no persistence import.
 //
-// Selection highlighting ("currently selected target") is explicitly NOT
-// this view's job — that is T2.3. GoalView stays stateless.
+// Selection highlighting ("currently selected target") is drawn from the
+// `selection` property (T2.3), passed IN by the caller rather than held in
+// local `@State`. This is deliberate, not an oversight: an internal
+// `@State` would make it impossible for a caller (T4.2's linked court-goal
+// view) to highlight a target that was never tapped in THIS view. GoalView
+// still has no `@State` of its own and stays a plain, side-effect-free
+// `struct` — only WHERE the selection lives changed, not the
+// container/presentational split.
 
 import SwiftUI
 import KeepercentDomain
 
 struct GoalView: View {
     let geometry: GoalGeometry
+    /// The target this view should currently highlight, passed in by the
+    /// caller — see this file's header comment for why it is not local
+    /// `@State`. `nil` draws no highlight.
+    let selection: GoalTarget?
     let onTargetTapped: (GoalTarget) -> Void
 
-    init(geometry: GoalGeometry = .standard, onTargetTapped: @escaping (GoalTarget) -> Void) {
+    init(
+        geometry: GoalGeometry = .standard,
+        selection: GoalTarget? = nil,
+        onTargetTapped: @escaping (GoalTarget) -> Void
+    ) {
         self.geometry = geometry
+        self.selection = selection
         self.onTargetTapped = onTargetTapped
     }
 
@@ -51,6 +66,40 @@ struct GoalView: View {
     /// glance and has no bearing on hit-testing, which only ever consults
     /// `GoalGeometry`.
     private let netCellsAcross = 12
+
+    /// Shared "this is the current selection" tint with `CourtView`'s own
+    /// identical constant. No shared palette file exists (CLAUDE.md), so
+    /// this literal is kept in sync with `CourtView.swift` by convention,
+    /// not by import. Blue reads as selection across iOS and does not
+    /// collide with any other semantic color already used in this file
+    /// (the out band's grays, the frame's `.primary`). 0.45 matches the
+    /// opacity `CourtView.drawSevenMeterMark` already uses for its own
+    /// translucent fill over line art, a value already proven not to
+    /// swallow the dashed zone grid underneath it.
+    private let selectionHighlightColor = Color(.systemBlue).opacity(0.45)
+
+    /// The tint for each `MissDirection`'s share of the out band.
+    ///
+    /// `regions(for:within:)` tiles the WHOLE band, so leaving all three
+    /// on one shade would repaint a single flat field and hide the split
+    /// this task exists to make visible. But three DIFFERENT shades lie
+    /// the other way: `wideLeft` and `wideRight` are the same miss
+    /// mirrored, and giving them different weights implies a difference
+    /// that does not exist. They also never touch — the whole goal sits
+    /// between them — so position alone already tells them apart, with no
+    /// help from colour.
+    ///
+    /// So colour carries the one distinction position cannot: wide (the
+    /// miss a keeper dives for) against high (the one that goes over).
+    /// The two wide areas share a shade, `.over` takes the other, and the
+    /// only two areas that actually share an edge — a wide one and
+    /// `.over`, at each top corner — are the two that differ.
+    private func outBandTint(for direction: MissDirection) -> Color {
+        switch direction {
+        case .wideLeft, .wideRight: return Color(.systemGray4)
+        case .over: return Color(.systemGray2)
+        }
+    }
 
     var body: some View {
         Canvas { context, size in
@@ -153,6 +202,31 @@ struct GoalView: View {
         )
     }
 
+    /// The view's own drawn canvas — pixel `(0, 0)` to `(size.width,
+    /// size.height)` — expressed as a `GoalRegion` in the same normalized
+    /// mouth frame `GoalGeometry.regions(for:within:)` reads from. This is
+    /// the exact inverse of `pixelRect`'s forward mapping (through
+    /// `layout(in:)`, the one shared conversion this file already commits
+    /// to — see `mouthPoint(fromViewLocation:canvasSize:)`'s own header
+    /// comment), so it is not a second, independently-derived coordinate
+    /// conversion: it is `layout(in:)` read backwards.
+    ///
+    /// `drawOutBand` passes this as `bounds` so the tiled miss regions it
+    /// draws reach exactly as far as the canvas itself does — no further
+    /// (a wasted rect nothing on screen shows) and no less (the gap this
+    /// task's defect was about).
+    private func normalizedBounds(for size: CGSize) -> GoalRegion {
+        let layout = layout(in: size)
+        guard layout.scaleX > 0, layout.scaleY > 0 else {
+            return GoalRegion(x: 0, y: 0, width: 0, height: 0)
+        }
+        let minX = -layout.leftMargin / layout.scaleX
+        let minY = -layout.topMargin / layout.scaleY
+        let maxX = (Double(size.width) - layout.leftMargin) / layout.scaleX
+        let maxY = (Double(size.height) - layout.topMargin) / layout.scaleY
+        return GoalRegion(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+    }
+
     // MARK: - Drawing
 
     private func draw(in context: inout GraphicsContext, size: CGSize) {
@@ -161,13 +235,46 @@ struct GoalView: View {
         drawOutBand(in: &context, size: size)
         drawMouth(in: &context, mouthRect: mouthRect, canvasSize: size)
         drawFrame(in: &context, size: size)
+        drawSelectionHighlight(in: &context, size: size)
     }
 
     /// The out band: a visible margin beyond the frame band, distinct from
     /// both the mouth and the frame, because it is out of play.
+    ///
+    /// Split into three tinted areas, one per `MissDirection` (T2.3) — a
+    /// selected miss needs somewhere to visibly land, and a single flat
+    /// fill gave it nowhere.
+    ///
+    /// An earlier version tinted only `geometry.region(for: direction)`
+    /// verbatim — a single rect that was, by that function's own
+    /// documented contract, a finite SUBSET of the true, unbounded miss
+    /// area (see `GoalPoint`'s header comment: `target(at:)` never
+    /// clamps). That was the same "what you see is what you tap" defect
+    /// `drawFrame`'s header comment documents fixing once already, just
+    /// for the out band instead of the frame: most of the drawn margin sat
+    /// past that small rect, reading as undifferentiated gray while still
+    /// hit-testing as that same miss direction. `regions(for:within:)`
+    /// replaces it with the exact tiling of `bounds` — this view's own
+    /// canvas, via `normalizedBounds(for:)` — so every pixel that
+    /// `target(at:)` would resolve to a given `MissDirection` carries that
+    /// direction's own tint, all the way to the canvas edge.
+    ///
+    /// The base `.systemGray5` fill underneath still matters: it is the
+    /// fallback for whatever `bounds` does NOT reach (a degenerate/tiny
+    /// canvas can make `regions(for:within:)` return fewer rects, or none
+    /// — see that function's doc comment), so no pixel is ever left
+    /// undrawn.
     private func drawOutBand(in context: inout GraphicsContext, size: CGSize) {
         let fullRect = CGRect(origin: .zero, size: size)
         context.fill(Path(fullRect), with: .color(Color(.systemGray5)))
+
+        let bounds = normalizedBounds(for: size)
+        for direction in MissDirection.allCases {
+            for region in geometry.regions(for: direction, within: bounds) {
+                let rect = pixelRect(for: region, in: size)
+                context.fill(Path(rect), with: .color(outBandTint(for: direction)))
+            }
+        }
     }
 
     /// The mouth: the 3 m x 2 m goal opening, with a net texture and the 3x3
@@ -286,6 +393,29 @@ struct GoalView: View {
         context.stroke(groundLine, with: .color(.secondary), lineWidth: thickness)
     }
 
+    /// Fills the region(s) the currently `selection`ed target corresponds
+    /// to. Drawn last, on top of the mouth grid, the frame and the
+    /// out-band accents, so the highlight stays visible no matter which of
+    /// the three `GoalTarget` cases is selected. `geometry.regions(for:
+    /// within:)` is the one call that already covers all three (`.inside`,
+    /// `.post`, `.out`), so this needs no `switch` of its own.
+    ///
+    /// A selected `.out` target can return more than one rect — the same
+    /// `bounds`-clipped tiling `drawOutBand` fills — so every rect that
+    /// resolves to that `MissDirection` gets highlighted, not just
+    /// whichever one happens to sit nearest the frame. That keeps the
+    /// highlight consistent with the same "what you see is what you tap"
+    /// rule the rest of this file follows: the WHOLE area a tap there
+    /// would record is the area that lights up.
+    private func drawSelectionHighlight(in context: inout GraphicsContext, size: CGSize) {
+        guard let selection else { return }
+        let bounds = normalizedBounds(for: size)
+        for region in geometry.regions(for: selection, within: bounds) {
+            let rect = pixelRect(for: region, in: size)
+            context.fill(Path(rect), with: .color(selectionHighlightColor))
+        }
+    }
+
     // MARK: - Hit-testing
 
     /// The single place a tap's view-pixel location becomes a domain
@@ -329,4 +459,11 @@ struct GoalView: View {
     }
     .padding()
     .preferredColorScheme(.dark)
+}
+
+#Preview("GoalView - Selected") {
+    GoalView(selection: .out(.wideLeft)) { target in
+        print("Tapped: \(target.code)")
+    }
+    .padding()
 }
