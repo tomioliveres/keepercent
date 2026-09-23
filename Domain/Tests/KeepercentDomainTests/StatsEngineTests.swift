@@ -298,6 +298,21 @@ struct SaveRateTests {
         #expect(byZone.count == 1)
         #expect(byZone[zone] == Tally(successes: 1, attempts: 2))
     }
+
+    @Test("saveRateByGoalZone keeps each zone's tally apart")
+    func byGoalZoneKeepsZonesApart() {
+        let topLeft = GoalZone(row: .top, column: .left)
+        let bottomRight = GoalZone(row: .bottom, column: .right)
+        let engine = StatsEngine(shots: [
+            shot(target: .inside(topLeft), outcome: .saved),
+            shot(target: .inside(topLeft), outcome: .saved),
+            shot(target: .inside(bottomRight), outcome: .goal)
+        ])
+        let byZone = engine.saveRateByGoalZone
+        #expect(byZone.count == 2)
+        #expect(byZone[topLeft] == Tally(successes: 2, attempts: 2))
+        #expect(byZone[bottomRight] == Tally(successes: 0, attempts: 1))
+    }
 }
 
 @Suite("StatsEngine.heightDistribution and lineDistribution")
@@ -329,6 +344,15 @@ struct DistributionTests {
         #expect(lines[.crossShot] == 1)
         #expect(lines[.nearPost] == 0)
         #expect(lines[.neutral] == 0)
+    }
+
+    @Test("a 7 m throw reads as neutral, and fieldShots keeps it out")
+    func sevenMeterThrowReadsAsNeutral() {
+        let engine = StatsEngine(shots: [
+            shot(isSevenMeters: true, target: .inside(GoalZone(row: .top, column: .left)), outcome: .goal)
+        ])
+        #expect(engine.lineDistribution[.neutral] == 1)
+        #expect(engine.fieldShots.lineDistribution[.neutral] == 0)
     }
 }
 
