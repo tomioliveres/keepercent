@@ -444,6 +444,13 @@
     <div class="why">
       <b>Por qué guardar el punto y no la zona.</b> Si mañana cambiamos cómo se dividen los sectores, los datos viejos siguen sirviendo: se recalculan. Si guardáramos solo la zona, cada cambio de criterio tiraría a la basura todos los partidos ya cargados.
     </div>
+
+    <h3>La línea de 9 m no se dibuja: se camina</h3>
+    <p>Dibujar la línea de 9 m parece un problema aparte de clasificar un toque como cercano o lejano, pero es <strong>la misma cuenta</strong>. La línea se genera muestreando, punto por punto y cada un grado aproximadamente, la misma función <code>distanceToGoalMouth</code> que <code>depth(at:)</code> usa para decidir si un toque cayó cerca o lejos — dos cuartos de círculo sobre los postes unidos por un tramo recto, nunca un semicírculo. Por construcción, la línea dibujada <strong>es</strong> el borde que se está clasificando, y el test lo comprueba tal cual: cada punto muestreado está exactamente a 9 m del arco.</p>
+    <p>El muestreo parejo, sin embargo, dejó un defecto que solo aparece al correr la app: las tres curvas que arman la línea son <strong>piezas distintas</strong>, unidas en tres codos —la esquina de la cancha, el punto donde la línea de 9 m sale de la cancha y el empalme entre el tramo recto y el arco del poste—, y ningún codo cae exacto sobre un múltiplo de un grado. Muestrear más fino no lo arregla: el error de un codo no depende del tamaño del paso, así que reducirlo a la mitad no reduce el hueco a la mitad. Los tres codos ahora entran como <strong>vértices exactos</strong> del polígono, no como muestras; dentro de cada tramo, que sí es una curva continua, el muestreo parejo alcanza. Lo que queda es un error irreducible entre la cuerda y el arco real —medido en <strong>0,36 mm</strong>—, que el test perdona explícitamente en la curva de 9 m y en ningún otro lugar.</p>
+    <div class="why">
+      <b>La lección general.</b> Una función definida por partes no se aproxima mejor solo afinando el muestreo: el error se concentra en los codos, y ahí es constante sin importar cuántos puntos más se agreguen. Un codo se resuelve poniéndolo como vértice, no muestreándolo con más resolución.
+    </div>
   </section>
 
   <section>
@@ -515,6 +522,18 @@
     <p>Un hallazgo técnico de hoy, verificado contra la documentación de Apple antes de darlo por bueno: en SwiftData, una regla de borrado solo llega a las filas que referencian un registro cuando el <code>@Relationship</code> declara un <strong>inverso</strong> explícito. Sin ese inverso, borrar el equipo rival no pone en <code>nil</code> la referencia del jugador —SwiftData no sabe que la relación también corre en el otro sentido, y el nullify simplemente no ocurre.</p>
     <div class="why">
       <b>Por qué se verificó antes de aceptarlo.</b> Un sub-agente había afirmado que el nullify funcionaba sin declarar el inverso. No era cierto, y quedó confirmado contra la documentación de Apple, no contra la palabra de quien lo escribió. Es la misma regla que deja la sección 07: un hallazgo se verifica contra la fuente, no se obedece.
+    </div>
+
+    <h3>Escribir sin dejar una fila a mitad de camino</h3>
+    <p>Toda escritura desde una vista sigue la misma forma, sea agregar un jugador, editarlo, borrarlo o iniciar una sesión: primero se reconstruye el valor del dominio a partir de las filas guardadas, y se corre la operación del dominio —que puede lanzar— <strong>contra ese valor completo</strong>, nunca contra la fila sola. Si lanza, SwiftData no se toca. Si no lanza, se aplica exactamente <strong>una fila</strong>, la que esa acción ya sabe que cambió; nunca se compara el antes y el después de todo el plantel ni se reemplaza la relación entera.</p>
+<pre><span class="c-key">let</span> roster = <span class="c-key">try</span> <span class="c-type">Roster</span>(players: team.players.map(\.domainPlayer))
+<span class="c-key">try</span> roster.remove(number: n, recordedShotCount: stored.shotsTaken.count)  <span class="c-com">// valida primero</span>
+context.delete(stored)                                                 <span class="c-com">// una sola fila</span>
+<span class="c-key">do</span> { <span class="c-key">try</span> context.save() }
+<span class="c-key">catch</span> { context.rollback(); message = error.localizedDescription } <span class="c-com">// no deja la fila a mitad de camino</span></pre>
+    <p>El <code>rollback()</code> importa tanto como la validación: sin él, un <code>save()</code> que falla —el disco lleno, por ejemplo, algo que pasó de verdad en esta máquina— deja la fila agregada en memoria mostrada en pantalla junto al mensaje que dice que no se guardó.</p>
+    <div class="why">
+      <b>Por qué validar contra el todo y escribir solo la parte.</b> Validar contra el objeto completo es lo único que puede ver una regla como “no se puede borrar un jugador con tiros registrados”, que depende de más que la fila que cambia. Escribir solo esa fila es lo que evita que una acción sobre un jugador le mueva el pelo a los demás —borrar y reinsertar el plantel entero habría reescrito las relaciones de <code>shotsTaken</code>/<code>shotsFaced</code> de todos los demás jugadores, el mismo resultado de tiros huérfanos que esta regla existe para evitar.
     </div>
   </section>
 
@@ -606,10 +625,32 @@ DesignSystem/      <span class="c-com">// CourtView, GoalView, HeatmapCell, colo
 
     <h3>Una rama secuencial, no sesiones en paralelo</h3>
     <p>La hackathon exige que el autor pueda explicar cada línea de código. Dos sesiones de IA trabajando en paralelo generan código más rápido de lo que una persona puede leer, así que el cuello de botella nunca es la máquina: es la atención del autor. El trabajo pesado sí se delega a sub-agentes, pero el autor revisa un solo hilo y un solo diff a la vez, nunca varios cambios simultáneos que después haya que reconciliar sin haberlos leído.</p>
+
+    <h3>Por qué una vista se verifica corriéndola, no solo compilándola</h3>
+    <p>Cada una de las tareas de pantalla hechas hasta ahora —el arco, la cancha, la selección, el editor de plantel, la sesión, la carga del tiro— encontró al menos un defecto que ni un build en verde ni la batería completa de tests en verde habían visto: una proporción calculada en unidades que no eran cuadradas, una grilla dibujada del mismo color que el fondo, un palo cuyo trazo pintado no coincidía con su banda táctil, un área de afuera dibujada más chica que lo que realmente registraba, un mensaje de error que tiraba a la basura ediciones sin guardar al cerrar la hoja debajo suyo, una vista de iPad que conservaba la sesión del equipo anterior al cambiar de selección, y en la carga del tiro tres más: las tres columnas del iPad que nunca aparecían, un contador que seguía sumando un tiro ya deshecho y una tiradora seleccionada que se confundía con una arquera.</p>
+    <p>Ninguno de esos defectos es un hueco del dominio —el dominio no tuvo ninguno de estos bugs, porque es la única capa donde TDD estricto realmente llega. Es un hueco de lo que un build en verde prueba: el compilador verifica que los tipos encastren, no que un color se vea o que un toque caiga exactamente donde está la tinta. Por eso ninguna tarea de vista se da por terminada solo porque compiló: se cierra después de correrla a mano en el simulador, tocarla y mirarla.</p>
   </section>
 
   <section>
-    <h2><span class="num">08</span>Glosario: del código al handball</h2>
+    <h2><span class="num">08</span>La pantalla que carga un tiro</h2>
+    <p>Tres decisiones de los días 2 y 3, todas sobre la misma tensión: la pantalla tiene que ser rápida en el banco y no puede mentirle a los datos.</p>
+
+    <h3>Dibujo y toque: la misma cuenta, no dos aproximaciones</h3>
+    <p>El palo del arco se dibujaba con un trazo centrado sobre el borde de la boca, así que la mitad de ese trazo caía <em>adentro</em> del arco. Tocar el palo pintado de negro registraba, la mitad de las veces, un tiro adentro. Y en la cancha, el área de «afuera» se pintaba como un rectángulo documentado como un <em>subconjunto</em> garantizado del área real —un contrato correcto, pero con la forma equivocada—, así que quedaba un margen gris que igual registraba como afuera al tocarlo.</p>
+    <p>Los dos bugs son el mismo bug: el dibujo y el toque habían arrancado leyendo la misma función y con el tiempo se habían separado en dos aproximaciones distintas. La corrección en los dos casos fue la misma —pintar exactamente la región que el toque resuelve, ni un pixel más ni uno menos (<code>GoalGeometry.region(for:)</code>, <code>CourtGeometry.regions(for:within:)</code>)— para que dejen de poder desalinearse.</p>
+    <div class="why">
+      <b>La regla general.</b> Cuando el dibujo y el toque leen la misma función, no se pueden desincronizar porque no son dos cosas sincronizadas: son la misma cuenta leída dos veces. Dos aproximaciones que arrancan iguales, en cambio, se separan tarde o temprano — nadie las edita a la vez.
+    </div>
+
+    <h3>La fecha del partido, no la fecha de carga</h3>
+    <p>Una sesión guarda la <strong>fecha del partido</strong>, no la fecha en que se cargó. En vivo las dos coinciden, pero un scouting con video pasa días después del partido jugado. El dominio rechaza una fecha de partido posterior a hoy, comparando por día de calendario con un calendario inyectado en vez de comparar los instantes crudos —lo que evita que un partido jugado a las 23:30 UTC y cargado a la medianoche siguiente en Europa se rechace por una diferencia de huso horario que no es un día distinto para nadie que juega ahí.</p>
+
+    <h3>Deshacer de un solo nivel</h3>
+    <p>Después de cargar un tiro, la tarjeta repite exactamente lo que se guardó, junto a un botón grande de Deshacer y una vibración. Al deshacer, la tarjeta pasa a decir «Tiro eliminado», sin ningún botón encima. La ausencia del botón es la decisión: si quedara un botón de Deshacer sobre el Deshacer, un segundo toque —el reflejo de quien ya tocó una vez sin mirar— borraría un tiro correcto que nada tiene que ver con el que se acaba de deshacer.</p>
+  </section>
+
+  <section>
+    <h2><span class="num">09</span>Glosario: del código al handball</h2>
     <p>El código está en inglés, que es la convención del ecosistema de Apple y lo que espera el jurado. Acá está la traducción de cada término.</p>
     <div class="tablewrap">
       <table>
@@ -640,13 +681,19 @@ DesignSystem/      <span class="c-com">// CourtView, GoalView, HeatmapCell, colo
           <tr><td class="term">CaseIterable</td><td>Capacidad de listar todos los casos posibles de un tipo</td></tr>
           <tr><td class="term">enum</td><td>Lista cerrada de posibilidades</td></tr>
           <tr><td class="term">struct</td><td>Estructura que agrupa datos relacionados</td></tr>
+          <tr><td class="term">Roster</td><td>El plantel de un equipo rival: jugadores por número de camiseta</td></tr>
+          <tr><td class="term">RosterError</td><td>Por qué falló una operación sobre el plantel (número repetido, jugador con tiros)</td></tr>
+          <tr><td class="term">matchDate</td><td>Fecha en que se jugó el partido, no la fecha en que se cargó</td></tr>
+          <tr><td class="term">facingGoalkeeper</td><td>El arquero rival activo cuando se registró un tiro propio</td></tr>
+          <tr><td class="term">ShotEntryError</td><td>Por qué se rechazó un tiro antes de guardarlo (falta tirador, arquero, origen o resultado)</td></tr>
+          <tr><td class="term">ShotSummary</td><td>El texto de la tarjeta que confirma un tiro recién cargado</td></tr>
         </tbody>
       </table>
     </div>
   </section>
 
   <section>
-    <h2><span class="num">09</span>Decisiones tomadas, y las que descartamos</h2>
+    <h2><span class="num">10</span>Decisiones tomadas, y las que descartamos</h2>
     <div class="tablewrap">
       <table>
         <thead><tr><th>Decisión</th><th>Por qué</th><th>Qué se descartó</th></tr></thead>
@@ -741,13 +788,48 @@ DesignSystem/      <span class="c-com">// CourtView, GoalView, HeatmapCell, colo
             <td>Cada línea tiene que poder explicarla el autor</td>
             <td>Sesiones en paralelo sobre worktrees separados</td>
           </tr>
+          <tr>
+            <td>El palo se pinta exactamente como se toca (relleno, no trazo centrado)</td>
+            <td>Un trazo centrado sobre el borde deja la mitad adentro del arco, y esa mitad se tocaba como gol</td>
+            <td>Agrandar solo la zona táctil sin tocar el dibujo</td>
+          </tr>
+          <tr>
+            <td>La línea de 9 m se genera caminando la misma función que clasifica la profundidad</td>
+            <td>Así la línea dibujada es, por construcción, el borde que se está clasificando</td>
+            <td>Un semicírculo geométrico simple, más fácil de dibujar pero distinto de la clasificación real</td>
+          </tr>
+          <tr>
+            <td>Borrar un jugador con tiros registrados queda bloqueado, no permitido ni soft-deleted</td>
+            <td>El inverso de SwiftData deja los tiros sin dueño y su ficha desaparece de las estadísticas: una respuesta equivocada en silencio</td>
+            <td>Permitir el borrado y dejar <code>shooter</code> en <code>nil</code></td>
+          </tr>
+          <tr>
+            <td>La sesión guarda la fecha del partido, no la fecha de carga</td>
+            <td>El scouting con video pasa días después del partido jugado</td>
+            <td>Usar siempre la fecha de hoy</td>
+          </tr>
+          <tr>
+            <td>El toggle de lado de ataque es pegajoso, no se resetea tras cada tiro</td>
+            <td>Algunos partidos se scoutean desde un solo lado de principio a fin</td>
+            <td>Volver al lado por defecto después de cada carga</td>
+          </tr>
+          <tr>
+            <td>iPad en horizontal: tres columnas, no dos</td>
+            <td>El arco sobre la cancha apilados quedan acotados por la altura —unos 550 pt de ancho en un iPad Pro 11", con ~660 pt libres que solo columnas laterales aprovechan</td>
+            <td>Dos columnas, con la grilla de tiradores y el panel apilados y scrolleables</td>
+          </tr>
+          <tr>
+            <td>Deshacer de un solo nivel, sin botón después de deshacer</td>
+            <td>Un doble toque no puede borrar un segundo tiro correcto que nada tiene que ver con el deshecho</td>
+            <td>Deshacer múltiple con historial</td>
+          </tr>
         </tbody>
       </table>
     </div>
   </section>
 
   <section>
-    <h2><span class="num">10</span>El avance, día por día</h2>
+    <h2><span class="num">11</span>El avance, día por día</h2>
 
     <div class="day">
       <div class="when">Sáb 19/9</div>
@@ -768,16 +850,16 @@ DesignSystem/      <span class="c-com">// CourtView, GoalView, HeatmapCell, colo
     <div class="day">
       <div class="when">Lun 21/9</div>
       <div class="what">
-        <b>Día 2 · Dibujo y toques <span class="pill now">sigue</span></b>
-        El arco y la cancha dibujados en pantalla, con zonas táctiles precisas incluso en los segmentos finos del marco.
+        <b>Día 2 · Dibujo y toques <span class="pill done">hecho</span></b>
+        El arco y la cancha dibujados en pantalla sobre una geometría de dominio testeada antes de trazar una sola línea, con zonas táctiles precisas incluso en los segmentos finos del marco. La regla que atravesó las tres tareas: lo que se pinta y lo que se toca resuelven contra la misma función, nunca contra dos aproximaciones que arrancan iguales y se desalinean — encontrado dos veces corriendo la app a mano, no por un test. Selección con resaltado en las dos vistas, con un polígono exacto para cada una de las nueve zonas del arco y las diez de la cancha. <strong>182 tests en 55 suites, todo en verde.</strong>
       </div>
     </div>
 
     <div class="day">
       <div class="when">Mar 22/9</div>
       <div class="what">
-        <b>Día 3 · Carga completa <span class="pill todo">pendiente</span></b>
-        Plantel rival, sesión, arquero rival activo, carga de punta a punta y deshacer.
+        <b>Día 3 · Carga completa <span class="pill now">sigue</span></b>
+        Editor de plantel del equipo rival, con el borrado bloqueado si el jugador ya tiene tiros registrados en vez de permitido o silenciado. Sesión en vivo o con video, guardando la fecha del partido —no la de carga— como regla del dominio. Carga de un tiro de punta a punta: ataque propio o rival, arquero rival activo, diseño de tres columnas en iPad y deshacer de un solo nivel — código escrito y corrido a mano en iPhone y iPad, revisión de código todavía en curso. <strong>238 tests en 69 suites, todo en verde.</strong> Queda pendiente el registro de tiros con edición y borrado.
       </div>
     </div>
 
