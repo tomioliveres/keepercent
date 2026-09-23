@@ -67,7 +67,7 @@
 //
 // ## Shot log (T3.4)
 //
-// A toolbar button — `.navigationBarTrailing`, next to the title — opens
+// A toolbar button — `.primaryAction`, next to the title — opens
 // `ShotLogView` as a sheet. That is the least disruptive entry point: it
 // works identically in both `threeColumnLayout` and `verticalLayout`
 // without reshaping either one, unlike adding a fourth column (there is no
