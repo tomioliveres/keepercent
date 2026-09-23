@@ -1,0 +1,351 @@
+import Foundation
+import Testing
+@testable import KeepercentDomain
+
+private let referenceDate = Date(timeIntervalSince1970: 0)
+
+/// Builds a `Shot` with sensible defaults, so each test only states the
+/// fields it actually cares about. Matches the builder style in
+/// ShotTests.swift.
+private func shot(
+    attackingSide: AttackingSide = .rival,
+    shooter: Player? = nil,
+    facingGoalkeeper: Player? = nil,
+    originPoint: CourtPoint? = nil,
+    isSevenMeters: Bool = false,
+    target: GoalTarget = .inside(GoalZone(row: .middle, column: .center)),
+    outcome: ShotOutcome = .goal
+) -> Shot {
+    Shot(
+        attackingSide: attackingSide,
+        shooter: shooter,
+        facingGoalkeeper: facingGoalkeeper,
+        originPoint: originPoint,
+        isSevenMeters: isSevenMeters,
+        target: target,
+        outcome: outcome,
+        date: referenceDate
+    )
+}
+
+/// A point that lands in the left wing, near zone — matching the demo
+/// dataset's convention for stating an origin as metres from the goal.
+private func point(xMeters: Double, yMeters: Double, geometry: CourtGeometry = .standard) -> CourtPoint {
+    CourtPoint(x: xMeters / geometry.widthInMeters + 0.5, y: yMeters / geometry.depthInMeters)
+}
+
+private let leftWingNear = point(xMeters: -8, yMeters: 3)
+private let rightWingNear = point(xMeters: 8, yMeters: 3)
+private let leftWingNearZone = CourtZone(sector: .leftWing, depth: .near)
+private let rightWingNearZone = CourtZone(sector: .rightWing, depth: .near)
+
+@Suite("Tally")
+struct TallyTests {
+
+    @Test("rate is nil when nothing was attempted")
+    func rateIsNilAtZeroAttempts() {
+        let tally = Tally(successes: 0, attempts: 0)
+        #expect(tally.rate == nil)
+    }
+
+    @Test("rate is the exact fraction of successes over attempts")
+    func rateIsExactFraction() {
+        let tally = Tally(successes: 3, attempts: 4)
+        #expect(tally.rate == 0.75)
+    }
+
+    @Test("rate is zero, not nil, when every attempt failed")
+    func rateIsZeroNotNilWhenNothingSucceeded() {
+        let tally = Tally(successes: 0, attempts: 2)
+        #expect(tally.rate == 0)
+    }
+}
+
+@Suite("StatsEngine on an empty shot list")
+struct EmptyEngineTests {
+    private let engine = StatsEngine(shots: [])
+
+    @Test("every outcome is zero-filled")
+    func outcomeCountsAreZeroFilled() {
+        let counts = engine.outcomeCounts
+        for outcome in ShotOutcome.allCases {
+            #expect(counts[outcome] == 0)
+        }
+    }
+
+    @Test("effectiveness has no attempts and a nil rate")
+    func effectivenessHasNoAttempts() {
+        #expect(engine.effectiveness == Tally(successes: 0, attempts: 0))
+    }
+
+    @Test("save rate has no attempts and a nil rate")
+    func saveRateHasNoAttempts() {
+        #expect(engine.saveRate == Tally(successes: 0, attempts: 0))
+    }
+
+    @Test("per-origin, per-zone and per-pair breakdowns are empty")
+    func breakdownsAreEmpty() {
+        #expect(engine.effectivenessByOrigin.isEmpty)
+        #expect(engine.effectivenessByGoalZone.isEmpty)
+        #expect(engine.effectivenessByOriginTarget.isEmpty)
+        #expect(engine.saveRateByGoalZone.isEmpty)
+    }
+
+    @Test("height and line distributions are zero-filled, not empty")
+    func distributionsAreZeroFilled() {
+        let heights = engine.heightDistribution
+        for height in ShotHeight.allCases {
+            #expect(heights[height] == 0)
+        }
+        let lines = engine.lineDistribution
+        for line in ShotLine.allCases {
+            #expect(lines[line] == 0)
+        }
+    }
+}
+
+@Suite("StatsEngine filters")
+struct FilterTests {
+
+    @Test("shots(by:) keeps only rival shots from that shooter number")
+    func filtersByShooterNumber() {
+        let shooter7 = Player(number: 7)
+        let shooter9 = Player(number: 9)
+        let engine = StatsEngine(shots: [
+            shot(attackingSide: .rival, shooter: shooter7),
+            shot(attackingSide: .rival, shooter: shooter9),
+            shot(attackingSide: .own, facingGoalkeeper: shooter7)
+        ])
+        let filtered = engine.shots(by: 7)
+        #expect(filtered.shots.count == 1)
+        #expect(filtered.shots.first?.shooter == shooter7)
+    }
+
+    @Test("shots(facing:) keeps only own-side shots against that goalkeeper number")
+    func filtersByGoalkeeperNumber() {
+        let goalkeeper1 = Player(number: 1)
+        let goalkeeper2 = Player(number: 2)
+        let engine = StatsEngine(shots: [
+            shot(attackingSide: .own, facingGoalkeeper: goalkeeper1),
+            shot(attackingSide: .own, facingGoalkeeper: goalkeeper2),
+            shot(attackingSide: .rival, shooter: goalkeeper1)
+        ])
+        let filtered = engine.shots(facing: 1)
+        #expect(filtered.shots.count == 1)
+        #expect(filtered.shots.first?.facingGoalkeeper == goalkeeper1)
+    }
+
+    @Test("a shirt number shared by a rival shooter and an own goalkeeper never leaks across sides")
+    func sameNumberDoesNotLeakAcrossSides() {
+        let sharedNumber = 4
+        let engine = StatsEngine(shots: [
+            shot(attackingSide: .rival, shooter: Player(number: sharedNumber)),
+            shot(attackingSide: .own, facingGoalkeeper: Player(number: sharedNumber))
+        ])
+        #expect(engine.shots(by: sharedNumber).shots.count == 1)
+        #expect(engine.shots(facing: sharedNumber).shots.count == 1)
+        #expect(engine.shots(by: sharedNumber).shots.first?.attackingSide == .rival)
+        #expect(engine.shots(facing: sharedNumber).shots.first?.attackingSide == .own)
+    }
+
+    @Test("shots(from:) keeps only shots with that exact origin")
+    func filtersByOrigin() {
+        let engine = StatsEngine(shots: [
+            shot(originPoint: leftWingNear),
+            shot(originPoint: rightWingNear),
+            shot(isSevenMeters: true)
+        ])
+        let filtered = engine.shots(from: .zone(leftWingNearZone))
+        #expect(filtered.shots.count == 1)
+        #expect(filtered.shots.first?.origin == .zone(leftWingNearZone))
+    }
+
+    @Test("filters chain: shooter then origin narrows further")
+    func filtersChain() {
+        let shooter7 = Player(number: 7)
+        let engine = StatsEngine(shots: [
+            shot(attackingSide: .rival, shooter: shooter7, originPoint: leftWingNear),
+            shot(attackingSide: .rival, shooter: shooter7, originPoint: rightWingNear),
+            shot(attackingSide: .rival, shooter: Player(number: 9), originPoint: leftWingNear)
+        ])
+        let chained = engine.shots(by: 7).shots(from: .zone(leftWingNearZone))
+        #expect(chained.shots.count == 1)
+    }
+
+    @Test("rivalShots and ownShots separate the two attacking sides")
+    func rivalAndOwnAreSeparated() {
+        let engine = StatsEngine(shots: [
+            shot(attackingSide: .rival),
+            shot(attackingSide: .rival),
+            shot(attackingSide: .own)
+        ])
+        #expect(engine.rivalShots.shots.count == 2)
+        #expect(engine.ownShots.shots.count == 1)
+    }
+
+    @Test("fieldShots excludes 7 m throws, sevenMeterShots keeps only them")
+    func fieldAndSevenMeterAreSeparated() {
+        let engine = StatsEngine(shots: [
+            shot(originPoint: leftWingNear, isSevenMeters: false),
+            shot(isSevenMeters: true),
+            shot(isSevenMeters: true)
+        ])
+        #expect(engine.fieldShots.shots.count == 1)
+        #expect(engine.sevenMeterShots.shots.count == 2)
+    }
+}
+
+@Suite("StatsEngine.effectiveness")
+struct EffectivenessTests {
+
+    @Test("counts goals over every shot regardless of origin")
+    func countsAllShots() {
+        let engine = StatsEngine(shots: [
+            shot(outcome: .goal),
+            shot(originPoint: nil, isSevenMeters: false, outcome: .saved),
+            shot(outcome: .out)
+        ])
+        #expect(engine.effectiveness == Tally(successes: 1, attempts: 3))
+    }
+
+    @Test("a nil-origin shot counts toward overall effectiveness but not by-origin")
+    func nilOriginCountsOverallOnlyNotByOrigin() {
+        let engine = StatsEngine(shots: [
+            shot(originPoint: nil, isSevenMeters: false, outcome: .goal),
+            shot(originPoint: leftWingNear, outcome: .goal)
+        ])
+        #expect(engine.effectiveness == Tally(successes: 2, attempts: 2))
+        #expect(engine.effectivenessByOrigin.count == 1)
+        #expect(engine.effectivenessByOrigin[.zone(leftWingNearZone)] == Tally(successes: 1, attempts: 1))
+    }
+
+    @Test("effectivenessByOrigin only lists origins that actually have shots, keeping 7 m separate")
+    func byOriginOnlyListsPresentOrigins() {
+        let engine = StatsEngine(shots: [
+            shot(originPoint: leftWingNear, outcome: .goal),
+            shot(originPoint: leftWingNear, outcome: .saved),
+            shot(isSevenMeters: true, outcome: .goal)
+        ])
+        let byOrigin = engine.effectivenessByOrigin
+        #expect(byOrigin.count == 2)
+        #expect(byOrigin[.zone(leftWingNearZone)] == Tally(successes: 1, attempts: 2))
+        #expect(byOrigin[.sevenMeters] == Tally(successes: 1, attempts: 1))
+        #expect(byOrigin[.zone(rightWingNearZone)] == nil)
+    }
+
+    @Test("effectivenessByGoalZone only considers .inside targets")
+    func byGoalZoneOnlyConsidersInsideTargets() {
+        let zone = GoalZone(row: .top, column: .left)
+        let engine = StatsEngine(shots: [
+            shot(target: .inside(zone), outcome: .goal),
+            shot(target: .inside(zone), outcome: .saved),
+            shot(target: .post(.crossbarCenter), outcome: .post),
+            shot(target: .out(.wideLeft), outcome: .out)
+        ])
+        let byZone = engine.effectivenessByGoalZone
+        #expect(byZone.count == 1)
+        #expect(byZone[zone] == Tally(successes: 1, attempts: 2))
+    }
+
+    @Test("effectivenessByOriginTarget only pairs a non-nil origin with an .inside target")
+    func byOriginTargetOnlyPairsRecordedOriginsWithInsideTargets() {
+        let zone = GoalZone(row: .bottom, column: .right)
+        let engine = StatsEngine(shots: [
+            shot(originPoint: leftWingNear, target: .inside(zone), outcome: .goal),
+            shot(originPoint: nil, isSevenMeters: false, target: .inside(zone), outcome: .goal),
+            shot(originPoint: leftWingNear, target: .post(.crossbarCenter), outcome: .post)
+        ])
+        let byPair = engine.effectivenessByOriginTarget
+        let pair = OriginTargetPair(origin: .zone(leftWingNearZone), zone: zone)
+        #expect(byPair.count == 1)
+        #expect(byPair[pair] == Tally(successes: 1, attempts: 1))
+    }
+}
+
+@Suite("StatsEngine.saveRate")
+struct SaveRateTests {
+
+    @Test("ignores post and out outcomes")
+    func ignoresPostAndOut() {
+        let engine = StatsEngine(shots: [
+            shot(outcome: .goal),
+            shot(outcome: .saved),
+            shot(outcome: .post),
+            shot(outcome: .out)
+        ])
+        #expect(engine.saveRate == Tally(successes: 1, attempts: 2))
+    }
+
+    @Test("counts a saved shot even when its stored target looks inconsistent with a save")
+    func countsSavedShotRegardlessOfTargetShape() {
+        // The outcome alone decides "on target"; the target is not
+        // re-validated against it (docs/mvp.md decision recorded in the task).
+        let engine = StatsEngine(shots: [
+            shot(target: .out(.wideLeft), outcome: .saved)
+        ])
+        #expect(engine.saveRate == Tally(successes: 1, attempts: 1))
+    }
+
+    @Test("saveRateByGoalZone only considers .inside targets")
+    func byGoalZoneOnlyConsidersInsideTargets() {
+        let zone = GoalZone(row: .middle, column: .right)
+        let engine = StatsEngine(shots: [
+            shot(target: .inside(zone), outcome: .saved),
+            shot(target: .inside(zone), outcome: .goal),
+            shot(target: .post(.crossbarCenter), outcome: .post)
+        ])
+        let byZone = engine.saveRateByGoalZone
+        #expect(byZone.count == 1)
+        #expect(byZone[zone] == Tally(successes: 1, attempts: 2))
+    }
+}
+
+@Suite("StatsEngine.heightDistribution and lineDistribution")
+struct DistributionTests {
+
+    @Test("heightDistribution is zero-filled and skips targets with no height")
+    func heightDistributionIsZeroFilledAndSkipsMisses() {
+        let engine = StatsEngine(shots: [
+            shot(target: .inside(GoalZone(row: .top, column: .left)), outcome: .goal),
+            shot(target: .out(.over), outcome: .out)
+        ])
+        let heights = engine.heightDistribution
+        #expect(heights[.top] == 1)
+        #expect(heights[.middle] == 0)
+        #expect(heights[.bottom] == 0)
+    }
+
+    @Test("lineDistribution is zero-filled and skips shots with no line")
+    func lineDistributionIsZeroFilledAndSkipsNoOrigin() {
+        let engine = StatsEngine(shots: [
+            shot(
+                originPoint: leftWingNear,
+                target: .inside(GoalZone(row: .middle, column: .right)),
+                outcome: .goal
+            ),
+            shot(originPoint: nil, isSevenMeters: false, outcome: .goal)
+        ])
+        let lines = engine.lineDistribution
+        #expect(lines[.crossShot] == 1)
+        #expect(lines[.nearPost] == 0)
+        #expect(lines[.neutral] == 0)
+    }
+}
+
+@Suite("StatsEngine over DemoData.shots")
+struct DemoDataIntegrationTests {
+    private let engine = StatsEngine(shots: DemoData.shots)
+
+    @Test("outcome counts add up to the total number of shots")
+    func outcomeCountsSumToTotal() {
+        let total = engine.outcomeCounts.values.reduce(0, +)
+        #expect(total == DemoData.shots.count)
+    }
+
+    @Test("per-origin attempts plus nil-origin shots add up to the total number of shots")
+    func perOriginAttemptsPlusNilOriginSumToTotal() {
+        let byOriginAttempts = engine.effectivenessByOrigin.values.reduce(0) { $0 + $1.attempts }
+        let nilOriginCount = DemoData.shots.filter { $0.origin == nil }.count
+        #expect(byOriginAttempts + nilOriginCount == DemoData.shots.count)
+    }
+}
