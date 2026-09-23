@@ -373,3 +373,114 @@ struct DemoDataIntegrationTests {
         #expect(byOriginAttempts + nilOriginCount == DemoData.shots.count)
     }
 }
+
+@Suite("StatsEngine.saveRateByOrigin")
+struct SaveRateByOriginTests {
+
+    @Test("only origins with an on-target shot appear")
+    func onlyOnTargetOriginsAppear() {
+        let engine = StatsEngine(shots: [
+            // Missed entirely: has an origin, but never on target, so it
+            // must not show up as a 0% save rate.
+            shot(originPoint: leftWingNear, target: .out(.wideLeft), outcome: .out),
+            shot(originPoint: rightWingNear, outcome: .saved)
+        ])
+        let byOrigin = engine.saveRateByOrigin
+        #expect(byOrigin.count == 1)
+        #expect(byOrigin[.zone(leftWingNearZone)] == nil)
+        #expect(byOrigin[.zone(rightWingNearZone)] == Tally(successes: 1, attempts: 1))
+    }
+
+    @Test("keeps each origin's tally apart, including the 7 m mark")
+    func keepsOriginsApartIncludingSevenMeters() {
+        let engine = StatsEngine(shots: [
+            shot(originPoint: leftWingNear, outcome: .saved),
+            shot(originPoint: leftWingNear, outcome: .goal),
+            shot(isSevenMeters: true, outcome: .goal)
+        ])
+        let byOrigin = engine.saveRateByOrigin
+        #expect(byOrigin.count == 2)
+        #expect(byOrigin[.zone(leftWingNearZone)] == Tally(successes: 1, attempts: 2))
+        #expect(byOrigin[.sevenMeters] == Tally(successes: 0, attempts: 1))
+    }
+
+    @Test("a shot with no origin is skipped")
+    func skipsShotsWithNoOrigin() {
+        let engine = StatsEngine(shots: [
+            shot(originPoint: nil, isSevenMeters: false, outcome: .saved)
+        ])
+        #expect(engine.saveRateByOrigin.isEmpty)
+    }
+}
+
+@Suite("StatsReading and the reading-driven tally lookups")
+struct StatsReadingTests {
+
+    @Test("StatsReading has exactly the shooter and goalkeeper cases")
+    func hasBothCases() {
+        #expect(StatsReading.allCases == [.effectiveness, .saveRate])
+    }
+
+    @Test("goalZoneTallies routes to the matching per-zone breakdown")
+    func goalZoneTalliesRoutesByReading() {
+        let zone = GoalZone(row: .top, column: .left)
+        let engine = StatsEngine(shots: [
+            shot(target: .inside(zone), outcome: .goal),
+            shot(target: .inside(zone), outcome: .saved)
+        ])
+        #expect(engine.goalZoneTallies(.effectiveness) == engine.effectivenessByGoalZone)
+        #expect(engine.goalZoneTallies(.saveRate) == engine.saveRateByGoalZone)
+        #expect(engine.goalZoneTallies(.effectiveness)[zone] == Tally(successes: 1, attempts: 2))
+        #expect(engine.goalZoneTallies(.saveRate)[zone] == Tally(successes: 1, attempts: 2))
+    }
+
+    @Test("originTallies routes to the matching per-origin breakdown")
+    func originTalliesRoutesByReading() {
+        let engine = StatsEngine(shots: [
+            shot(originPoint: leftWingNear, outcome: .goal),
+            shot(originPoint: leftWingNear, outcome: .saved)
+        ])
+        #expect(engine.originTallies(.effectiveness) == engine.effectivenessByOrigin)
+        #expect(engine.originTallies(.saveRate) == engine.saveRateByOrigin)
+        let origin = ShotOrigin.zone(leftWingNearZone)
+        #expect(engine.originTallies(.effectiveness)[origin] == Tally(successes: 1, attempts: 2))
+        #expect(engine.originTallies(.saveRate)[origin] == Tally(successes: 1, attempts: 2))
+    }
+}
+
+@Suite("StatsEngine.goalEngine(forSelectedOrigin:)")
+struct GoalEngineForSelectedOriginTests {
+
+    @Test("nil selection reads field shots, excluding 7 m")
+    func nilSelectionReadsFieldShots() {
+        let engine = StatsEngine(shots: [
+            shot(originPoint: leftWingNear),
+            shot(isSevenMeters: true)
+        ])
+        let goalEngine = engine.goalEngine(forSelectedOrigin: nil)
+        #expect(goalEngine == engine.fieldShots)
+        #expect(goalEngine.shots.count == 1)
+    }
+
+    @Test("a selected zone narrows to exactly that origin's shots")
+    func selectedZoneNarrowsToThatOrigin() {
+        let engine = StatsEngine(shots: [
+            shot(originPoint: leftWingNear),
+            shot(originPoint: rightWingNear)
+        ])
+        let goalEngine = engine.goalEngine(forSelectedOrigin: .zone(leftWingNearZone))
+        #expect(goalEngine == engine.shots(from: .zone(leftWingNearZone)))
+        #expect(goalEngine.shots.count == 1)
+    }
+
+    @Test("selecting the 7 m mark stays apart, unlike nil")
+    func selectingSevenMetersStaysApart() {
+        let engine = StatsEngine(shots: [
+            shot(originPoint: leftWingNear),
+            shot(isSevenMeters: true)
+        ])
+        let goalEngine = engine.goalEngine(forSelectedOrigin: .sevenMeters)
+        #expect(goalEngine == engine.shots(from: .sevenMeters))
+        #expect(goalEngine.shots.count == 1)
+    }
+}

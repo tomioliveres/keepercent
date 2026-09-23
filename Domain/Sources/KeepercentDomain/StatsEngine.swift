@@ -193,6 +193,70 @@ extension StatsEngine {
         }
         return counts.mapValues { Tally(successes: $0.successes, attempts: $0.attempts) }
     }
+
+    /// The same save rate, grouped by origin instead of by goal zone. Only
+    /// origins that actually have an on-target shot appear — the same
+    /// "on target" test as `saveRate` (`goal` or `saved`, whatever the
+    /// stored target says), not restricted to `.inside` targets: a save
+    /// rate by origin is about where the shot came FROM, which every shot
+    /// has regardless of where it ended up.
+    public var saveRateByOrigin: [ShotOrigin: Tally] {
+        var counts: [ShotOrigin: (successes: Int, attempts: Int)] = [:]
+        for shot in shots {
+            guard let origin = shot.origin,
+                  shot.outcome == .goal || shot.outcome == .saved
+            else { continue }
+            counts[origin, default: (0, 0)].attempts += 1
+            if shot.outcome == .saved {
+                counts[origin, default: (0, 0)].successes += 1
+            }
+        }
+        return counts.mapValues { Tally(successes: $0.successes, attempts: $0.attempts) }
+    }
+}
+
+// MARK: - Reading
+
+/// Which of the two cards a `StatsEngine` is feeding, so the linked view
+/// (T4.2) can read the same tallies as either card without knowing their
+/// names: the shooter card reads goals over attempts, the goalkeeper card
+/// reads saves over shots on target.
+public enum StatsReading: Sendable, CaseIterable {
+    /// Goals over attempts — the shooter card.
+    case effectiveness
+    /// Saves over shots on target — the goalkeeper card.
+    case saveRate
+}
+
+extension StatsEngine {
+    /// The per-goal-zone tally for the given reading: `effectivenessByGoalZone`
+    /// for `.effectiveness`, `saveRateByGoalZone` for `.saveRate`.
+    public func goalZoneTallies(_ reading: StatsReading) -> [GoalZone: Tally] {
+        switch reading {
+        case .effectiveness: return effectivenessByGoalZone
+        case .saveRate: return saveRateByGoalZone
+        }
+    }
+
+    /// The per-origin tally for the given reading: `effectivenessByOrigin`
+    /// for `.effectiveness`, `saveRateByOrigin` for `.saveRate`.
+    public func originTallies(_ reading: StatsReading) -> [ShotOrigin: Tally] {
+        switch reading {
+        case .effectiveness: return effectivenessByOrigin
+        case .saveRate: return saveRateByOrigin
+        }
+    }
+
+    /// The engine the linked view's goal side should read from, given the
+    /// court zone currently selected (T4.2): the shots from that one
+    /// origin when something is selected, or every field shot when
+    /// nothing is — 7 m always stays apart from field play (docs/mvp.md
+    /// §6), so selecting `.sevenMeters` narrows to it explicitly rather
+    /// than falling into `fieldShots`, which excludes it.
+    public func goalEngine(forSelectedOrigin origin: ShotOrigin?) -> StatsEngine {
+        guard let origin else { return fieldShots }
+        return shots(from: origin)
+    }
 }
 
 // MARK: - Distributions
