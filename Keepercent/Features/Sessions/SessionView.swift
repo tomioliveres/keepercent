@@ -64,6 +64,22 @@
 // The middle column's own height split between `GoalView` and `CourtView`
 // is `middleColumnHeights(for:)` — see its doc comment for why it solves
 // for equal rendered WIDTH rather than an arbitrary fraction.
+//
+// ## Shot log (T3.4)
+//
+// A toolbar button — `.navigationBarTrailing`, next to the title — opens
+// `ShotLogView` as a sheet. That is the least disruptive entry point: it
+// works identically in both `threeColumnLayout` and `verticalLayout`
+// without reshaping either one, unlike adding a fourth column (there is no
+// spare width on an iPad Pro 11" — see the layout note above) or a new
+// section in `ShotEntryContextPanel` (already the panel that is fullest on
+// iPhone, per that file's own scroll). `ShotLogView` owns its own delete
+// write (see that file's header); it reports the deleted shot's identity
+// through `shotWasDeleted(_:)` below so the ONE-LEVEL UNDO invariant holds
+// even when the deleting action happens in a different view: if the log
+// deletes the exact shot `lastShotID` names, the card drops its Undo
+// (`lastShotCard`/`lastShotID` both cleared) instead of risking a stale
+// Undo that would delete a different, still-live shot.
 
 import SwiftUI
 import SwiftData
@@ -94,6 +110,7 @@ struct SessionView: View {
     @State private var lastShotCard: LastShotCardState?
     @State private var lastShotID: PersistentIdentifier?
     @State private var saveHapticTrigger = false
+    @State private var isPresentingShotLog = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -115,6 +132,18 @@ struct SessionView: View {
         .padding()
         .navigationTitle(team.name)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    isPresentingShotLog = true
+                } label: {
+                    Label("Shot Log", systemImage: "list.bullet.rectangle")
+                }
+            }
+        }
+        .sheet(isPresented: $isPresentingShotLog) {
+            ShotLogView(session: session, onDeletedShot: shotWasDeleted)
+        }
         .sensoryFeedback(.success, trigger: saveHapticTrigger)
         .task(id: lastShotCard) {
             guard case .removed = lastShotCard else { return }
@@ -403,6 +432,18 @@ struct SessionView: View {
         // independent guards against a second delete.
         self.lastShotID = nil
         lastShotCard = .removed
+    }
+
+    /// Called by `ShotLogView` after it deletes a shot (see this file's
+    /// header, "Shot log (T3.4)"). Identity-safe by construction: it only
+    /// clears the card when `deletedID` is the exact id the card echoes —
+    /// deleting any OTHER shot from the log leaves `lastShotID` and
+    /// `lastShotCard` untouched, so Undo keeps pointing at the same still-
+    /// live shot it always did.
+    private func shotWasDeleted(_ deletedID: PersistentIdentifier) {
+        guard deletedID == lastShotID else { return }
+        lastShotID = nil
+        lastShotCard = nil
     }
 }
 
