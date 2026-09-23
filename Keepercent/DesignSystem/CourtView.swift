@@ -42,6 +42,18 @@ struct CourtView: View {
     /// caller — see this file's header comment for why it is not local
     /// `@State`. `nil` draws no highlight.
     let selection: ShotOrigin?
+    /// A heatmap tint per origin (T4.2's linked view), keyed the same way
+    /// `handleTap` classifies a tap: `.zone` origins tint
+    /// `geometry.shape(for:)`, `.sevenMeters` tints
+    /// `geometry.sevenMeterMarkRegion` — the exact shapes hit-testing
+    /// already uses, never a second independently-drawn one. Empty by
+    /// default, which keeps ordinary shot entry byte-for-byte unchanged.
+    /// Resolved `Color`s, not raw tallies — see `GoalView`'s identical
+    /// `zoneTints` for why the mapping stays out of this dumb view.
+    let zoneTints: [ShotOrigin: Color]
+    /// An optional short label per origin ("3/5"), drawn at the tinted
+    /// shape's centroid. Empty by default; see `GoalView.zoneLabels`.
+    let zoneLabels: [ShotOrigin: String]
     /// Reports both the classified `ShotOrigin` AND the raw normalized tap
     /// (T3.3, docs/mvp.md §5.2: "store the raw normalized tap point, and
     /// derive the zone from it"). Before T3.3 this view only reported the
@@ -68,10 +80,14 @@ struct CourtView: View {
     init(
         geometry: CourtGeometry = .standard,
         selection: ShotOrigin? = nil,
+        zoneTints: [ShotOrigin: Color] = [:],
+        zoneLabels: [ShotOrigin: String] = [:],
         onOriginTapped: @escaping (ShotOrigin, CourtPoint?) -> Void
     ) {
         self.geometry = geometry
         self.selection = selection
+        self.zoneTints = zoneTints
+        self.zoneLabels = zoneLabels
         self.onOriginTapped = onOriginTapped
     }
 
@@ -145,9 +161,11 @@ struct CourtView: View {
 
     private func draw(in context: inout GraphicsContext, size: CGSize) {
         drawSurface(in: &context, size: size)
+        drawZoneTints(in: &context, size: size)
         drawSixMeterLine(in: &context, size: size)
         drawZoneGrid(in: &context, size: size)
         drawSevenMeterMark(in: &context, size: size)
+        drawZoneLabels(in: &context, size: size)
         drawSelectionHighlight(in: &context, size: size)
         drawOutline(in: &context, size: size)
         drawGoalMouth(in: &context, size: size)
@@ -238,6 +256,112 @@ struct CourtView: View {
         context.fill(Path(rect), with: .color(Color(.systemOrange).opacity(0.45)))
     }
 
+    /// The closed shape a `.zone` origin resolves to, from
+    /// `geometry.shape(for:)` — the exact polygon `zone(at:)` classifies
+    /// against. Shared by `drawSelectionHighlight`, `drawZoneTints` and
+    /// `zoneLabelAnchor`, so a tinted/highlighted zone can never drift from
+    /// the one a tap would actually hit.
+    private func zonePath(for zone: CourtZone, in size: CGSize) -> Path {
+        var shape = path(for: geometry.shape(for: zone), in: size)
+        shape.closeSubpath()
+        return shape
+    }
+
+    /// The heatmap tint per origin (T4.2), painted on the exact same
+    /// shapes hit-testing uses — `zonePath(for:in:)` for a court zone,
+    /// `geometry.sevenMeterMarkRegion` for the 7 m mark. Drawn right after
+    /// the surface, so the 6 m/9 m lines, the zone grid, the 7 m mark and
+    /// the selection highlight all stay legible on top of it.
+    private func drawZoneTints(in context: inout GraphicsContext, size: CGSize) {
+        for (origin, tint) in zoneTints {
+            switch origin {
+            case .sevenMeters:
+                let rect = pixelRect(for: geometry.sevenMeterMarkRegion, in: size)
+                context.fill(Path(rect), with: .color(tint))
+            case .zone(let zone):
+                context.fill(zonePath(for: zone, in: size), with: .color(tint))
+            }
+        }
+    }
+
+    /// The area-weighted centroid of a closed polygon (the shoelace
+    /// formula) — the point a flat cutout of the shape would balance on,
+    /// as opposed to the plain mean of its vertices. The mean pulls
+    /// toward wherever a polygon's points happen to be denser, which for
+    /// the wing zones' skewed quadrilaterals (more of their vertices sit
+    /// on the far, narrow end) landed ON or OUTSIDE the court's own edge.
+    /// The centroid stays inside any convex polygon, which every
+    /// `CourtZone` shape is.
+    ///
+    /// Falls back to the plain mean for a degenerate shape (fewer than 3
+    /// points, or zero signed area — a polygon collapsed to a line),
+    /// since the shoelace formula divides by that area.
+    private func polygonCentroid(_ points: [CGPoint]) -> CGPoint {
+        func mean(_ points: [CGPoint]) -> CGPoint {
+            guard !points.isEmpty else { return .zero }
+            let sum = points.reduce(CGPoint.zero) { CGPoint(x: $0.x + $1.x, y: $0.y + $1.y) }
+            return CGPoint(x: sum.x / CGFloat(points.count), y: sum.y / CGFloat(points.count))
+        }
+
+        guard points.count >= 3 else { return mean(points) }
+
+        var signedArea: CGFloat = 0
+        var centroidX: CGFloat = 0
+        var centroidY: CGFloat = 0
+        for index in points.indices {
+            let current = points[index]
+            let next = points[(index + 1) % points.count]
+            let cross = current.x * next.y - next.x * current.y
+            signedArea += cross
+            centroidX += (current.x + next.x) * cross
+            centroidY += (current.y + next.y) * cross
+        }
+        signedArea *= 0.5
+        guard signedArea != 0 else { return mean(points) }
+
+        return CGPoint(x: centroidX / (6 * signedArea), y: centroidY / (6 * signedArea))
+    }
+
+    /// Pulls a label anchor back inside the court's own drawn rect, with a
+    /// margin roughly half a label's size — a safety net for whatever the
+    /// centroid math above does not already guarantee (e.g. a future,
+    /// less regular zone shape), so a label can never render clipped at
+    /// the canvas edge.
+    private func clampedToCourt(_ point: CGPoint, in size: CGSize) -> CGPoint {
+        let margin: CGFloat = 14
+        guard size.width > 2 * margin, size.height > 2 * margin else { return point }
+        return CGPoint(
+            x: min(max(point.x, margin), size.width - margin),
+            y: min(max(point.y, margin), size.height - margin)
+        )
+    }
+
+    /// Where a `.zone` origin's "successes/attempts" label is centred: the
+    /// clamped, area-weighted centroid of `geometry.shape(for:)` — the
+    /// same polygon `zonePath(for:in:)` tints and `zone(at:)` hit-tests.
+    /// The 7 m mark has no label of its own here — see `drawZoneLabels`'s
+    /// header comment — so this is only ever called for `.zone`.
+    private func zoneLabelAnchor(for zone: CourtZone, in size: CGSize) -> CGPoint {
+        let points = geometry.shape(for: zone).map { pixelPoint(for: $0, in: size) }
+        return clampedToCourt(polygonCentroid(points), in: size)
+    }
+
+    /// The optional "successes/attempts" label for each tinted ZONE only.
+    /// The 7 m mark is deliberately skipped: its own rect sits exactly on
+    /// top of the center-near zone, so a label drawn there collided with
+    /// that zone's own label (both reading the same tally at the same
+    /// spot). `LinkedZonesView` shows the 7 m tally as its own caption
+    /// line instead, matching docs/mvp.md's rule that 7 m is always shown
+    /// apart from field play.
+    private func drawZoneLabels(in context: inout GraphicsContext, size: CGSize) {
+        for (origin, label) in zoneLabels {
+            guard case .zone(let zone) = origin else { continue }
+            let anchor = zoneLabelAnchor(for: zone, in: size)
+            let text = Text(label).font(.caption2.weight(.semibold)).foregroundStyle(.primary)
+            context.draw(context.resolve(text), at: anchor)
+        }
+    }
+
     /// Fills the region the currently `selection`ed origin corresponds to.
     /// Drawn after the zone grid, 6 m/9 m lines and 7 m mark, so the
     /// translucent highlight sits on top of them (still legible through it,
@@ -260,9 +384,7 @@ struct CourtView: View {
             let rect = pixelRect(for: geometry.sevenMeterMarkRegion, in: size)
             context.fill(Path(rect), with: .color(selectionHighlightColor))
         case .zone(let zone):
-            var shape = path(for: geometry.shape(for: zone), in: size)
-            shape.closeSubpath()
-            context.fill(shape, with: .color(selectionHighlightColor))
+            context.fill(zonePath(for: zone, in: size), with: .color(selectionHighlightColor))
         }
     }
 

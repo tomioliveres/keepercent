@@ -135,6 +135,13 @@ struct RosterEditorView: View {
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button {
+                        path.append(ScoutingRoute())
+                    } label: {
+                        Label("Scouting", systemImage: "chart.bar.xaxis")
+                    }
+                }
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
                         newSessionKind = .live
                         newSessionMatchDate = .now
                         newSessionErrorMessage = nil
@@ -154,6 +161,13 @@ struct RosterEditorView: View {
                         description: Text("This session may have been removed.")
                     )
                 }
+            }
+            // A distinct route type from `PersistentIdentifier` (sessions,
+            // above): `NavigationStack` dispatches by the pushed value's
+            // type, so this can be its own destination on the SAME `path`
+            // without touching session navigation at all.
+            .navigationDestination(for: ScoutingRoute.self) { _ in
+                TeamScoutingView(team: team)
             }
         }
         // T3.3, decision ③: the team sidebar is hidden while a session is
@@ -355,6 +369,13 @@ struct RosterEditorView: View {
         }
     }
 }
+
+/// A marker pushed onto `path` (T4.2) to reach `TeamScoutingView`: this
+/// screen already needs nothing more than `team`, which the destination
+/// closure captures directly, so the route carries no payload of its own —
+/// it exists only to give `.navigationDestination(for:)` a distinct type
+/// from the session push above.
+private struct ScoutingRoute: Hashable {}
 
 /// A UI-ready wrapper so `.alert(presenting:)` can show whatever
 /// `RosterEditorView`'s actions threw, worded by `rosterErrorMessage` —

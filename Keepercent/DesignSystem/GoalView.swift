@@ -22,15 +22,34 @@ struct GoalView: View {
     /// caller — see this file's header comment for why it is not local
     /// `@State`. `nil` draws no highlight.
     let selection: GoalTarget?
+    /// A heatmap tint per goal zone (T4.2's linked view). Empty by default,
+    /// which keeps ordinary shot entry byte-for-byte unchanged — this
+    /// param only exists so the linked view can paint `StatsEngine`'s
+    /// tallies straight onto the same `Canvas` a tap already resolves
+    /// against, instead of a second, independently-positioned overlay
+    /// that could drift from `geometry.region(for:)`. Resolved `Color`s,
+    /// not raw tallies: the mapping from a `Tally` to a shade is a
+    /// presentational decision (`HeatmapColor`) this view has no opinion
+    /// on, so it stays dumb and only paints what it is given.
+    let zoneTints: [GoalZone: Color]
+    /// An optional short label per zone ("3/5"), drawn centred in the
+    /// zone once its tint is painted. Empty by default; skipped when
+    /// `zoneTints` has nothing for that zone either, so a caller that
+    /// only wants colour and no digits can leave this empty.
+    let zoneLabels: [GoalZone: String]
     let onTargetTapped: (GoalTarget) -> Void
 
     init(
         geometry: GoalGeometry = .standard,
         selection: GoalTarget? = nil,
+        zoneTints: [GoalZone: Color] = [:],
+        zoneLabels: [GoalZone: String] = [:],
         onTargetTapped: @escaping (GoalTarget) -> Void
     ) {
         self.geometry = geometry
         self.selection = selection
+        self.zoneTints = zoneTints
+        self.zoneLabels = zoneLabels
         self.onTargetTapped = onTargetTapped
     }
 
@@ -286,7 +305,32 @@ struct GoalView: View {
     private func drawMouth(in context: inout GraphicsContext, mouthRect: CGRect, canvasSize: CGSize) {
         context.fill(Path(mouthRect), with: .color(Color(.systemBackground)))
         drawNet(in: &context, mouthRect: mouthRect)
+        drawZoneTints(in: &context, canvasSize: canvasSize)
         drawGridLines(in: &context, canvasSize: canvasSize)
+        drawZoneLabels(in: &context, canvasSize: canvasSize)
+    }
+
+    /// The heatmap tint per zone (T4.2), painted on the exact same rect
+    /// `drawGridLines` outlines — `geometry.region(for:)`, never a second,
+    /// independently-derived rect — so the coloured zone and the zone a
+    /// tap resolves to are always the same one. Drawn after the net but
+    /// before the grid lines and the selection highlight, so the dashed
+    /// guides and a live selection both stay legible on top of it.
+    private func drawZoneTints(in context: inout GraphicsContext, canvasSize: CGSize) {
+        for (zone, tint) in zoneTints {
+            let rect = pixelRect(for: geometry.region(for: zone), in: canvasSize)
+            context.fill(Path(rect), with: .color(tint))
+        }
+    }
+
+    /// The optional "successes/attempts" label for each tinted zone,
+    /// centred in the same rect the tint and the grid line share.
+    private func drawZoneLabels(in context: inout GraphicsContext, canvasSize: CGSize) {
+        for (zone, label) in zoneLabels {
+            let rect = pixelRect(for: geometry.region(for: zone), in: canvasSize)
+            let text = Text(label).font(.caption2.weight(.semibold)).foregroundStyle(.primary)
+            context.draw(context.resolve(text), at: CGPoint(x: rect.midX, y: rect.midY))
+        }
     }
 
     /// Decorative net texture: an evenly spaced grid of thin lines. Purely
