@@ -261,7 +261,7 @@
       <span>Swift + SwiftUI · 100% nativo</span>
       <span>iOS 26</span>
       <span>Entrega: viernes 25/9</span>
-      <span>Última actualización: día 1 · dominio y datos completos</span>
+      <span>Última actualización: día 4 · análisis completo: estadísticas, vista enlazada, fichas del tirador y del arquero</span>
     </div>
   </header>
 
@@ -647,10 +647,52 @@ DesignSystem/      <span class="c-com">// CourtView, GoalView, HeatmapCell, colo
 
     <h3>Deshacer de un solo nivel</h3>
     <p>Después de cargar un tiro, la tarjeta repite exactamente lo que se guardó, junto a un botón grande de Deshacer y una vibración. Al deshacer, la tarjeta pasa a decir «Tiro eliminado», sin ningún botón encima. La ausencia del botón es la decisión: si quedara un botón de Deshacer sobre el Deshacer, un segundo toque —el reflejo de quien ya tocó una vez sin mirar— borraría un tiro correcto que nada tiene que ver con el que se acaba de deshacer.</p>
+
+    <h3>El registro de tiros: se borra, no se edita</h3>
+    <p>La lista de tiros de una sesión permite borrar, no editar. <code>docs/mvp.md</code> había prometido las dos cosas, pero un tiro mal cargado y notado varias jugadas después queda igual de bien resuelto borrándolo y cargándolo de nuevo, y editar hubiera costado una pantalla entera con el cronograma ya un día atrasado. Cada borrado toca una sola fila y hace <code>rollback()</code> si falla, como cualquier otra escritura de la app. Y como la tarjeta de Deshacer del tiro recién cargado sigue en pantalla mientras se navega al registro, el borrado desde la lista le avisa a la tarjeta qué fila borró: el Deshacer de un solo nivel solo desaparece cuando la fila que borra el registro es exactamente la misma que la tarjeta está mostrando, nunca por haberse borrado cualquier tiro.</p>
   </section>
 
   <section>
-    <h2><span class="num">09</span>Glosario: del código al handball</h2>
+    <h2><span class="num">09</span>El motor de estadísticas y las dos fichas</h2>
+    <p>El día 4 no agrega pantallas de carga nuevas: lee los tiros que ya están guardados y los convierte en números. <code>StatsEngine</code> es una función pura en el mismo sentido que <code>GoalGeometry</code> o <code>CourtGeometry</code>: recibe un array de <code>Shot</code> del dominio, nunca un <code>ModelContext</code> de SwiftData, así que una tasa de atajadas se testea igual que una clasificación de lanzamiento — sin simulador, en segundos, y sin necesitar una base de datos en memoria para calcular un número.</p>
+
+    <h3>Un conteo con su tasa adentro, nunca un porcentaje solo</h3>
+    <p><code>docs/mvp.md</code> no define un mínimo de muestra para considerar confiable una estadística, así que el motor no inventa uno. Cada estadística es un conteo con su tasa, y cuando no hubo ningún intento la tasa es <code>nil</code>, nunca <code>0%</code>:</p>
+<pre><span class="c-key">struct</span> <span class="c-type">Tally</span> {
+    <span class="c-key">let</span> attempts: <span class="c-type">Int</span>
+    <span class="c-key">let</span> successes: <span class="c-type">Int</span>
+    <span class="c-key">var</span> rate: <span class="c-type">Double</span>? { attempts == 0 ? <span class="c-key">nil</span> : <span class="c-type">Double</span>(successes) / <span class="c-type">Double</span>(attempts) }
+}</pre>
+    <div class="why">
+      <b>Por qué <code>nil</code> y no cero.</b> Un <code>0%</code> dice «lo intentó y le fue mal». Una zona sin intentos no dice nada de eso: no dice nada. Confundir las dos cosas es exactamente el tipo de mentira silenciosa que la sección 06 ya prohibió para <code>InsightWriter</code> — acá aplica al número, no a la frase que lo describe. Una zona sin datos se dibuja como «sin datos», nunca como una tasa mala.
+    </div>
+
+    <h3>El mapa de calor vive adentro del dibujo que ya existía</h3>
+    <p>El mapa de calor no es una vista nueva: es un tinte más que <code>GoalView</code> y <code>CourtView</code> pintan sobre las mismas regiones que ya dibujaban y ya hit-testeaban desde el día 2. La zona que se colorea es, por construcción, exactamente la zona que un toque resuelve — la misma regla de «lo que ves es lo que tocás» de la sección 08, aplicada ahora al color en vez de al trazo. Se descartó dibujar el arco como una grilla de 3×3 con <code>Chart</code> de Swift Charts: hubiera duplicado el dibujo del arco, perdido los palos y el travesaño, y no tiene forma de dibujar los sectores radiales de la cancha, que no son rectángulos. Swift Charts se usa donde es la herramienta correcta: los gráficos de barras de altura del remate y de resultados, debajo de la vista enlazada.</p>
+
+    <h3>Una vista sirve a las dos fichas: la lectura decide qué mide</h3>
+    <p>El tirador y el arquero rival no son dos vistas distintas con dos mapas de calor distintos: son la misma vista enlazada, leída con dos <strong>lecturas</strong> distintas.</p>
+<pre><span class="c-key">enum</span> <span class="c-type">StatsReading</span> {
+    <span class="c-key">case</span> effectiveness  <span class="c-com">// goles / lanzamientos — la ficha del tirador</span>
+    <span class="c-key">case</span> saveRate       <span class="c-com">// atajadas / tiros al arco — la ficha del arquero</span>
+}</pre>
+    <p>Tocar una zona de la cancha filtra el arco a los tiros que salieron desde ahí; sin nada seleccionado, el arco muestra los tiros de cancha. La marca de 7 m es su propio origen, aparte de las diez zonas de cancha, así que sigue apareciendo por separado a los dos lados de la vista enlazada.</p>
+
+    <h3>Rankear por cantidad, no por tasa</h3>
+    <p>Más allá de la vista enlazada, cada ficha nombra en palabras dónde es peligroso un tirador o dónde es débil un arquero: las tres zonas del arco y los tres orígenes de cancha con más goles para el tirador, las tres zonas con más goles recibidos y las tres con más atajadas para el arquero. El orden es por <strong>cantidad</strong>, no por tasa, porque una tasa sin un mínimo de muestra deja que una zona de 1/1 —un solo tiro, un solo gol— encabece el ranking por delante de una zona de 8/12. Se descartaron dos alternativas: ordenar por tasa con un mínimo de muestra (un umbral que <code>docs/mvp.md</code> no define en ningún lado) y no rankear nada (que delega todo juicio a la sección de texto en lenguaje natural, todavía sin escribir). Una zona con cero goles, o cero atajadas, no entra al ranking. Y como varias zonas pueden empatar en goles, el desempate es determinístico y en dos pasos: primero la que tuvo menos intentos —la tasa más alta entre empatadas—, y si eso también empata, el orden fijo de <code>GoalZone.allCases</code>, para que el mismo dataset produzca siempre el mismo ranking.</p>
+
+    <h3>Los 7 m aparte, y el bug que un build en verde no vio</h3>
+    <p>El ranking del arquero corrió, en un primer momento, sobre el motor completo, 7 m incluidos, mientras el mapa de calor de arriba —la vista enlazada— mostraba solo los tiros de cancha. El resultado: la ficha del arquero #1 nombraba su zona débil como «abajo izquierda 6/7», justo debajo de una celda del mapa de calor que leía 1/6 para esa misma zona. No eran dos números distintos de dos estadísticas distintas: eran <strong>la misma zona, leída por dos caminos que dejaron de estar de acuerdo</strong>, porque uno de los dos había sumado el gol de 7 m que el otro dejaba afuera a propósito. La corrección hizo que las dos rankings —del tirador y del arquero— lean los mismos tiros de cancha que ya lee el mapa de calor, y que el 7 m se mantenga como origen propio en el otro extremo de la vista enlazada, nunca mezclado adentro de una zona de cancha.</p>
+    <div class="why">
+      <b>La lección general.</b> Dos vistas de los mismos datos que no leen exactamente la misma función tienden a desacordarse, tarde o temprano, sobre algún caso límite — acá el 7 m. Un build en verde y toda la batería de tests en verde no vieron nada raro, porque cada cuenta por separado era correcta; hacía falta abrir las dos fichas del mismo arquero, una al lado de la otra, para notar que contaban historias distintas del mismo tiro.
+    </div>
+
+    <h3>Revisar una porción por tarea, no un commit por vez</h3>
+    <p>Con el motor de estadísticas y las dos fichas, la revisión de código dejó de correr commit por commit: cuando el riesgo evaluado es medio, la porción se deja acumular y se revisa una sola vez, al cerrar la tarea, desde el mismo límite que la última revisión aprobada. Es la misma decisión selectiva de la sección 07 —el riesgo decide la ceremonia, no una corazonada— aplicada ahora también al <em>tamaño</em> de lo que se manda a revisar, no solo a si se revisa.</p>
+  </section>
+
+  <section>
+    <h2><span class="num">10</span>Glosario: del código al handball</h2>
     <p>El código está en inglés, que es la convención del ecosistema de Apple y lo que espera el jurado. Acá está la traducción de cada término.</p>
     <div class="tablewrap">
       <table>
@@ -687,13 +729,19 @@ DesignSystem/      <span class="c-com">// CourtView, GoalView, HeatmapCell, colo
           <tr><td class="term">facingGoalkeeper</td><td>El arquero rival activo cuando se registró un tiro propio</td></tr>
           <tr><td class="term">ShotEntryError</td><td>Por qué se rechazó un tiro antes de guardarlo (falta tirador, arquero, origen o resultado)</td></tr>
           <tr><td class="term">ShotSummary</td><td>El texto de la tarjeta que confirma un tiro recién cargado</td></tr>
+          <tr><td class="term">Tally</td><td>Conteo de intentos y aciertos, con la tasa como opcional: <code>nil</code> si no hubo intentos</td></tr>
+          <tr><td class="term">effectiveness</td><td>Goles / lanzamientos: la métrica de la ficha del tirador</td></tr>
+          <tr><td class="term">saveRate</td><td>Atajadas / tiros al arco: la métrica de la ficha del arquero</td></tr>
+          <tr><td class="term">StatsReading</td><td>Cuál de las dos métricas usa la vista enlazada en cada ficha: <code>effectiveness</code> o <code>saveRate</code></td></tr>
+          <tr><td class="term">zona débil / zona fuerte</td><td>En la ficha del arquero: las tres zonas con más goles recibidos y las tres con más atajadas, por cantidad</td></tr>
+          <tr><td class="term">sevenMeters</td><td>El caso de <code>ShotOrigin</code> para la marca de 7 m; se mantiene aparte de las diez zonas de cancha en la vista enlazada y en los rankings</td></tr>
         </tbody>
       </table>
     </div>
   </section>
 
   <section>
-    <h2><span class="num">10</span>Decisiones tomadas, y las que descartamos</h2>
+    <h2><span class="num">11</span>Decisiones tomadas, y las que descartamos</h2>
     <div class="tablewrap">
       <table>
         <thead><tr><th>Decisión</th><th>Por qué</th><th>Qué se descartó</th></tr></thead>
@@ -823,13 +871,33 @@ DesignSystem/      <span class="c-com">// CourtView, GoalView, HeatmapCell, colo
             <td>Un doble toque no puede borrar un segundo tiro correcto que nada tiene que ver con el deshecho</td>
             <td>Deshacer múltiple con historial</td>
           </tr>
+          <tr>
+            <td>El registro de tiros permite borrar, no editar</td>
+            <td>Un tiro mal cargado se resuelve igual de bien borrándolo y cargándolo de nuevo; editar hubiera costado una pantalla entera</td>
+            <td>Editar un tiro ya guardado</td>
+          </tr>
+          <tr>
+            <td>El mapa de calor se pinta adentro de <code>GoalView</code>/<code>CourtView</code>, no con un <code>Chart</code> de 3×3</td>
+            <td>La zona coloreada es, por construcción, la misma que un toque resuelve; un <code>Chart</code> perdería los palos, el travesaño y los sectores radiales</td>
+            <td>Dibujar el arco como una grilla de rectángulos de Swift Charts</td>
+          </tr>
+          <tr>
+            <td>Los rankings de las fichas ordenan por cantidad de goles o atajadas, no por tasa</td>
+            <td>Una tasa sin mínimo de muestra deja que una zona de 1/1 encabece el ranking, y <code>docs/mvp.md</code> no define ningún umbral</td>
+            <td>Ordenar por tasa con un mínimo de muestra inventado, o no rankear nada</td>
+          </tr>
+          <tr>
+            <td>Los 7 m quedan aparte en los rankings de zona, igual que en la vista enlazada</td>
+            <td>Mezclarlos hizo que una ficha nombrara «6/7» en una zona que el mapa de calor de al lado mostraba como 1/6</td>
+            <td>Sumar el 7 m adentro de la zona de cancha que le corresponde</td>
+          </tr>
         </tbody>
       </table>
     </div>
   </section>
 
   <section>
-    <h2><span class="num">11</span>El avance, día por día</h2>
+    <h2><span class="num">12</span>El avance, día por día</h2>
 
     <div class="day">
       <div class="when">Sáb 19/9</div>
@@ -858,16 +926,16 @@ DesignSystem/      <span class="c-com">// CourtView, GoalView, HeatmapCell, colo
     <div class="day">
       <div class="when">Mar 22/9</div>
       <div class="what">
-        <b>Día 3 · Carga completa <span class="pill now">sigue</span></b>
-        Editor de plantel del equipo rival, con el borrado bloqueado si el jugador ya tiene tiros registrados en vez de permitido o silenciado. Sesión en vivo o con video, guardando la fecha del partido —no la de carga— como regla del dominio. Carga de un tiro de punta a punta: ataque propio o rival, arquero rival activo, diseño de tres columnas en iPad y deshacer de un solo nivel — código escrito y corrido a mano en iPhone y iPad, revisión de código todavía en curso. <strong>238 tests en 69 suites, todo en verde.</strong> Queda pendiente el registro de tiros con edición y borrado.
+        <b>Día 3 · Carga completa <span class="pill done">hecho</span></b>
+        Editor de plantel del equipo rival, con el borrado bloqueado si el jugador ya tiene tiros registrados en vez de permitido o silenciado. Sesión en vivo o con video, guardando la fecha del partido —no la de carga— como regla del dominio. Carga de un tiro de punta a punta: ataque propio o rival, arquero rival activo, diseño de tres columnas en iPad y deshacer de un solo nivel. Por último, el registro de tiros de la sesión: se borra, no se edita, y el borrado nunca deja al Deshacer de la tarjeta apuntando a un tiro distinto del que borró. Código corrido a mano en iPhone y iPad. <strong>238 tests en 69 suites, todo en verde.</strong>
       </div>
     </div>
 
     <div class="day">
       <div class="when">Mié 23/9</div>
       <div class="what">
-        <b>Día 4 · Análisis <span class="pill todo">pendiente</span></b>
-        Motor de estadísticas y las dos fichas: tirador y arquero rival, con mapas que se filtran entre sí.
+        <b>Día 4 · Análisis <span class="pill done">hecho</span></b>
+        <code>StatsEngine</code>, la vista enlazada entre cancha y arco con el mapa de calor pintado adentro del dibujo existente, y las dos fichas —tirador y arquero rival— con sus rankings por cantidad de goles y atajadas, 7 m siempre aparte. Un bug de los rankings mezclando el 7 m, encontrado solo corriendo la app, corregido antes de cerrar el día. <strong>302 tests en 83 suites, todo en verde.</strong>
       </div>
     </div>
 
