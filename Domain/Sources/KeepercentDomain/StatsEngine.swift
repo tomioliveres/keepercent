@@ -166,6 +166,65 @@ extension StatsEngine {
     }
 }
 
+// MARK: - Goal-count rankings
+
+/// One key (a `GoalZone` or a `ShotOrigin`) with its `Tally`, in the order
+/// `topGoalZones`/`topOrigins` ranked it — so the shooter card (T4.3) can
+/// show "4/5" next to the zone or origin it belongs to.
+public struct RankedTally<Key: Equatable & Sendable>: Equatable, Sendable {
+    public let key: Key
+    public let tally: Tally
+
+    public init(key: Key, tally: Tally) {
+        self.key = key
+        self.tally = tally
+    }
+}
+
+extension StatsEngine {
+    /// Ranks `tallies` by goal count, most dangerous first: a zone/origin
+    /// with zero goals is not ranked at all (docs/mvp.md §5.3 defines no
+    /// minimum-sample rule, so this only ever excludes on goals, never on
+    /// sample size). Ties break on fewer attempts — the same goal count
+    /// over fewer attempts is the higher rate — then on `canonicalOrder`
+    /// (the key's own `CaseIterable`/declaration order), so the result is
+    /// fully deterministic regardless of dictionary iteration order.
+    private static func topRanked<Key: Hashable & Sendable>(
+        from tallies: [Key: Tally],
+        canonicalOrder: [Key],
+        limit: Int
+    ) -> [RankedTally<Key>] {
+        let orderIndex = Dictionary(uniqueKeysWithValues: canonicalOrder.enumerated().map { ($1, $0) })
+        return tallies
+            .filter { $0.value.successes > 0 }
+            .sorted { lhs, rhs in
+                if lhs.value.successes != rhs.value.successes {
+                    return lhs.value.successes > rhs.value.successes
+                }
+                if lhs.value.attempts != rhs.value.attempts {
+                    return lhs.value.attempts < rhs.value.attempts
+                }
+                return (orderIndex[lhs.key] ?? 0) < (orderIndex[rhs.key] ?? 0)
+            }
+            .prefix(limit)
+            .map { RankedTally(key: $0.key, tally: $0.value) }
+    }
+
+    /// The goal zones this engine's shots most often score in, ranked by
+    /// goal count (not rate) up to `limit`. Reuses `effectivenessByGoalZone`
+    /// rather than recomputing goals/attempts.
+    public func topGoalZones(limit: Int) -> [RankedTally<GoalZone>] {
+        Self.topRanked(from: effectivenessByGoalZone, canonicalOrder: GoalZone.allCases, limit: limit)
+    }
+
+    /// The origins this engine's shots most often score from, ranked by
+    /// goal count (not rate) up to `limit`. Reuses `effectivenessByOrigin`
+    /// rather than recomputing goals/attempts.
+    public func topOrigins(limit: Int) -> [RankedTally<ShotOrigin>] {
+        Self.topRanked(from: effectivenessByOrigin, canonicalOrder: ShotOrigin.allCases, limit: limit)
+    }
+}
+
 // MARK: - Save rate
 
 extension StatsEngine {

@@ -484,3 +484,150 @@ struct GoalEngineForSelectedOriginTests {
         #expect(goalEngine.shots.count == 1)
     }
 }
+
+@Suite("StatsEngine.topGoalZones")
+struct TopGoalZonesTests {
+    private let topLeft = GoalZone(row: .top, column: .left)
+    private let topCenter = GoalZone(row: .top, column: .center)
+    private let topRight = GoalZone(row: .top, column: .right)
+    private let middleLeft = GoalZone(row: .middle, column: .left)
+
+    @Test("ranks by goal count, descending")
+    func ranksByGoalCountDescending() throws {
+        let engine = StatsEngine(shots: [
+            shot(target: .inside(topLeft), outcome: .goal),
+            shot(target: .inside(topRight), outcome: .goal),
+            shot(target: .inside(topRight), outcome: .goal),
+            shot(target: .inside(topRight), outcome: .saved)
+        ])
+        let ranked = engine.topGoalZones(limit: 3)
+        let first = try #require(ranked.first)
+        #expect(first.key == topRight)
+        #expect(first.tally == Tally(successes: 2, attempts: 3))
+        let second = try #require(ranked.dropFirst().first)
+        #expect(second.key == topLeft)
+        #expect(second.tally == Tally(successes: 1, attempts: 1))
+    }
+
+    @Test("ties on goal count break on fewer attempts, i.e. the higher rate")
+    func tiesBreakOnFewerAttempts() throws {
+        let engine = StatsEngine(shots: [
+            // topLeft: 1 goal in 1 attempt (100%).
+            shot(target: .inside(topLeft), outcome: .goal),
+            // topRight: 1 goal in 2 attempts (50%).
+            shot(target: .inside(topRight), outcome: .goal),
+            shot(target: .inside(topRight), outcome: .saved)
+        ])
+        let ranked = engine.topGoalZones(limit: 2)
+        let first = try #require(ranked.first)
+        #expect(first.key == topLeft)
+        let second = try #require(ranked.dropFirst().first)
+        #expect(second.key == topRight)
+    }
+
+    @Test("ties on goals and attempts break on the zone's canonical order")
+    func tiesBreakOnCanonicalOrder() throws {
+        let engine = StatsEngine(shots: [
+            // topCenter and topLeft tie: 1 goal in 1 attempt each.
+            // topLeft precedes topCenter in GoalZone.allCases.
+            shot(target: .inside(topCenter), outcome: .goal),
+            shot(target: .inside(topLeft), outcome: .goal)
+        ])
+        let ranked = engine.topGoalZones(limit: 2)
+        let first = try #require(ranked.first)
+        #expect(first.key == topLeft)
+        let second = try #require(ranked.dropFirst().first)
+        #expect(second.key == topCenter)
+    }
+
+    @Test("a zone with attempts but no goals is not ranked")
+    func zeroGoalZoneIsExcluded() {
+        let engine = StatsEngine(shots: [
+            shot(target: .inside(topLeft), outcome: .goal),
+            shot(target: .inside(topRight), outcome: .saved),
+            shot(target: .inside(topRight), outcome: .saved)
+        ])
+        let ranked = engine.topGoalZones(limit: 3)
+        #expect(ranked.count == 1)
+        #expect(!ranked.contains { $0.key == topRight })
+    }
+
+    @Test("limit caps the number of ranked zones returned")
+    func limitCapsCount() {
+        let engine = StatsEngine(shots: [
+            shot(target: .inside(topLeft), outcome: .goal),
+            shot(target: .inside(topCenter), outcome: .goal),
+            shot(target: .inside(topRight), outcome: .goal),
+            shot(target: .inside(middleLeft), outcome: .goal)
+        ])
+        let ranked = engine.topGoalZones(limit: 3)
+        #expect(ranked.count == 3)
+    }
+
+    @Test("an empty engine ranks no zones")
+    func emptyEngineRanksNothing() {
+        let engine = StatsEngine(shots: [])
+        #expect(engine.topGoalZones(limit: 3).isEmpty)
+    }
+}
+
+@Suite("StatsEngine.topOrigins")
+struct TopOriginsTests {
+
+    @Test("ranks by goal count, descending, reusing effectivenessByOrigin")
+    func ranksByGoalCountDescending() throws {
+        let engine = StatsEngine(shots: [
+            shot(originPoint: leftWingNear, outcome: .goal),
+            shot(originPoint: rightWingNear, outcome: .goal),
+            shot(originPoint: rightWingNear, outcome: .goal),
+            shot(originPoint: rightWingNear, outcome: .saved)
+        ])
+        let ranked = engine.topOrigins(limit: 2)
+        let first = try #require(ranked.first)
+        #expect(first.key == .zone(rightWingNearZone))
+        #expect(first.tally == Tally(successes: 2, attempts: 3))
+        let second = try #require(ranked.dropFirst().first)
+        #expect(second.key == .zone(leftWingNearZone))
+    }
+
+    @Test("the 7 m mark ranks alongside court zones, by the same rules")
+    func sevenMetersRanksAlongsideZones() throws {
+        let engine = StatsEngine(shots: [
+            shot(isSevenMeters: true, outcome: .goal),
+            shot(originPoint: leftWingNear, outcome: .goal),
+            shot(originPoint: leftWingNear, outcome: .saved)
+        ])
+        // sevenMeters: 1/1 (100%), leftWingNear: 1/2 (50%) — sevenMeters wins the tie-break.
+        let ranked = engine.topOrigins(limit: 2)
+        let first = try #require(ranked.first)
+        #expect(first.key == .sevenMeters)
+    }
+
+    @Test("an origin with attempts but no goals is not ranked")
+    func zeroGoalOriginIsExcluded() {
+        let engine = StatsEngine(shots: [
+            shot(originPoint: leftWingNear, outcome: .goal),
+            shot(originPoint: rightWingNear, outcome: .saved)
+        ])
+        let ranked = engine.topOrigins(limit: 3)
+        #expect(ranked.count == 1)
+        #expect(!ranked.contains { $0.key == .zone(rightWingNearZone) })
+    }
+
+    @Test("limit caps the number of ranked origins returned")
+    func limitCapsCount() {
+        let engine = StatsEngine(shots: [
+            shot(originPoint: leftWingNear, outcome: .goal),
+            shot(originPoint: rightWingNear, outcome: .goal),
+            shot(isSevenMeters: true, outcome: .goal)
+        ])
+        let ranked = engine.topOrigins(limit: 1)
+        #expect(ranked.count == 1)
+    }
+
+    @Test("an empty engine ranks no origins")
+    func emptyEngineRanksNothing() {
+        let engine = StatsEngine(shots: [])
+        #expect(engine.topOrigins(limit: 3).isEmpty)
+    }
+}
