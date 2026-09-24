@@ -213,7 +213,7 @@ struct CourtView: View {
         context.stroke(mouth, with: .color(.primary), style: StrokeStyle(lineWidth: lineWidth, lineCap: .square))
     }
 
-    /// The 6 m line. It plays no part in `origin(at:)`, so it stays
+    /// The 6 m line bounds valid shot origins. It stays
     /// secondary to the zone grid — but not faint: it is the line a
     /// handball player reads the whole court against, the edge of the
     /// goal area, and it is what tells a scout whether a shot came from
@@ -406,7 +406,7 @@ struct CourtView: View {
     private func handleTap(at location: CGPoint, canvasSize: CGSize) {
         guard canvasSize.width > 0, canvasSize.height > 0 else { return }
         let point = courtPoint(fromViewLocation: location, canvasSize: canvasSize)
-        let origin = geometry.origin(at: point)
+        guard let origin = geometry.origin(at: point) else { return }
         switch origin {
         case .sevenMeters:
             // No origin point for a 7 m throw — see this file's header

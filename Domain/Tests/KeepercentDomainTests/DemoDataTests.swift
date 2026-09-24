@@ -101,7 +101,7 @@ struct DemoDataOriginResolutionTests {
     func nonSevenMeterShotsHaveAMatchingOrigin() throws {
         for shot in DemoData.shots where !shot.isSevenMeters {
             let originPoint = try #require(shot.originPoint, "a non-7m demo shot must carry an origin point")
-            let expectedZone = CourtGeometry.standard.zone(at: originPoint)
+            let expectedZone = try #require(CourtGeometry.standard.zone(at: originPoint), "a demo take-off must be outside the 6m area")
             #expect(shot.origin == .zone(expectedZone))
         }
     }

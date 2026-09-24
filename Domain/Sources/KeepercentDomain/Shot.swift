@@ -148,7 +148,7 @@ extension Shot {
             return .sevenMeters
         }
         guard let originPoint else { return nil }
-        return .zone(CourtGeometry.standard.zone(at: originPoint))
+        return CourtGeometry.standard.zone(at: originPoint).map(ShotOrigin.zone)
     }
 
     /// The shot's line (cross-shot / near-post / neutral), derived from

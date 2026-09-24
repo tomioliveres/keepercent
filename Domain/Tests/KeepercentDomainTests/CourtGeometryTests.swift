@@ -144,6 +144,34 @@ struct CourtGeometryDepthBoundaryTests {
 
     let geometry = CourtGeometry.standard
 
+    @Test("Inside the 6m goal area has no depth, zone or shot origin, including the goal centre")
+    func goalAreaCannotBeAShotOrigin() {
+        for p in [point(xMeters: 0, yMeters: 0), point(xMeters: 0, yMeters: 5.9), point(xMeters: 2, yMeters: 5)] {
+            #expect(geometry.depth(at: p) == nil)
+            #expect(geometry.zone(at: p) == nil)
+            #expect(geometry.origin(at: p) == nil)
+        }
+    }
+
+    @Test("The curved 6m boundary belongs to near, but a point just inside it is rejected")
+    func sixMeterBoundaryIsPlayable() {
+        for x in [0.0, 1.5, -4.5, 4.5] {
+            let y = abs(x) <= 1.5 ? 6.0 : (36 - pow(abs(x) - 1.5, 2)).squareRoot()
+            let onLine = point(xMeters: x, yMeters: y)
+            let inside = point(xMeters: x, yMeters: y - 0.01)
+            #expect(geometry.depth(at: onLine) == .near)
+            #expect(geometry.origin(at: onLine) != nil)
+            #expect(geometry.origin(at: inside) == nil)
+        }
+    }
+
+    @Test("The drawn 6m line follows the exact validity boundary")
+    func sixMeterLineIsPlayable() {
+        for p in geometry.line(atDistanceInMeters: geometry.sixMeterLine) {
+            #expect(geometry.origin(at: p) != nil)
+        }
+    }
+
     @Test("Straight out at exactly 9m is near")
     func exactlyNineMetersStraightOutIsNear() {
         let p = point(xMeters: 0, yMeters: 9, geometry: geometry)
@@ -250,12 +278,6 @@ struct CourtGeometryRealisticPositionTests {
     func centreBackAtElevenMetersIsCenterFar() {
         let p = point(xMeters: 0.0, yMeters: 11.0, geometry: geometry)
         #expect(geometry.zone(at: p) == CourtZone(sector: .center, depth: .far))
-    }
-
-    @Test("The degenerate goal-centre tap (0,0) resolves to center/near")
-    func goalCentreTapResolvesToCenterNear() {
-        let p = point(xMeters: 0.0, yMeters: 0.0, geometry: geometry)
-        #expect(geometry.zone(at: p) == CourtZone(sector: .center, depth: .near))
     }
 }
 
@@ -545,11 +567,10 @@ private func isPointInPolygon(_ point: CourtPoint, _ polygon: [CourtPoint]) -> B
 /// below the ~15 cm structural gap.
 private let boundaryToleranceMeters = 0.005
 
-/// True when `point` sits within tolerance of the ONLY boundary of
-/// `shape(for:)` that is genuinely curved: the 9 m near/far line, whose
-/// post-centred quarter arcs a polygon can only ever chord. A round-trip
-/// or tiling assertion skips a point here - never anywhere else - because
-/// the polygon's edge there carries the unavoidable sagitta
+/// True when `point` sits within tolerance of the curved 9 m near/far line,
+/// whose post-centred quarter arcs a polygon can only ever chord. A round-trip
+/// or tiling assertion skips a point here because the polygon's edge carries
+/// the unavoidable sagitta
 /// `boundaryToleranceMeters` documents, not because the classification or
 /// the polygon is wrong.
 ///
@@ -566,6 +587,12 @@ private let boundaryToleranceMeters = 0.005
 /// to prevent, in the one file whose job is to catch that drift.
 private func isNearTheNineMeterCurve(_ point: CourtPoint, geometry: CourtGeometry) -> Bool {
     abs(geometry.distanceToGoalMouth(for: point) - geometry.nineMeterLine) <= boundaryToleranceMeters
+}
+
+private func isNearTheSixMeterCurve(_ point: CourtPoint, geometry: CourtGeometry) -> Bool {
+    // The new inner polygon edge is chorded too; use the same bounded
+    // sagitta allowance, never a blanket tolerance for the goal area.
+    abs(geometry.distanceToGoalMouth(for: point) - geometry.sixMeterLine) <= boundaryToleranceMeters
 }
 
 @Suite("CourtGeometry shape(for: CourtZone)")
@@ -600,26 +627,29 @@ struct CourtGeometryShapeTests {
         for point in denseGridPoints() where isPointInPolygon(point, polygon) {
             sampledAtLeastOnePoint = true
             // A point strictly inside the polygon but within tolerance
-            // of the 9 m curve can legitimately fall on the wrong side of
-            // that curve - see `boundaryToleranceMeters` for why this is
-            // the unavoidable sagitta, not a defect.
-            guard !isNearTheNineMeterCurve(point, geometry: geometry) else { continue }
+            // of either curved line can legitimately fall on the wrong side
+            // of its polygon chord; straight edges have no allowance.
+            guard !isNearTheNineMeterCurve(point, geometry: geometry), !isNearTheSixMeterCurve(point, geometry: geometry) else { continue }
             #expect(geometry.zone(at: point) == zone, "\(point) inside \(zone)'s polygon resolved to \(geometry.zone(at: point))")
         }
         #expect(sampledAtLeastOnePoint, "no sampled point landed inside \(zone)'s polygon — it may be empty or malformed")
     }
 
-    @Test("The 10 zone polygons tile the whole court: every sampled point's zone(at:) result contains that point in its own polygon")
-    func zonePolygonsCoverTheCourt() {
+    @Test("The 10 zone polygons tile the playable court, but none covers the goal area")
+    func zonePolygonsCoverThePlayableCourt() {
         let geometry = CourtGeometry.standard
         let shapes = Dictionary(uniqueKeysWithValues: CourtZone.allCases.map { ($0, geometry.shape(for: $0)) })
         for point in denseGridPoints() {
-            let zone = geometry.zone(at: point)
+            guard let zone = geometry.zone(at: point) else {
+                guard !isNearTheSixMeterCurve(point, geometry: geometry) else { continue }
+                #expect(shapes.values.allSatisfy { !isPointInPolygon(point, $0) }, "goal area point is highlighted")
+                continue
+            }
             guard let polygon = shapes[zone] else {
                 Issue.record("no polygon recorded for \(zone)")
                 continue
             }
-            guard !isNearTheNineMeterCurve(point, geometry: geometry) else { continue }
+            guard !isNearTheNineMeterCurve(point, geometry: geometry), !isNearTheSixMeterCurve(point, geometry: geometry) else { continue }
             #expect(isPointInPolygon(point, polygon), "\(point) classified as \(zone) but falls outside its own polygon")
         }
     }
@@ -645,23 +675,27 @@ struct CourtGeometryShapeTests {
     func shapeRoundTripsOnNonDefaultGeometry(geometry: CourtGeometry) {
         let shapes = Dictionary(uniqueKeysWithValues: CourtZone.allCases.map { ($0, geometry.shape(for: $0)) })
         for point in denseGridPoints(columns: 137, rows: 101) {
-            let zone = geometry.zone(at: point)
+            guard let zone = geometry.zone(at: point) else {
+                guard !isNearTheSixMeterCurve(point, geometry: geometry) else { continue }
+                #expect(shapes.values.allSatisfy { !isPointInPolygon(point, $0) }, "goal area point is highlighted on \(geometry)")
+                continue
+            }
             guard let polygon = shapes[zone] else {
                 Issue.record("no polygon recorded for \(zone)")
                 continue
             }
-            guard !isNearTheNineMeterCurve(point, geometry: geometry) else { continue }
+            guard !isNearTheNineMeterCurve(point, geometry: geometry), !isNearTheSixMeterCurve(point, geometry: geometry) else { continue }
             #expect(isPointInPolygon(point, polygon), "\(point) classified as \(zone) but falls outside its own polygon on \(geometry)")
         }
     }
 
     @Test("shape(for:) never cuts a hole for the 7 m mark: a point inside the mark's hit area still belongs to its ordinary zone's polygon")
-    func shapeDoesNotExcludeTheSevenMeterMark() {
+    func shapeDoesNotExcludeTheSevenMeterMark() throws {
         let geometry = CourtGeometry.standard
         let point = geometry.sevenMeterPoint
         let zone = geometry.zone(at: point)
         #expect(zone == CourtZone(sector: .center, depth: .near))
-        let polygon = geometry.shape(for: zone)
+        let polygon = geometry.shape(for: try #require(zone))
         #expect(isPointInPolygon(point, polygon))
     }
 
@@ -712,7 +746,7 @@ struct CourtGeometryShapeTests {
     }
 
     @Test("The court's own corner is an actual vertex of the polygon of the zone that owns it")
-    func courtCornerIsAnActualVertexOfItsOwnZonesPolygon() {
+    func courtCornerIsAnActualVertexOfItsOwnZonesPolygon() throws {
         let geometry = CourtGeometry.standard
         // The right corner is exactly (1, 1) in normalized coordinates by
         // construction of `xMeters(for:)`/`yMeters(for:)` (x = 0.5 at the
@@ -723,7 +757,7 @@ struct CourtGeometryShapeTests {
         // fell between two ~1-degree samples, so the chord cut this corner
         // off by ~15 cm. It must now be an actual vertex.
         let rightCorner = CourtPoint(x: 1, y: 1)
-        let zone = geometry.zone(at: rightCorner)
+        let zone = try #require(geometry.zone(at: rightCorner))
         let polygon = geometry.shape(for: zone)
         #expect(
             polygon.contains { tolerant($0.x, rightCorner.x) && tolerant($0.y, rightCorner.y) },
@@ -731,7 +765,7 @@ struct CourtGeometryShapeTests {
         )
 
         let leftCorner = CourtPoint(x: 0, y: 1)
-        let mirroredZone = geometry.zone(at: leftCorner)
+        let mirroredZone = try #require(geometry.zone(at: leftCorner))
         let mirroredPolygon = geometry.shape(for: mirroredZone)
         #expect(
             mirroredPolygon.contains { tolerant($0.x, leftCorner.x) && tolerant($0.y, leftCorner.y) },

@@ -81,7 +81,7 @@ public struct CourtGeometry: Equatable, Hashable, Sendable {
     public let depthInMeters: Double
     /// The width of the goal itself.
     public let goalWidthInMeters: Double
-    /// Distance of the 6 m line from the goal mouth, for drawing.
+    /// Distance of the 6 m line from the goal mouth; points inside it are invalid origins.
     public let sixMeterLine: Double
     /// Distance of the 9 m line from the goal mouth; this is the near/far
     /// depth boundary.
@@ -222,12 +222,12 @@ extension CourtGeometry {
     /// reasoning as `centerBoundaryDegrees`.
     private static let backBoundaryDegrees: Double = 54
 
-    /// The depth band a tap falls into, from its distance to the goal
-    /// mouth. The boundary belongs to `.near` (docs/mvp.md describes near
-    /// as "6-9m"), a deliberate tie-break, with the same floating-point
-    /// round-trip tolerance as `sector(at:)`.
-    public func depth(at point: CourtPoint) -> CourtDepth {
-        distanceToGoalMouth(for: point) <= nineMeterLine + Self.boundaryToleranceMeters ? .near : .far
+    /// The depth band outside the 6 m goal area. Exactly 6 m belongs to
+    /// `.near`; points inside it are not legal take-off points.
+    public func depth(at point: CourtPoint) -> CourtDepth? {
+        let distance = distanceToGoalMouth(for: point)
+        guard distance >= sixMeterLine - Self.boundaryToleranceMeters else { return nil }
+        return distance <= nineMeterLine + Self.boundaryToleranceMeters ? .near : .far
     }
 
     /// Absorbs floating-point round-trip noise (normalize/denormalize
@@ -240,14 +240,10 @@ extension CourtGeometry {
     /// the same reason as `boundaryToleranceDegrees`.
     private static let boundaryToleranceMeters: Double = 1e-9
 
-    /// The zone a tap falls into: the combination of `sector(at:)` and
-    /// `depth(at:)`.
-    ///
-    /// A tap exactly at the goal centre is defined behaviour, not a
-    /// special case: `atan2(0, 0) == 0` puts it in `.center`, and a
-    /// distance of `0` puts it in `.near`.
-    public func zone(at point: CourtPoint) -> CourtZone {
-        CourtZone(sector: sector(at: point), depth: depth(at: point))
+    /// Combines sector and depth; no zone exists inside the goal area.
+    public func zone(at point: CourtPoint) -> CourtZone? {
+        guard let depth = depth(at: point) else { return nil }
+        return CourtZone(sector: sector(at: point), depth: depth)
     }
 
     /// The normalized location of the 7 m mark, for drawing and hit-testing
@@ -438,8 +434,9 @@ extension CourtGeometry {
     /// resolve a raw tap. `.sevenMeters` when the tap lands inside
     /// `sevenMeterMarkRegion` (boundary-inclusive, the same tie-break
     /// direction as `sector(at:)`/`depth(at:)`), otherwise the ordinary
-    /// zone from `zone(at:)`.
-    public func origin(at point: CourtPoint) -> ShotOrigin {
+    /// zone from `zone(at:)`. A tap inside 6 m returns nil.
+    public func origin(at point: CourtPoint) -> ShotOrigin? {
+        guard let zone = zone(at: point) else { return nil }
         let region = sevenMeterMarkRegion
         let tolerance = Self.boundaryToleranceNormalized
         let insideX = point.x >= region.x - tolerance && point.x <= region.x + region.width + tolerance
@@ -447,7 +444,7 @@ extension CourtGeometry {
         if insideX && insideY {
             return .sevenMeters
         }
-        return .zone(zone(at: point))
+        return .zone(zone)
     }
 
     /// Absorbs floating-point round-trip noise at the 7 m mark rectangle's
@@ -659,7 +656,8 @@ extension CourtGeometry {
     /// `sector(at:)` reads) and, at every angle, computing the radius
     /// where the zone's near/far boundary sits — `radiusAtGoalMouthDistance`
     /// solves the exact equation `distanceToGoalMouth(for:)` evaluates, so
-    /// this can never disagree with `depth(at:)`, the way sampling the
+    /// this can never disagree with `depth(at:)` beyond the polygon's
+    /// chord-vs-arc sagitta, the way sampling the
     /// drawn `line(atDistanceInMeters:)` polyline and interpolating
     /// between its points could.
     ///
@@ -672,9 +670,8 @@ extension CourtGeometry {
     /// reaching the 9 m line (this happens for every wing, and depends on
     /// the geometry's own proportions, never hard-coded).
     ///
-    /// For `.near`, the inner boundary is always the single goal-centre
-    /// point (every angle's own "distance 0" point is that same point);
-    /// for `.far`, the inner boundary is the near/far boundary itself,
+    /// For `.near`, the inner boundary is the 6 m line; for `.far`,
+    /// the inner boundary is the near/far boundary itself,
     /// walked back the opposite way so the outer-then-inner point list
     /// traces one continuous loop.
     public func shape(for zone: CourtZone) -> [CourtPoint] {
@@ -712,6 +709,14 @@ extension CourtGeometry {
         )
         let nearFarCriticalAngles = [cornerAngle, -cornerAngle, mouthTransition, -mouthTransition] + exitCrossings
         let exitCriticalAngles = [cornerAngle, -cornerAngle]
+        let sixMeterTransition = mouthTransitionAngleDegrees(distance: sixMeterLine)
+        let sixMeterExitCrossings = nearFarExitCrossings(
+            angleLow: angleLow,
+            angleHigh: angleHigh,
+            arcRadius: { radiusAtGoalMouthDistance(angleDegrees: $0, distance: sixMeterLine) },
+            exitRadius: { courtExitRadius(atAngleDegrees: $0) }
+        )
+        let sixMeterCriticalAngles = [cornerAngle, -cornerAngle, sixMeterTransition, -sixMeterTransition] + sixMeterExitCrossings
 
         let outerRadius: (Double) -> Double
         let outerCriticalAngles: [Double]
@@ -721,7 +726,12 @@ extension CourtGeometry {
         case .near:
             outerRadius = nearFarBoundaryRadius
             outerCriticalAngles = nearFarCriticalAngles
-            innerPoints = [normalizedPoint(xMeters: 0, yMeters: 0)]
+            innerPoints = radialArcPoints(
+                angleLow: angleLow,
+                angleHigh: angleHigh,
+                criticalAngles: sixMeterCriticalAngles,
+                radius: { min(radiusAtGoalMouthDistance(angleDegrees: $0, distance: sixMeterLine), courtExitRadius(atAngleDegrees: $0)) }
+            ).reversed()
         case .far:
             outerRadius = { courtExitRadius(atAngleDegrees: $0) }
             outerCriticalAngles = exitCriticalAngles
