@@ -378,6 +378,30 @@ struct CourtGeometrySectorBoundaryRayTests {
 
     let geometry = CourtGeometry.standard
 
+    @Test("Drawable sector cuts begin on the 6m line and retain their court-edge endpoints")
+    func playableRaysExcludeTheGoalArea() {
+        let rays = geometry.playableSectorBoundaryRays
+        #expect(rays.count == geometry.sectorBoundaryRays.count)
+        for (playable, full) in zip(rays, geometry.sectorBoundaryRays) {
+            #expect(tolerant(geometry.distanceToGoalMouth(for: playable.from), geometry.sixMeterLine))
+            #expect(geometry.zone(at: playable.from) != nil)
+            #expect(playable.to == full.to)
+            let halfway = CourtPoint(x: (playable.from.x + playable.to.x) / 2, y: (playable.from.y + playable.to.y) / 2)
+            #expect(geometry.zone(at: halfway) != nil)
+        }
+    }
+
+    @Test("Both touchline strips outside the 6m area remain selectable near zones")
+    func touchlineStripsAreNearZones() {
+        for x in [-9.5, 9.5] {
+            let p = point(xMeters: x, yMeters: 1)
+            let zone = CourtZone(sector: x < 0 ? .leftWing : .rightWing, depth: .near)
+            #expect(geometry.origin(at: p) == .zone(zone))
+            #expect(isPointInPolygon(p, geometry.shape(for: zone)))
+        }
+        #expect(geometry.origin(at: point(xMeters: 0, yMeters: 1)) == nil)
+    }
+
     @Test("Every ray starts at the goal centre")
     func everyRayStartsAtGoalCentre() {
         for ray in geometry.sectorBoundaryRays {

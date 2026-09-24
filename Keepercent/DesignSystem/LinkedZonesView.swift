@@ -25,15 +25,6 @@ struct LinkedZonesView: View {
     let reading: StatsReading
     @Binding var selection: ShotOrigin?
 
-    /// Chooses the layout directly, rather than letting `ViewThatFits`
-    /// guess from the space it is offered: inside an `HStack`, an iPhone
-    /// portrait width is still enough for `ViewThatFits` to accept its
-    /// side-by-side alternative, which then squeezes the court down to
-    /// roughly 170 pt — no longer usable to tap a zone on. `.regular`
-    /// (iPad, and an iPhone in landscape with Display Zoom off) reads as
-    /// genuinely spacious; anything else stacks instead.
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-
     /// The engine the goal side (tints AND chart) reads from: every field
     /// shot with nothing selected, or exactly the selected origin's shots
     /// otherwise. See `StatsEngine.goalEngine(forSelectedOrigin:)`'s own
@@ -43,23 +34,9 @@ struct LinkedZonesView: View {
     }
 
     var body: some View {
-        if horizontalSizeClass == .regular {
-            HStack(alignment: .top, spacing: 24) {
-                courtColumn
-                goalColumn
-            }
-        } else {
-            // No side ever competes with the other for width here, so
-            // each column's `CourtView`/`GoalView` is naturally proposed
-            // the FULL available width — unlike inside the `HStack`
-            // above, which is exactly the layout this branch exists to
-            // avoid. The caller (`TeamScoutingView`) already scrolls its
-            // whole screen, so this view does not nest a second
-            // `ScrollView` of its own.
-            VStack(alignment: .leading, spacing: 24) {
-                courtColumn
-                goalColumn
-            }
+        VStack(alignment: .leading, spacing: 24) {
+            goalColumn
+            courtColumn
         }
     }
 
@@ -68,7 +45,7 @@ struct LinkedZonesView: View {
             Text("Origin").font(.headline)
             CourtView(
                 selection: selection,
-                zoneTints: tints(from: engine.originTallies(reading)),
+                zoneTints: courtTints,
                 zoneLabels: labels(from: engine.originTallies(reading)),
                 onOriginTapped: { origin, _ in
                     // Tapping the already-selected zone clears it: a
@@ -87,6 +64,17 @@ struct LinkedZonesView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
+    }
+
+    /// Tint every playable zone, including zones without recorded shots.
+    /// Otherwise those areas show the court's green base and look like gaps
+    /// even though CourtGeometry already accepts their taps as near zones.
+    private var courtTints: [ShotOrigin: Color] {
+        let tallies = engine.originTallies(reading)
+        return Dictionary(uniqueKeysWithValues: CourtZone.allCases.map { zone in
+            let origin = ShotOrigin.zone(zone)
+            return (origin, HeatmapColor.tint(for: tallies[origin]))
+        } + [(.sevenMeters, HeatmapColor.tint(for: tallies[.sevenMeters]))])
     }
 
     /// "7 m: 1/2" when the 7 m mark has an on-target attempt recorded for

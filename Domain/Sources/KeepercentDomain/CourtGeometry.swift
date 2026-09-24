@@ -384,6 +384,21 @@ extension CourtGeometry {
         return angles.map { CourtSegment(from: goalCentre, to: sectorRayEndpoint(atAngleDegrees: $0)) }
     }
 
+    /// Only the playable part of each sector cut. The full rays still
+    /// describe the classification boundary, but must not be drawn inside
+    /// the forbidden 6 m goal area.
+    public var playableSectorBoundaryRays: [CourtSegment] {
+        sectorBoundaryRays.map { ray in
+            let angle = angleDegrees(for: ray.to)
+            let radius = radiusAtGoalMouthDistance(angleDegrees: angle, distance: sixMeterLine)
+            let radians = angle * .pi / 180
+            return CourtSegment(
+                from: normalizedPoint(xMeters: radius * sin(radians), yMeters: radius * cos(radians)),
+                to: ray.to
+            )
+        }
+    }
+
     /// Where a ray from the goal centre, at `angle` degrees off
     /// straight-ahead, leaves the drawn court — whichever of a touchline or
     /// the far depth edge it reaches first.

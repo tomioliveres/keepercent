@@ -224,8 +224,9 @@ struct CourtView: View {
         context.stroke(line, with: .color(.secondary.opacity(0.55)), lineWidth: 1)
     }
 
-    /// The zone grid: the 9 m line plus the four sector rays, together
-    /// EXACTLY the boundaries `zone(at:)` classifies against. Drawn as one
+    /// The zone grid: the 9 m line plus the playable parts of the four
+    /// sector rays. The cuts stop at 6 m so the forbidden goal area has
+    /// no interior divisions. Drawn as one
     /// combined dashed stroke, clearly heavier than the 6 m line, so the
     /// ten zones read as the thing being tapped.
     ///
@@ -236,7 +237,7 @@ struct CourtView: View {
     /// front, rather than after visual inspection, is deliberate.
     private func drawZoneGrid(in context: inout GraphicsContext, size: CGSize) {
         var grid = path(for: geometry.line(atDistanceInMeters: geometry.nineMeterLine), in: size)
-        for ray in geometry.sectorBoundaryRays {
+        for ray in geometry.playableSectorBoundaryRays {
             grid.addPath(path(for: ray, in: size))
         }
         context.stroke(
