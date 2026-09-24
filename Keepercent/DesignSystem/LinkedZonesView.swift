@@ -172,7 +172,10 @@ struct LinkedZonesView: View {
     }
 }
 
-private extension CourtSector {
+// Not `private`: the shooter card (T4.3) reuses these same names for its
+// "Where they score" origin list, so a scout never sees two different
+// names for the same zone.
+extension CourtSector {
     var displayName: String {
         switch self {
         case .leftWing: return "left wing"
@@ -184,7 +187,7 @@ private extension CourtSector {
     }
 }
 
-private extension CourtDepth {
+extension CourtDepth {
     var displayName: String {
         switch self {
         case .near: return "near"

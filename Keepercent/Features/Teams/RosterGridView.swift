@@ -3,6 +3,12 @@
 // goalkeepers visually distinct"). PRESENTATIONAL per CLAUDE.md: it draws
 // only the `[KeepercentDomain.Player]` it is given and reports taps
 // through closures — no SwiftData import, no `StoredPlayer`.
+//
+// A tap opens the shooter card (T4.3): scouting a rival is the more
+// frequent reason to open a roster row than editing it, so the tap itself
+// is now `onSelectPlayer`'s job, and editing moved to a context menu
+// (long-press) via `onEditPlayer` — the roster's edit/delete actions
+// (`RosterEditorView`'s `PlayerEditorView` sheet) are otherwise unchanged.
 
 import SwiftUI
 import KeepercentDomain
@@ -10,6 +16,7 @@ import KeepercentDomain
 struct RosterGridView: View {
     let players: [Player]
     let onSelectPlayer: (Player) -> Void
+    let onEditPlayer: (Player) -> Void
     let onTapAddUnknown: () -> Void
     /// When true (the default, and every existing call site), this view
     /// owns its own vertical scrolling, exactly as before T3.2. T3.2's
@@ -44,6 +51,13 @@ struct RosterGridView: View {
                     PlayerTileView(player: player)
                 }
                 .buttonStyle(.plain)
+                .contextMenu {
+                    Button {
+                        onEditPlayer(player)
+                    } label: {
+                        Label("Edit", systemImage: "pencil")
+                    }
+                }
             }
 
             Button(action: onTapAddUnknown) {
@@ -64,6 +78,7 @@ struct RosterGridView: View {
             Player(number: 12, name: "Sofía", isGoalkeeper: true, handedness: .right),
         ],
         onSelectPlayer: { _ in },
+        onEditPlayer: { _ in },
         onTapAddUnknown: {}
     )
 }

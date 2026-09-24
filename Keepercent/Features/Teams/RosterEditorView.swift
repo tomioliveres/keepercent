@@ -110,6 +110,13 @@ struct RosterEditorView: View {
                             RosterGridView(
                                 players: roster.players,
                                 onSelectPlayer: { player in
+                                    // T4.3: opens the shooter card, the more
+                                    // frequent reason to tap a roster row.
+                                    // Editing moved to the context menu
+                                    // below (`onEditPlayer`).
+                                    path.append(ShooterCardRoute(playerNumber: player.number))
+                                },
+                                onEditPlayer: { player in
                                     editingPlayer = team.players.first { $0.number == player.number }
                                 },
                                 onTapAddUnknown: {
@@ -168,6 +175,13 @@ struct RosterEditorView: View {
             // without touching session navigation at all.
             .navigationDestination(for: ScoutingRoute.self) { _ in
                 TeamScoutingView(team: team)
+            }
+            // T4.3: a distinct route type again, same reasoning as
+            // `ScoutingRoute` above, but this one carries the tapped
+            // shirt number so the destination knows which shooter to
+            // narrow to.
+            .navigationDestination(for: ShooterCardRoute.self) { route in
+                ShooterCardView(team: team, playerNumber: route.playerNumber)
             }
         }
         // T3.3, decision ③: the team sidebar is hidden while a session is
@@ -376,6 +390,13 @@ struct RosterEditorView: View {
 /// it exists only to give `.navigationDestination(for:)` a distinct type
 /// from the session push above.
 private struct ScoutingRoute: Hashable {}
+
+/// A route pushed onto `path` (T4.3) to reach `ShooterCardView` for one
+/// rival shooter, identified by shirt number — the same identity
+/// `StatsEngine.shots(by:)` already matches on.
+private struct ShooterCardRoute: Hashable {
+    let playerNumber: Int
+}
 
 /// A UI-ready wrapper so `.alert(presenting:)` can show whatever
 /// `RosterEditorView`'s actions threw, worded by `rosterErrorMessage` —
