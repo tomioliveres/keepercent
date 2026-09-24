@@ -110,11 +110,17 @@ struct RosterEditorView: View {
                             RosterGridView(
                                 players: roster.players,
                                 onSelectPlayer: { player in
-                                    // T4.3: opens the shooter card, the more
-                                    // frequent reason to tap a roster row.
-                                    // Editing moved to the context menu
-                                    // below (`onEditPlayer`).
-                                    path.append(ShooterCardRoute(playerNumber: player.number))
+                                    // T4.3/T4.4: opens the shooter card for
+                                    // a field player, the goalkeeper card
+                                    // for a goalkeeper — the more frequent
+                                    // reason to tap a roster row. Editing
+                                    // moved to the context menu below
+                                    // (`onEditPlayer`).
+                                    if player.isGoalkeeper {
+                                        path.append(GoalkeeperCardRoute(playerNumber: player.number))
+                                    } else {
+                                        path.append(ShooterCardRoute(playerNumber: player.number))
+                                    }
                                 },
                                 onEditPlayer: { player in
                                     editingPlayer = team.players.first { $0.number == player.number }
@@ -182,6 +188,12 @@ struct RosterEditorView: View {
             // narrow to.
             .navigationDestination(for: ShooterCardRoute.self) { route in
                 ShooterCardView(team: team, playerNumber: route.playerNumber)
+            }
+            // T4.4: same reasoning as `ShooterCardRoute` — a distinct route
+            // type carrying the tapped shirt number, so the destination
+            // knows which goalkeeper to narrow to.
+            .navigationDestination(for: GoalkeeperCardRoute.self) { route in
+                GoalkeeperCardView(team: team, playerNumber: route.playerNumber)
             }
         }
         // T3.3, decision ③: the team sidebar is hidden while a session is
@@ -395,6 +407,13 @@ private struct ScoutingRoute: Hashable {}
 /// rival shooter, identified by shirt number — the same identity
 /// `StatsEngine.shots(by:)` already matches on.
 private struct ShooterCardRoute: Hashable {
+    let playerNumber: Int
+}
+
+/// A route pushed onto `path` (T4.4) to reach `GoalkeeperCardView` for one
+/// rival goalkeeper, identified by shirt number — the same identity
+/// `StatsEngine.shots(facing:)` already matches on.
+private struct GoalkeeperCardRoute: Hashable {
     let playerNumber: Int
 }
 

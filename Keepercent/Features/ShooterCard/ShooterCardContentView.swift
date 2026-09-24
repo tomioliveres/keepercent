@@ -74,7 +74,10 @@ struct ShooterCardContentView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Where they score").font(.headline)
 
-            rankingColumn(title: "Goal zones", ranked: engine.topGoalZones(limit: 3)) { $0.displayName }
+            // Goal zones read `fieldShots`, like the goal heatmap above: 7 m
+            // stays apart (docs/mvp.md §6). Origins keep 7 m, where it is its
+            // own named origin and cannot be confused with a field zone.
+            rankingColumn(title: "Goal zones", ranked: fieldShots.topGoalZones(limit: 3)) { $0.displayName }
             rankingColumn(title: "Origins", ranked: engine.topOrigins(limit: 3)) { $0.displayName }
         }
     }
