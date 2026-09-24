@@ -631,3 +631,220 @@ struct TopOriginsTests {
         #expect(engine.topOrigins(limit: 3).isEmpty)
     }
 }
+
+// T4.4: the goalkeeper card's own rankings, mirroring `topGoalZones`'s rules
+// exactly (docs/mvp.md's T4.4 entry) but over the save-rate tallies instead
+// of the effectiveness ones: weak zones rank by goals CONCEDED, strong
+// zones rank by SAVES, both over shots on target ("on target" is
+// `saveRateByGoalZone`'s own test: outcome `.goal` or `.saved`, and only
+// `.inside` targets have a zone at all).
+@Suite("StatsEngine.weakGoalZones")
+struct WeakGoalZonesTests {
+    private let topLeft = GoalZone(row: .top, column: .left)
+    private let topCenter = GoalZone(row: .top, column: .center)
+    private let topRight = GoalZone(row: .top, column: .right)
+    private let middleLeft = GoalZone(row: .middle, column: .left)
+
+    @Test("ranks by goals conceded, descending")
+    func ranksByGoalsConcededDescending() throws {
+        let engine = StatsEngine(shots: [
+            shot(target: .inside(topLeft), outcome: .goal),
+            shot(target: .inside(topRight), outcome: .goal),
+            shot(target: .inside(topRight), outcome: .goal),
+            shot(target: .inside(topRight), outcome: .saved)
+        ])
+        let ranked = engine.weakGoalZones(limit: 3)
+        let first = try #require(ranked.first)
+        #expect(first.key == topRight)
+        // 2 goals conceded over 3 shots on target.
+        #expect(first.tally == Tally(successes: 2, attempts: 3))
+        let second = try #require(ranked.dropFirst().first)
+        #expect(second.key == topLeft)
+        #expect(second.tally == Tally(successes: 1, attempts: 1))
+    }
+
+    @Test("ties on goals conceded break on fewer shots on target")
+    func tiesBreakOnFewerAttempts() throws {
+        let engine = StatsEngine(shots: [
+            // topLeft: 1 goal conceded in 1 shot on target.
+            shot(target: .inside(topLeft), outcome: .goal),
+            // topRight: 1 goal conceded in 2 shots on target.
+            shot(target: .inside(topRight), outcome: .goal),
+            shot(target: .inside(topRight), outcome: .saved)
+        ])
+        let ranked = engine.weakGoalZones(limit: 2)
+        let first = try #require(ranked.first)
+        #expect(first.key == topLeft)
+        let second = try #require(ranked.dropFirst().first)
+        #expect(second.key == topRight)
+    }
+
+    @Test("ties on goals conceded and attempts break on the zone's canonical order")
+    func tiesBreakOnCanonicalOrder() throws {
+        let engine = StatsEngine(shots: [
+            // topLeft precedes topCenter in GoalZone.allCases.
+            shot(target: .inside(topCenter), outcome: .goal),
+            shot(target: .inside(topLeft), outcome: .goal)
+        ])
+        let ranked = engine.weakGoalZones(limit: 2)
+        let first = try #require(ranked.first)
+        #expect(first.key == topLeft)
+        let second = try #require(ranked.dropFirst().first)
+        #expect(second.key == topCenter)
+    }
+
+    @Test("a zone with shots on target but no goals conceded is not ranked")
+    func zeroConcededZoneIsExcluded() {
+        let engine = StatsEngine(shots: [
+            shot(target: .inside(topLeft), outcome: .goal),
+            shot(target: .inside(topRight), outcome: .saved),
+            shot(target: .inside(topRight), outcome: .saved)
+        ])
+        let ranked = engine.weakGoalZones(limit: 3)
+        #expect(ranked.count == 1)
+        #expect(!ranked.contains { $0.key == topRight })
+    }
+
+    @Test("limit caps the number of ranked zones returned")
+    func limitCapsCount() {
+        let engine = StatsEngine(shots: [
+            shot(target: .inside(topLeft), outcome: .goal),
+            shot(target: .inside(topCenter), outcome: .goal),
+            shot(target: .inside(topRight), outcome: .goal),
+            shot(target: .inside(middleLeft), outcome: .goal)
+        ])
+        let ranked = engine.weakGoalZones(limit: 3)
+        #expect(ranked.count == 3)
+    }
+
+    @Test("an empty engine ranks no zones")
+    func emptyEngineRanksNothing() {
+        let engine = StatsEngine(shots: [])
+        #expect(engine.weakGoalZones(limit: 3).isEmpty)
+    }
+
+    @Test("a 7 m throw that reaches a zone counts like any other shot; misses and posts never count as on target")
+    func sevenMetersCountsButMissesAndPostsDoNot() {
+        let engine = StatsEngine(shots: [
+            shot(isSevenMeters: true, target: .inside(topLeft), outcome: .goal),
+            shot(target: .post(.crossbarCenter), outcome: .post),
+            shot(target: .out(.wideLeft), outcome: .out)
+        ])
+        let ranked = engine.weakGoalZones(limit: 3)
+        #expect(ranked.count == 1)
+        #expect(ranked.first?.key == topLeft)
+        #expect(ranked.first?.tally == Tally(successes: 1, attempts: 1))
+    }
+}
+
+@Suite("StatsEngine.strongGoalZones")
+struct StrongGoalZonesTests {
+    private let topLeft = GoalZone(row: .top, column: .left)
+    private let topCenter = GoalZone(row: .top, column: .center)
+    private let topRight = GoalZone(row: .top, column: .right)
+    private let middleLeft = GoalZone(row: .middle, column: .left)
+
+    @Test("ranks by saves, descending")
+    func ranksBySavesDescending() throws {
+        let engine = StatsEngine(shots: [
+            shot(target: .inside(topLeft), outcome: .saved),
+            shot(target: .inside(topRight), outcome: .saved),
+            shot(target: .inside(topRight), outcome: .saved),
+            shot(target: .inside(topRight), outcome: .goal)
+        ])
+        let ranked = engine.strongGoalZones(limit: 3)
+        let first = try #require(ranked.first)
+        #expect(first.key == topRight)
+        #expect(first.tally == Tally(successes: 2, attempts: 3))
+        let second = try #require(ranked.dropFirst().first)
+        #expect(second.key == topLeft)
+        #expect(second.tally == Tally(successes: 1, attempts: 1))
+    }
+
+    @Test("ties on saves break on fewer shots on target")
+    func tiesBreakOnFewerAttempts() throws {
+        let engine = StatsEngine(shots: [
+            // topLeft: 1 save in 1 shot on target.
+            shot(target: .inside(topLeft), outcome: .saved),
+            // topRight: 1 save in 2 shots on target.
+            shot(target: .inside(topRight), outcome: .saved),
+            shot(target: .inside(topRight), outcome: .goal)
+        ])
+        let ranked = engine.strongGoalZones(limit: 2)
+        let first = try #require(ranked.first)
+        #expect(first.key == topLeft)
+        let second = try #require(ranked.dropFirst().first)
+        #expect(second.key == topRight)
+    }
+
+    @Test("ties on saves and attempts break on the zone's canonical order")
+    func tiesBreakOnCanonicalOrder() throws {
+        let engine = StatsEngine(shots: [
+            shot(target: .inside(topCenter), outcome: .saved),
+            shot(target: .inside(topLeft), outcome: .saved)
+        ])
+        let ranked = engine.strongGoalZones(limit: 2)
+        let first = try #require(ranked.first)
+        #expect(first.key == topLeft)
+        let second = try #require(ranked.dropFirst().first)
+        #expect(second.key == topCenter)
+    }
+
+    @Test("a zone with shots on target but no saves is not ranked")
+    func zeroSaveZoneIsExcluded() {
+        let engine = StatsEngine(shots: [
+            shot(target: .inside(topLeft), outcome: .saved),
+            shot(target: .inside(topRight), outcome: .goal),
+            shot(target: .inside(topRight), outcome: .goal)
+        ])
+        let ranked = engine.strongGoalZones(limit: 3)
+        #expect(ranked.count == 1)
+        #expect(!ranked.contains { $0.key == topRight })
+    }
+
+    @Test("limit caps the number of ranked zones returned")
+    func limitCapsCount() {
+        let engine = StatsEngine(shots: [
+            shot(target: .inside(topLeft), outcome: .saved),
+            shot(target: .inside(topCenter), outcome: .saved),
+            shot(target: .inside(topRight), outcome: .saved),
+            shot(target: .inside(middleLeft), outcome: .saved)
+        ])
+        let ranked = engine.strongGoalZones(limit: 3)
+        #expect(ranked.count == 3)
+    }
+
+    @Test("an empty engine ranks no zones")
+    func emptyEngineRanksNothing() {
+        let engine = StatsEngine(shots: [])
+        #expect(engine.strongGoalZones(limit: 3).isEmpty)
+    }
+
+    @Test("a 7 m throw that reaches a zone counts like any other shot; misses and posts never count as on target")
+    func sevenMetersCountsButMissesAndPostsDoNot() {
+        let engine = StatsEngine(shots: [
+            shot(isSevenMeters: true, target: .inside(topLeft), outcome: .saved),
+            shot(target: .post(.crossbarCenter), outcome: .post),
+            shot(target: .out(.wideLeft), outcome: .out)
+        ])
+        let ranked = engine.strongGoalZones(limit: 3)
+        #expect(ranked.count == 1)
+        #expect(ranked.first?.key == topLeft)
+        #expect(ranked.first?.tally == Tally(successes: 1, attempts: 1))
+    }
+
+    @Test("the same zone can rank in both weak and strong zones at once")
+    func sameZoneRanksInBothWeakAndStrong() throws {
+        let zone = GoalZone(row: .middle, column: .center)
+        let engine = StatsEngine(shots: [
+            shot(target: .inside(zone), outcome: .goal),
+            shot(target: .inside(zone), outcome: .saved)
+        ])
+        let weak = try #require(engine.weakGoalZones(limit: 3).first)
+        let strong = try #require(engine.strongGoalZones(limit: 3).first)
+        #expect(weak.key == zone)
+        #expect(weak.tally == Tally(successes: 1, attempts: 2))
+        #expect(strong.key == zone)
+        #expect(strong.tally == Tally(successes: 1, attempts: 2))
+    }
+}

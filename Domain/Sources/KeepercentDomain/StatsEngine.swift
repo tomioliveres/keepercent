@@ -223,6 +223,29 @@ extension StatsEngine {
     public func topOrigins(limit: Int) -> [RankedTally<ShotOrigin>] {
         Self.topRanked(from: effectivenessByOrigin, canonicalOrder: ShotOrigin.allCases, limit: limit)
     }
+
+    /// `saveRateByGoalZone`, inverted: what got past the goalkeeper rather
+    /// than what she stopped. A goal conceded is exactly a shot on target
+    /// that was not saved, so this walks no shots of its own — it derives
+    /// straight from the tally `saveRateByGoalZone` already built.
+    private var concededByGoalZone: [GoalZone: Tally] {
+        saveRateByGoalZone.mapValues { Tally(successes: $0.attempts - $0.successes, attempts: $0.attempts) }
+    }
+
+    /// The goal zones this goalkeeper concedes from most often, ranked by
+    /// goals CONCEDED (not rate) up to `limit` — the shooter card's mirror
+    /// for the goalkeeper card (T4.4). Same exclusion/tie-break rules as
+    /// `topGoalZones`: a zone with zero goals conceded is not ranked.
+    public func weakGoalZones(limit: Int) -> [RankedTally<GoalZone>] {
+        Self.topRanked(from: concededByGoalZone, canonicalOrder: GoalZone.allCases, limit: limit)
+    }
+
+    /// The goal zones this goalkeeper saves most often, ranked by SAVE
+    /// count (not rate) up to `limit`. Reuses `saveRateByGoalZone` directly:
+    /// its `successes` already ARE the save count this ranking wants.
+    public func strongGoalZones(limit: Int) -> [RankedTally<GoalZone>] {
+        Self.topRanked(from: saveRateByGoalZone, canonicalOrder: GoalZone.allCases, limit: limit)
+    }
 }
 
 // MARK: - Save rate
