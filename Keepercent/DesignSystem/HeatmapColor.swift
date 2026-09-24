@@ -32,9 +32,10 @@ enum HeatmapColor {
     }
 
     /// A short "successes/attempts" label for the zone, or nil when there
-    /// is nothing recorded to show.
+    /// is nothing recorded to show. A tally with no attempts is "no data",
+    /// as in `tint(for:)`, so it gets no label rather than "0/0".
     static func label(for tally: Tally?) -> String? {
-        guard let tally else { return nil }
+        guard let tally, tally.attempts > 0 else { return nil }
         return "\(tally.successes)/\(tally.attempts)"
     }
 }
