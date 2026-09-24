@@ -26,17 +26,20 @@
 //
 // ## Keeping the T2.x scaffold reachable (T3.1 item 7)
 //
-// `ContentView` is kept, unmodified, as the hand-verification harness for
+// `ContentView` is kept as the hand-verification harness for
 // `GoalView`/`CourtView` — it is not this task's to delete, and T3.3 will
 // build the real shot-entry screen on top of it. It stays reachable
 // through a secondary toolbar action here rather than a tab, since the
 // teams screen — not the scaffold — is now the app's real front door.
+// The debug launch router opts out of automatic seeding for its isolated
+// store; it seeds explicitly before displaying this view (or leaves it empty).
 
 import SwiftUI
 import SwiftData
 import KeepercentDomain
 
 struct TeamsView: View {
+    var seedDemoDataOnAppear = true
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \StoredRivalTeam.name) private var teams: [StoredRivalTeam]
 
@@ -114,10 +117,12 @@ struct TeamsView: View {
             }
         }
         .task {
-            do {
-                try DemoDataSeeder.seed(into: modelContext)
-            } catch {
-                seedErrorMessage = "Couldn't load demo data: \(error.localizedDescription)"
+            if seedDemoDataOnAppear {
+                do {
+                    try DemoDataSeeder.seed(into: modelContext)
+                } catch {
+                    seedErrorMessage = "Couldn't load demo data: \(error.localizedDescription)"
+                }
             }
             selectFirstTeamIfNeeded()
         }

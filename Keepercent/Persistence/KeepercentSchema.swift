@@ -18,9 +18,9 @@ enum KeepercentSchema {
     /// incompatible schema) is unrecoverable: crashing loudly at launch
     /// beats silently losing scouting data or running against a container
     /// that never actually persists.
-    static func makeContainer() -> ModelContainer {
+    static func makeContainer(inMemory: Bool = false) -> ModelContainer {
         let schema = Schema(models)
-        let configuration = ModelConfiguration(schema: schema)
+        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: inMemory)
         do {
             return try ModelContainer(for: schema, configurations: [configuration])
         } catch {

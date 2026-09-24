@@ -6,13 +6,52 @@
 
 import SwiftUI
 import SwiftData
+import KeepercentDomain
 
 @main
 struct KeepercentApp: App {
+    #if DEBUG
+    private let debugLaunch = DebugLaunchConfiguration.parse(
+        screen: UserDefaults.standard.string(forKey: "KPScreen"),
+        data: UserDefaults.standard.string(forKey: "KPData")
+    )
+    #endif
+
+    private let container: ModelContainer
+
+    init() {
+        #if DEBUG
+        if let debugLaunch {
+            // Never create or open the user's persistent store in argument mode.
+            let isolated = KeepercentSchema.makeContainer(inMemory: true)
+            if debugLaunch.data == .demo {
+                do {
+                    try DemoDataSeeder.seed(into: isolated.mainContext)
+                } catch {
+                    fatalError("Failed to seed the debug store: \(error)")
+                }
+            }
+            container = isolated
+        } else {
+            container = KeepercentSchema.makeContainer()
+        }
+        #else
+        container = KeepercentSchema.makeContainer()
+        #endif
+    }
+
     var body: some Scene {
         WindowGroup {
+            #if DEBUG
+            if let debugLaunch {
+                DebugLaunchView(configuration: debugLaunch)
+            } else {
+                TeamsView()
+            }
+            #else
             TeamsView()
+            #endif
         }
-        .modelContainer(KeepercentSchema.makeContainer())
+        .modelContainer(container)
     }
 }
