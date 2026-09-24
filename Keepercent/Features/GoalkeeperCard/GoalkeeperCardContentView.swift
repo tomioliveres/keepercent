@@ -31,6 +31,10 @@ struct GoalkeeperCardContentView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
             header
+            InsightTextView(facts: .goalkeeper(
+                overall: engine.saveRate,
+                weakZone: engine.fieldShots.weakGoalZones(limit: 1).first
+            ))
             LinkedZonesView(engine: engine, reading: .saveRate, selection: $selection)
             weakZonesSection
             strongZonesSection

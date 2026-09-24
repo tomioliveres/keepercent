@@ -34,6 +34,10 @@ struct ShooterCardContentView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
             header
+            InsightTextView(facts: .shooter(
+                overall: engine.effectiveness,
+                leadingZone: fieldShots.topGoalZones(limit: 1).first
+            ))
             LinkedZonesView(engine: engine, reading: .effectiveness, selection: $selection)
             whereTheyScoreSection
             shotShapeSection
