@@ -136,13 +136,15 @@ struct ShooterCardContentView: View {
         let heights = fieldShots.heightDistribution
         let most = heights.values.max() ?? 0
         guard most > 0 else { return "No dominant height yet" }
-        // Walk the heights in their declared order so a tie is found the
-        // same way every time; a tie has no dominant height to name.
+        // Walk the heights in their declared order so a tie is named the
+        // same way every time; a tie names every tied height instead of
+        // hiding which ones they were.
         let leaders = ShotHeight.allCases.filter { heights[$0] == most }
-        guard leaders.count == 1, let dominant = leaders.first else {
-            return "No single dominant height"
+        guard leaders.count > 1 else {
+            return "Mostly \(leaders[0].rawValue) (\(most))"
         }
-        return "Mostly \(dominant.rawValue) (\(most))"
+        let tied = leaders.map(\.rawValue).formatted(.list(type: .and))
+        return "Tied: \(tied) (\(most) each)"
     }
 
     // MARK: - Formatting
