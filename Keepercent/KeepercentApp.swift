@@ -30,6 +30,18 @@ struct KeepercentApp: App {
                 } catch {
                     fatalError("Failed to seed the debug store: \(error)")
                 }
+            } else if debugLaunch.data == .emptyGoalkeeper {
+                let goalkeeper = StoredPlayer(
+                    number: 1, name: nil, isGoalkeeper: true, handednessCode: nil
+                )
+                isolated.mainContext.insert(
+                    StoredRivalTeam(name: "Unscouted Rival", players: [goalkeeper])
+                )
+                do {
+                    try isolated.mainContext.save()
+                } catch {
+                    fatalError("Failed to seed the zero-shot debug fixture: \(error)")
+                }
             }
             container = isolated
         } else {

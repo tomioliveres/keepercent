@@ -69,8 +69,8 @@ struct ContentView: View {
 
 #if DEBUG
 /// Routes a launch argument directly to an existing screen in an isolated
-/// SwiftData store. Empty data keeps the requested route visible without
-/// inventing a team, session, or player that does not exist.
+/// SwiftData store. The empty mode remains unseeded; emptyGoalkeeper is a
+/// separate zero-shot fixture for the existing goalkeeper report route.
 struct DebugLaunchView: View {
     let configuration: DebugLaunchConfiguration
     @Query(sort: \StoredRivalTeam.name) private var teams: [StoredRivalTeam]
@@ -115,8 +115,11 @@ struct DebugLaunchView: View {
                 unavailable("No Shooter Data", description: "No rival shooter has recorded shots.")
             }
         case .goalkeeperCard:
-            if let team, let number = team.sessions.flatMap(\.shots)
-                .compactMap({ $0.facingGoalkeeper?.number }).sorted().first {
+            if let team, let number = (
+                configuration.data == .emptyGoalkeeper
+                    ? team.players.filter(\.isGoalkeeper).map(\.number)
+                    : team.sessions.flatMap(\.shots).compactMap { $0.facingGoalkeeper?.number }
+            ).sorted().first {
                 GoalkeeperCardView(team: team, playerNumber: number)
             } else {
                 unavailable("No Goalkeeper Data", description: "No rival goalkeeper has faced shots.")

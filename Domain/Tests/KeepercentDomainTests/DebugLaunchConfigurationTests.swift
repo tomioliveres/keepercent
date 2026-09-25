@@ -19,11 +19,21 @@ struct DebugLaunchConfigurationTests {
         #expect(DebugLaunchConfiguration.parse(screen: raw, data: "demo")?.screen == expected)
     }
 
-    @Test("Both data modes are selectable", arguments: [
-        ("demo", DebugLaunchData.demo), ("empty", .empty)
+    @Test("All data modes are selectable without conflating empty stores", arguments: [
+        ("demo", DebugLaunchData.demo), ("empty", .empty),
+        ("emptyGoalkeeper", .emptyGoalkeeper)
     ])
     func dataValues(raw: String, expected: DebugLaunchData) {
         #expect(DebugLaunchConfiguration.parse(screen: "teams", data: raw)?.data == expected)
+    }
+
+    @Test("The zero-shot goalkeeper fixture retains the goalkeeper card route")
+    func emptyGoalkeeperRoute() {
+        let configuration = DebugLaunchConfiguration.parse(
+            screen: "goalkeeperCard", data: "emptyGoalkeeper"
+        )
+        #expect(configuration?.screen == .goalkeeperCard)
+        #expect(configuration?.data == .emptyGoalkeeper)
     }
 
     @Test("A missing or unknown screen falls back to teams")

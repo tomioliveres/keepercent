@@ -5,7 +5,7 @@ public enum DebugLaunchScreen: String, Sendable {
 }
 
 public enum DebugLaunchData: String, Sendable {
-    case demo, empty
+    case demo, empty, emptyGoalkeeper
 }
 
 public struct DebugLaunchConfiguration: Equatable, Sendable {
