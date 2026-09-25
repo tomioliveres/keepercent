@@ -24,8 +24,8 @@ public enum CourtDepth: String, CaseIterable, Equatable, Hashable, Sendable {
     case far
 }
 
-/// One of the 10 court zones (5 sectors x 2 depths) a shot can originate
-/// from.
+/// A court origin. Near play uses five sectors; beyond 9 m the wings merge
+/// into their adjacent backs, leaving three selectable far zones.
 public struct CourtZone: Equatable, Hashable, Sendable {
     public let sector: CourtSector
     public let depth: CourtDepth
@@ -37,12 +37,11 @@ public struct CourtZone: Equatable, Hashable, Sendable {
 }
 
 extension CourtZone: CaseIterable {
-    /// All 10 zones, derived from `CourtSector` and `CourtDepth` so this
-    /// list cannot drift from those two enums.
+    /// Selectable zones. Legacy far-wing values remain decodable by code,
+    /// but raw shot points now derive the matching far-back zone instead.
     public static var allCases: [CourtZone] {
-        CourtSector.allCases.flatMap { sector in
-            CourtDepth.allCases.map { depth in CourtZone(sector: sector, depth: depth) }
-        }
+        CourtSector.allCases.map { CourtZone(sector: $0, depth: .near) }
+            + [CourtSector.leftBack, .center, .rightBack].map { CourtZone(sector: $0, depth: .far) }
     }
 }
 

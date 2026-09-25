@@ -46,7 +46,9 @@ struct CourtView: View {
     /// `handleTap` classifies a tap: `.zone` origins tint
     /// `geometry.shape(for:)`, `.sevenMeters` tints
     /// `geometry.sevenMeterMarkRegion` — the exact shapes hit-testing
-    /// already uses, never a second independently-drawn one. Empty by
+    /// already uses, never a second independently-drawn one. Far-side
+    /// strips are part of the same polygon as the adjacent far back, so
+    /// their fill and selection cannot acquire a separate seam. Empty by
     /// default, which keeps ordinary shot entry byte-for-byte unchanged.
     /// Resolved `Color`s, not raw tallies — see `GoalView`'s identical
     /// `zoneTints` for why the mapping stays out of this dumb view.
@@ -215,11 +217,11 @@ struct CourtView: View {
         context.stroke(line, with: .color(.secondary.opacity(0.55)), lineWidth: 1)
     }
 
-    /// The zone grid: the 9 m line plus the playable parts of the four
-    /// sector rays. The cuts stop at 6 m so the forbidden goal area has
-    /// no interior divisions. Drawn as one
+    /// The zone grid: the 9 m line plus the selectable sector cuts. All
+    /// cuts stop at 6 m; the outer wing/back cuts also stop at 9 m because
+    /// the far wing strips belong to the far backs. Drawn as one
     /// combined dashed stroke, clearly heavier than the 6 m line, so the
-    /// ten zones read as the thing being tapped.
+    /// eight zones read as the thing being tapped.
     ///
     /// This is the lesson T2.1 learned the hard way: `GoalView`'s first
     /// 3x3 grid was drawn at the same weight as its decorative net, so the

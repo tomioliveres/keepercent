@@ -234,7 +234,7 @@ struct CourtGeometryZoneSurjectivityTests {
         "Every CourtZone is reachable from a representative point",
         arguments: [
             (xMeters: -8.0, yMeters: 3.0, zone: CourtZone(sector: .leftWing, depth: .near)),
-            (xMeters: -10.0, yMeters: 7.0, zone: CourtZone(sector: .leftWing, depth: .far)),
+            (xMeters: -10.0, yMeters: 7.0, zone: CourtZone(sector: .leftBack, depth: .far)),
             (xMeters: -5.0, yMeters: 8.0, zone: CourtZone(sector: .leftBack, depth: .near)),
             (xMeters: -6.0, yMeters: 10.0, zone: CourtZone(sector: .leftBack, depth: .far)),
             (xMeters: 0.0, yMeters: 6.0, zone: CourtZone(sector: .center, depth: .near)),
@@ -242,7 +242,7 @@ struct CourtGeometryZoneSurjectivityTests {
             (xMeters: 5.0, yMeters: 8.0, zone: CourtZone(sector: .rightBack, depth: .near)),
             (xMeters: 6.0, yMeters: 10.0, zone: CourtZone(sector: .rightBack, depth: .far)),
             (xMeters: 8.0, yMeters: 3.0, zone: CourtZone(sector: .rightWing, depth: .near)),
-            (xMeters: 10.0, yMeters: 7.0, zone: CourtZone(sector: .rightWing, depth: .far))
+            (xMeters: 10.0, yMeters: 7.0, zone: CourtZone(sector: .rightBack, depth: .far))
         ]
     )
     func everyZoneIsReachable(input: (xMeters: Double, yMeters: Double, zone: CourtZone)) {
@@ -378,16 +378,57 @@ struct CourtGeometrySectorBoundaryRayTests {
 
     let geometry = CourtGeometry.standard
 
-    @Test("Drawable sector cuts begin on the 6m line and retain their court-edge endpoints")
+    @Test("Drawable cuts start at 6m; outer cuts stop at 9m while center cuts reach the edge")
     func playableRaysExcludeTheGoalArea() {
         let rays = geometry.playableSectorBoundaryRays
         #expect(rays.count == geometry.sectorBoundaryRays.count)
         for (playable, full) in zip(rays, geometry.sectorBoundaryRays) {
             #expect(tolerant(geometry.distanceToGoalMouth(for: playable.from), geometry.sixMeterLine))
             #expect(geometry.zone(at: playable.from) != nil)
-            #expect(playable.to == full.to)
+            if abs(geometry.angleDegrees(for: full.to)) > 50 {
+                #expect(tolerant(geometry.distanceToGoalMouth(for: playable.to), geometry.nineMeterLine))
+            } else {
+                #expect(playable.to == full.to)
+            }
             let halfway = CourtPoint(x: (playable.from.x + playable.to.x) / 2, y: (playable.from.y + playable.to.y) / 2)
             #expect(geometry.zone(at: halfway) != nil)
+        }
+    }
+
+    @Test("Far strips and adjacent bands resolve to the same three origins, while near touchlines remain wings")
+    func mergedFarOriginsKeepNearBoundary() {
+        let left = CourtZone(sector: .leftBack, depth: .far)
+        let right = CourtZone(sector: .rightBack, depth: .far)
+        for (x, band, expected) in [(-10.0, -6.0, left), (10.0, 6.0, right)] {
+            #expect(geometry.origin(at: point(xMeters: x, yMeters: 7)) == .zone(expected))
+            #expect(geometry.origin(at: point(xMeters: band, yMeters: 10)) == .zone(expected))
+            let nearTouchline = point(xMeters: x, yMeters: 2)
+            #expect(geometry.depth(at: nearTouchline) == .near)
+            #expect(geometry.origin(at: nearTouchline) == .zone(CourtZone(sector: x < 0 ? .leftWing : .rightWing, depth: .near)))
+        }
+        #expect(geometry.origin(at: point(xMeters: 0, yMeters: 11)) == .zone(CourtZone(sector: .center, depth: .far)))
+        #expect(geometry.origin(at: geometry.sevenMeterPoint) == .sevenMeters)
+    }
+
+    @Test("Touchline near/far follows the curved 9m goal-mouth boundary, not its y-coordinate or angle")
+    func touchlineNineMeterBoundary() {
+        let x = geometry.widthInMeters / 2
+        let y = (pow(geometry.nineMeterLine, 2) - pow(x - geometry.goalWidthInMeters / 2, 2)).squareRoot()
+        for sign in [-1.0, 1.0] {
+            let side = sign < 0 ? CourtSector.leftWing : .rightWing
+            let farSide = sign < 0 ? CourtSector.leftBack : .rightBack
+            #expect(geometry.zone(at: point(xMeters: sign * x, yMeters: y - 0.01)) == CourtZone(sector: side, depth: .near))
+            #expect(geometry.zone(at: point(xMeters: sign * x, yMeters: y + 0.01)) == CourtZone(sector: farSide, depth: .far))
+        }
+    }
+
+    @Test("The far side polygon includes both strip and band without an interior wing boundary")
+    func mergedFarSidePolygon() {
+        for (x, band, sector) in [(-10.0, -6.0, CourtSector.leftBack), (10.0, 6.0, CourtSector.rightBack)] {
+            let polygon = geometry.shape(for: CourtZone(sector: sector, depth: .far))
+            #expect(isPointInPolygon(point(xMeters: x + (x < 0 ? 0.05 : -0.05), yMeters: 7), polygon))
+            #expect(isPointInPolygon(point(xMeters: band, yMeters: 10), polygon))
+            #expect(!isPointInPolygon(point(xMeters: x + (x < 0 ? 0.05 : -0.05), yMeters: 2), polygon))
         }
     }
 
@@ -659,7 +700,7 @@ struct CourtGeometryShapeTests {
         #expect(sampledAtLeastOnePoint, "no sampled point landed inside \(zone)'s polygon — it may be empty or malformed")
     }
 
-    @Test("The 10 zone polygons tile the playable court, but none covers the goal area")
+    @Test("The eight zone polygons tile the playable court, but none covers the goal area")
     func zonePolygonsCoverThePlayableCourt() {
         let geometry = CourtGeometry.standard
         let shapes = Dictionary(uniqueKeysWithValues: CourtZone.allCases.map { ($0, geometry.shape(for: $0)) })

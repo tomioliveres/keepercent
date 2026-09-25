@@ -67,7 +67,9 @@ struct LinkedZonesView: View {
         }
     }
 
-    /// Tint every playable zone, including zones without recorded shots.
+    /// Tint every selectable zone, including zones without recorded shots.
+    /// CourtZone.allCases includes only three far zones: the far touchline
+    /// strips share their side band's geometry, tally, and selection.
     /// Otherwise those areas show the court's green base and look like gaps
     /// even though CourtGeometry already accepts their taps as near zones.
     private var courtTints: [ShotOrigin: Color] {

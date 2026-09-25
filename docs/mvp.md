@@ -72,10 +72,10 @@ A tap on the frame or outside **fully resolves** the outcome (`post` / `out`). A
 
 - Store the raw normalized tap point, and **derive** the zone from it (so zones can be redefined without data loss).
 - **Normalized frame** (the contract between the view and the domain): `x` runs 0 → 1 from the shooter's left touchline to the shooter's right touchline across the 20 m court width; `y` runs 0 → 1 from the goal line to the far edge of the drawn area (15 m, deep enough for any real shot). Out-of-range taps are clamped rather than dropped, so a drag ending a pixel outside the canvas still records a shot.
-- Zones (validated, based on the reference app): **5 radial sectors** fanning out from the goal (left wing, left back, center, right back, right wing) × **2 depths** split by the 9m dashed line (near: 6–9m, far: beyond 9m) = **10 zones**, plus the 7m mark. The pivot is "center, near".
+- Zones: **5 radial sectors** from the goal inside the 9m line (left wing, left back, center, right back, right wing), and **3 beyond it** (left, center, right) = **8 selectable zones**, plus the separate 7m mark. Beyond 9m, each touchline strip merges into its adjacent side zone with no interior seam; within the real 9m curve touchline origins remain near wings. The pivot is "center, near".
 - **Real court geometry** (the drawing must match what a handball player expects, and the zone math is derived from it): the goal is 3 m wide; the 6 m area and the 9 m line are NOT semicircles — each is two quarter circles centred on the goalposts joined by a straight segment parallel to the goal line; the 7 m mark is a short line 7 m from the goal line, centred.
 - Zone derivation is pure geometry, and the **angle and the distance are measured from different references on purpose**:
-  - **Sector** — the signed angle at the **goal centre**, measured from the axis running straight out of the goal, positive toward the shooter's right. The 180° half-plane is split evenly into 5 sectors of 36°, so the cuts fall at ±18° and ±54°. Those cuts land between the real playing positions: a wing at the corner of the 6 m area sits near 74°, a back near 29°, the centre near 0°. A boundary angle belongs to the more central sector.
+  - **Sector** — the signed angle at the **goal centre**, measured from the axis running straight out of the goal, positive toward the shooter's right. Inside 9m the 180° half-plane is split into 5 sectors of 36°, with cuts at ±18° and ±54°. Beyond 9m, the outer cuts stop: wing angles join their corresponding side back, leaving three zones. A boundary angle belongs to the more central sector.
   - **Depth** — the distance to the **goal mouth** (the 3 m segment between the posts), not to the goal centre. The 9 m line *is* the locus of points 9 m from that segment, which is exactly why it is drawn as two quarter circles joined by a straight segment. Measuring from the goal centre would give a circle instead, and a tap that clearly falls outside the drawn 9 m line near a post would be classified as near. The boundary (exactly 9 m) belongs to `near`.
   - Because the raw normalized point is what gets stored, both thresholds can be redefined later without losing a single recorded shot.
 - Layout: **goal on top, court below, on the same screen**. Court tap and goal tap form one vertical path.
@@ -218,7 +218,7 @@ Rules for the compressed plan:
 ## 13. Open Questions
 
 1. ~~Goal map perspective~~ → **Resolved: shooter's view** (§5.1).
-2. ~~Court zones~~ → **Resolved: 5 radial sectors × 2 depths + 7m** (§5.2).
+2. ~~Court zones~~ → **Resolved: 5 near sectors + 3 far sectors + 7m** (§5.2).
 3. ~~Outcomes~~ → **Resolved: blocked shots are not recorded.** They say nothing about the goalkeeper or the shooter's target.
 4. ~~App name~~ → **Resolved: Keepercent**.
 5. ~~Submission logistics~~ → **Resolved**: the user can submit from a phone over the weekend if the link arrives late.

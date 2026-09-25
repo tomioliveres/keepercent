@@ -4,19 +4,19 @@ import Testing
 @Suite("CourtZone")
 struct CourtZoneTests {
 
-    @Test("5 sectors x 2 depths yields exactly 10 distinct zones")
-    func gridYieldsTenDistinctZones() {
+    @Test("Five near sectors and three far sectors yield eight selectable zones")
+    func gridYieldsEightDistinctZones() {
         let zones = CourtZone.allCases
-        #expect(zones.count == 10)
-        #expect(Set(zones).count == 10)
+        #expect(zones.count == 8)
+        #expect(Set(zones).count == 8)
     }
 
-    @Test("Every sector/depth combination is present exactly once")
+    @Test("Every near sector and only the three far bands are selectable")
     func everyCombinationIsPresent() {
         for sector in CourtSector.allCases {
             for depth in CourtDepth.allCases {
                 let zone = CourtZone(sector: sector, depth: depth)
-                #expect(CourtZone.allCases.contains(zone))
+                #expect(CourtZone.allCases.contains(zone) == (depth == .near || (sector != .leftWing && sector != .rightWing)))
             }
         }
     }
@@ -25,11 +25,11 @@ struct CourtZoneTests {
 @Suite("ShotOrigin")
 struct ShotOriginTests {
 
-    @Test("10 zones plus the 7m mark yields exactly 11 distinct origins")
-    func allCasesHasElevenDistinctOrigins() {
+    @Test("Eight zones plus the 7m mark yield nine distinct origins")
+    func allCasesHasNineDistinctOrigins() {
         let origins = ShotOrigin.allCases
-        #expect(origins.count == 11)
-        #expect(Set(origins).count == 11)
+        #expect(origins.count == 9)
+        #expect(Set(origins).count == 9)
     }
 }
 
@@ -47,6 +47,15 @@ struct CourtZoneCodeTests {
     func knownCodeFormats() {
         #expect(CourtZone(sector: .leftWing, depth: .near).code == "leftWing.near")
         #expect(CourtZone(sector: .center, depth: .far).code == "center.far")
+    }
+
+    @Test("Legacy far-wing codes still decode without losing their original code")
+    func legacyFarWingCodes() {
+        for side in ["leftWing", "rightWing"] {
+            let code = "\(side).far"
+            #expect(CourtZone(code: code)?.code == code)
+            #expect(ShotOrigin(code: "zone.\(code)")?.code == "zone.\(code)")
+        }
     }
 
     @Test(

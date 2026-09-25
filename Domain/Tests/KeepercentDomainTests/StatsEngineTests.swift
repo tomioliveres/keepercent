@@ -107,6 +107,27 @@ struct EmptyEngineTests {
 @Suite("StatsEngine filters")
 struct FilterTests {
 
+    @Test("Far side strip and band share one filter, tally, ranking and goal sample; 7m stays separate")
+    func mergedFarOriginStatistics() {
+        let left = ShotOrigin.zone(CourtZone(sector: .leftBack, depth: .far))
+        let right = ShotOrigin.zone(CourtZone(sector: .rightBack, depth: .far))
+        let engine = StatsEngine(shots: [
+            shot(originPoint: point(xMeters: -10, yMeters: 7), outcome: .goal),
+            shot(originPoint: point(xMeters: -6, yMeters: 10), outcome: .saved),
+            shot(originPoint: point(xMeters: 10, yMeters: 7), outcome: .saved),
+            shot(isSevenMeters: true, outcome: .goal)
+        ])
+        #expect(engine.effectivenessByOrigin[left] == Tally(successes: 1, attempts: 2))
+        #expect(engine.saveRateByOrigin[left] == Tally(successes: 1, attempts: 2))
+        #expect(engine.saveRateByOrigin[right] == Tally(successes: 1, attempts: 1))
+        #expect(engine.effectivenessByOrigin[.sevenMeters] == Tally(successes: 1, attempts: 1))
+        #expect(engine.shots(from: left).shots.count == 2)
+        #expect(engine.goalEngine(forSelectedOrigin: left).shots.count == 2)
+        #expect(engine.goalEngine(forSelectedOrigin: .sevenMeters).shots.count == 1)
+        #expect(engine.topOrigins(limit: 3).contains { $0.key == left && $0.tally.attempts == 2 })
+        #expect(engine.effectivenessByOrigin.count == 3)
+    }
+
     @Test("shots(by:) keeps only rival shots from that shooter number")
     func filtersByShooterNumber() {
         let shooter7 = Player(number: 7)

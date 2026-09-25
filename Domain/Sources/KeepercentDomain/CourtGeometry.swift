@@ -240,10 +240,19 @@ extension CourtGeometry {
     /// the same reason as `boundaryToleranceDegrees`.
     private static let boundaryToleranceMeters: Double = 1e-9
 
-    /// Combines sector and depth; no zone exists inside the goal area.
+    /// Combines sector and depth; the far wing strips belong to the adjacent
+    /// far backs. No zone exists inside the goal area.
     public func zone(at point: CourtPoint) -> CourtZone? {
         guard let depth = depth(at: point) else { return nil }
-        return CourtZone(sector: sector(at: point), depth: depth)
+        let sector = sector(at: point)
+        if depth == .far {
+            switch sector {
+            case .leftWing: return CourtZone(sector: .leftBack, depth: .far)
+            case .rightWing: return CourtZone(sector: .rightBack, depth: .far)
+            case .leftBack, .center, .rightBack: break
+            }
+        }
+        return CourtZone(sector: sector, depth: depth)
     }
 
     /// The normalized location of the 7 m mark, for drawing and hit-testing
@@ -384,17 +393,26 @@ extension CourtGeometry {
         return angles.map { CourtSegment(from: goalCentre, to: sectorRayEndpoint(atAngleDegrees: $0)) }
     }
 
-    /// Only the playable part of each sector cut. The full rays still
-    /// describe the classification boundary, but must not be drawn inside
-    /// the forbidden 6 m goal area.
+    /// Only selectable cuts: the 18-degree cuts reach the court edge, while
+    /// the 54-degree wing/back cuts end at 9 m, where those far zones merge.
+    /// None is drawn inside the forbidden 6 m area.
     public var playableSectorBoundaryRays: [CourtSegment] {
         sectorBoundaryRays.map { ray in
             let angle = angleDegrees(for: ray.to)
             let radius = radiusAtGoalMouthDistance(angleDegrees: angle, distance: sixMeterLine)
             let radians = angle * .pi / 180
+            let end: CourtPoint
+            if abs(angle) > Self.centerBoundaryDegrees + Self.boundaryToleranceDegrees {
+                let farRadius = radiusAtGoalMouthDistance(angleDegrees: angle, distance: nineMeterLine)
+                let exitRadius = courtExitRadius(atAngleDegrees: angle)
+                let clipped = min(farRadius, exitRadius)
+                end = normalizedPoint(xMeters: clipped * sin(radians), yMeters: clipped * cos(radians))
+            } else {
+                end = ray.to
+            }
             return CourtSegment(
                 from: normalizedPoint(xMeters: radius * sin(radians), yMeters: radius * cos(radians)),
-                to: ray.to
+                to: end
             )
         }
     }
@@ -472,19 +490,21 @@ extension CourtGeometry {
 
 extension CourtGeometry {
     /// The two angle bounds (degrees, `angleDegrees(for:)`'s own
-    /// convention) a `CourtSector` occupies, from the SAME
+    /// convention) a selectable zone occupies, from the SAME
     /// `centerBoundaryDegrees`/`backBoundaryDegrees` constants
     /// `sector(at:)` classifies against — never a re-typed 18/54 literal.
     /// The outer wing bound is the mathematical extreme `atan2` can reach
     /// for an on-court point (`y >= 0`), never a ray: see `shape(for:)`'s
     /// header comment for why a wing has no such ray.
-    private static func angleBoundsDegrees(for sector: CourtSector) -> (low: Double, high: Double) {
-        switch sector {
-        case .leftWing: return (-90, -backBoundaryDegrees)
-        case .leftBack: return (-backBoundaryDegrees, -centerBoundaryDegrees)
-        case .center: return (-centerBoundaryDegrees, centerBoundaryDegrees)
-        case .rightBack: return (centerBoundaryDegrees, backBoundaryDegrees)
-        case .rightWing: return (backBoundaryDegrees, 90)
+    private static func angleBoundsDegrees(for zone: CourtZone) -> (low: Double, high: Double) {
+        switch (zone.sector, zone.depth) {
+        case (.leftWing, _): return (-90, -backBoundaryDegrees)
+        case (.leftBack, .near): return (-backBoundaryDegrees, -centerBoundaryDegrees)
+        case (.leftBack, .far): return (-90, -centerBoundaryDegrees)
+        case (.center, _): return (-centerBoundaryDegrees, centerBoundaryDegrees)
+        case (.rightBack, .near): return (centerBoundaryDegrees, backBoundaryDegrees)
+        case (.rightBack, .far): return (centerBoundaryDegrees, 90)
+        case (.rightWing, _): return (backBoundaryDegrees, 90)
         }
     }
 
@@ -666,7 +686,7 @@ extension CourtGeometry {
     /// NOT repeated at the end: a caller closing the shape connects the
     /// last point back to the first.
     ///
-    /// Built by sweeping `zone.sector`'s angle range (from the SAME
+    /// Built by sweeping the zone's angle range (from the SAME
     /// `centerBoundaryDegrees`/`backBoundaryDegrees` constants
     /// `sector(at:)` reads) and, at every angle, computing the radius
     /// where the zone's near/far boundary sits — `radiusAtGoalMouthDistance`
@@ -679,18 +699,16 @@ extension CourtGeometry {
     /// At every angle the boundary radius is clamped to
     /// `courtExitRadius(atAngleDegrees:)`: this is what keeps a wing's
     /// outer edge on the court's own touchline/far edge — never a ray,
-    /// exactly matching the documented rule that wings have no outer ray
-    /// — and what shrinks a sector's far zone to a degenerate sliver at
-    /// whichever angle its ray already leaves the court before ever
-    /// reaching the 9 m line (this happens for every wing, and depends on
-    /// the geometry's own proportions, never hard-coded).
+    /// exactly matching the documented rule that wings have no outer ray.
+    /// A far-side polygon spans the back and its former wing strip in one
+    /// sweep, so there is no separate interior fill edge at 54 degrees.
     ///
     /// For `.near`, the inner boundary is the 6 m line; for `.far`,
     /// the inner boundary is the near/far boundary itself,
     /// walked back the opposite way so the outer-then-inner point list
     /// traces one continuous loop.
     public func shape(for zone: CourtZone) -> [CourtPoint] {
-        let (angleLow, angleHigh) = Self.angleBoundsDegrees(for: zone.sector)
+        let (angleLow, angleHigh) = Self.angleBoundsDegrees(for: zone)
         let boundaryDistance = nineMeterLine
 
         func nearFarBoundaryRadius(_ angle: Double) -> Double {

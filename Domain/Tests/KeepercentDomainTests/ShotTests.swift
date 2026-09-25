@@ -131,6 +131,14 @@ struct ShotOriginDerivationTests {
         #expect(recorded.origin == .zone(input.zone))
     }
 
+    @Test("A previously stored raw far-wing point now derives the merged side origin without changing coordinates")
+    func rawFarStripRetainsItsPoint() {
+        let raw = point(xMeters: -10, yMeters: 7)
+        let recorded = shot(originPoint: raw)
+        #expect(recorded.originPoint == raw)
+        #expect(recorded.origin == .zone(CourtZone(sector: .leftBack, depth: .far)))
+    }
+
     @Test("Neither 7m nor an originPoint means no origin")
     func noOriginWhenNeitherIsSet() {
         let recorded = shot(originPoint: nil, isSevenMeters: false)
