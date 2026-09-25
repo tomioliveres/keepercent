@@ -68,15 +68,6 @@ struct CourtView: View {
     /// caller to know to ignore it.
     let onOriginTapped: (ShotOrigin, CourtPoint?) -> Void
 
-    /// Shared "this is the current selection" tint with `GoalView`'s own
-    /// identical constant. No shared palette file exists (CLAUDE.md), so
-    /// this literal is kept in sync with `GoalView.swift` by convention,
-    /// not by import. Blue reads as selection across iOS and does not
-    /// collide with this file's own surface green or 7 m mark orange.
-    /// 0.45 matches `drawSevenMeterMark`'s own opacity, already proven not
-    /// to swallow the dashed zone grid or the 9 m line underneath it.
-    private let selectionHighlightColor = Color(.systemBlue).opacity(0.45)
-
     init(
         geometry: CourtGeometry = .standard,
         selection: ShotOrigin? = nil,
@@ -165,8 +156,8 @@ struct CourtView: View {
         drawSixMeterLine(in: &context, size: size)
         drawZoneGrid(in: &context, size: size)
         drawSevenMeterMark(in: &context, size: size)
-        drawZoneLabels(in: &context, size: size)
         drawSelectionHighlight(in: &context, size: size)
+        drawZoneLabels(in: &context, size: size)
         drawOutline(in: &context, size: size)
         drawGoalMouth(in: &context, size: size)
     }
@@ -364,11 +355,8 @@ struct CourtView: View {
     }
 
     /// Fills the region the currently `selection`ed origin corresponds to.
-    /// Drawn after the zone grid, 6 m/9 m lines and 7 m mark, so the
-    /// translucent highlight sits on top of them (still legible through it,
-    /// same opacity as `drawSevenMeterMark`'s own fill) — but before
-    /// `drawOutline`/`drawGoalMouth`, so those crisp boundary strokes stay
-    /// on top of the highlight rather than getting tinted themselves.
+    /// Drawn after the grid and mark but before labels and outline: the
+    /// contrasting border identifies the selection without hiding its count.
     ///
     /// `.sevenMeters` reuses `geometry.sevenMeterMarkRegion` — the exact
     /// rect `drawSevenMeterMark` already fills and `origin(at:)` already
@@ -383,9 +371,13 @@ struct CourtView: View {
         switch selection {
         case .sevenMeters:
             let rect = pixelRect(for: geometry.sevenMeterMarkRegion, in: size)
-            context.fill(Path(rect), with: .color(selectionHighlightColor))
+            let path = Path(rect)
+            context.fill(path, with: .color(HeatmapColor.selectionFill))
+            context.stroke(path, with: .color(HeatmapColor.selectionOutline), lineWidth: 3)
         case .zone(let zone):
-            context.fill(zonePath(for: zone, in: size), with: .color(selectionHighlightColor))
+            let path = zonePath(for: zone, in: size)
+            context.fill(path, with: .color(HeatmapColor.selectionFill))
+            context.stroke(path, with: .color(HeatmapColor.selectionOutline), lineWidth: 3)
         }
     }
 

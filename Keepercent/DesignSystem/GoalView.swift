@@ -86,17 +86,6 @@ struct GoalView: View {
     /// `GoalGeometry`.
     private let netCellsAcross = 12
 
-    /// Shared "this is the current selection" tint with `CourtView`'s own
-    /// identical constant. No shared palette file exists (CLAUDE.md), so
-    /// this literal is kept in sync with `CourtView.swift` by convention,
-    /// not by import. Blue reads as selection across iOS and does not
-    /// collide with any other semantic color already used in this file
-    /// (the out band's grays, the frame's `.primary`). 0.45 matches the
-    /// opacity `CourtView.drawSevenMeterMark` already uses for its own
-    /// translucent fill over line art, a value already proven not to
-    /// swallow the dashed zone grid underneath it.
-    private let selectionHighlightColor = Color(.systemBlue).opacity(0.45)
-
     /// The tint for each `MissDirection`'s share of the out band.
     ///
     /// `regions(for:within:)` tiles the WHOLE band, so leaving all three
@@ -259,6 +248,7 @@ struct GoalView: View {
         drawMouth(in: &context, mouthRect: mouthRect, canvasSize: size)
         drawFrame(in: &context, size: size)
         drawSelectionHighlight(in: &context, size: size)
+        drawZoneLabels(in: &context, canvasSize: size)
     }
 
     /// The out band: a visible margin beyond the frame band, distinct from
@@ -307,7 +297,6 @@ struct GoalView: View {
         drawNet(in: &context, mouthRect: mouthRect)
         drawZoneTints(in: &context, canvasSize: canvasSize)
         drawGridLines(in: &context, canvasSize: canvasSize)
-        drawZoneLabels(in: &context, canvasSize: canvasSize)
     }
 
     /// The heatmap tint per zone (T4.2), painted on the exact same rect
@@ -324,7 +313,8 @@ struct GoalView: View {
     }
 
     /// The optional "successes/attempts" label for each tinted zone,
-    /// centred in the same rect the tint and the grid line share.
+    /// centred in the same rect the tint and grid line share. Drawn after
+    /// selection so the tint cannot wash out its numeric sample.
     private func drawZoneLabels(in context: inout GraphicsContext, canvasSize: CGSize) {
         for (zone, label) in zoneLabels {
             let rect = pixelRect(for: geometry.region(for: zone), in: canvasSize)
@@ -442,8 +432,8 @@ struct GoalView: View {
     }
 
     /// Fills the region(s) the currently `selection`ed target corresponds
-    /// to. Drawn last, on top of the mouth grid, the frame and the
-    /// out-band accents, so the highlight stays visible no matter which of
+    /// to. Drawn above the mouth grid, frame and out-band accents (but below
+    /// tally labels), so the highlight stays visible no matter which of
     /// the three `GoalTarget` cases is selected. `geometry.regions(for:
     /// within:)` is the one call that already covers all three (`.inside`,
     /// `.post`, `.out`), so this needs no `switch` of its own.
@@ -460,7 +450,9 @@ struct GoalView: View {
         let bounds = normalizedBounds(for: size)
         for region in geometry.regions(for: selection, within: bounds) {
             let rect = pixelRect(for: region, in: size)
-            context.fill(Path(rect), with: .color(selectionHighlightColor))
+            let path = Path(rect)
+            context.fill(path, with: .color(HeatmapColor.selectionFill))
+            context.stroke(path, with: .color(HeatmapColor.selectionOutline), lineWidth: 3)
         }
     }
 

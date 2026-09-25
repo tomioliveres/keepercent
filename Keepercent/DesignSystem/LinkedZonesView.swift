@@ -24,6 +24,7 @@ struct LinkedZonesView: View {
     let engine: StatsEngine
     let reading: StatsReading
     @Binding var selection: ShotOrigin?
+    @Environment(\.colorScheme) private var colorScheme
 
     /// The engine the goal side (tints AND chart) reads from: every field
     /// shot with nothing selected, or exactly the selected origin's shots
@@ -73,8 +74,8 @@ struct LinkedZonesView: View {
         let tallies = engine.originTallies(reading)
         return Dictionary(uniqueKeysWithValues: CourtZone.allCases.map { zone in
             let origin = ShotOrigin.zone(zone)
-            return (origin, HeatmapColor.tint(for: tallies[origin]))
-        } + [(.sevenMeters, HeatmapColor.tint(for: tallies[.sevenMeters]))])
+            return (origin, HeatmapColor.tint(for: tallies[origin], appearance: colorScheme))
+        } + [(.sevenMeters, HeatmapColor.tint(for: tallies[.sevenMeters], appearance: colorScheme))])
     }
 
     /// "7 m: 1/2" when the 7 m mark has an on-target attempt recorded for
@@ -90,7 +91,7 @@ struct LinkedZonesView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(reading == .effectiveness ? "Effectiveness" : "Save rate").font(.headline)
             GoalView(
-                zoneTints: tints(from: goalEngine.goalZoneTallies(reading)),
+                zoneTints: goalTints,
                 zoneLabels: labels(from: goalEngine.goalZoneTallies(reading)),
                 onTargetTapped: { _ in }
             )
@@ -147,8 +148,13 @@ struct LinkedZonesView: View {
 
     // MARK: - Tally -> tint/label
 
-    private func tints<Key: Hashable>(from tallies: [Key: Tally]) -> [Key: Color] {
-        tallies.mapValues { HeatmapColor.tint(for: $0) }
+    /// Cover all nine goal cells, not only cells with shots. The tally map
+    /// omits empty zones, but the drawing must still mark them as no data.
+    private var goalTints: [GoalZone: Color] {
+        let tallies = goalEngine.goalZoneTallies(reading)
+        return Dictionary(uniqueKeysWithValues: GoalZone.allCases.map { zone in
+            (zone, HeatmapColor.tint(for: tallies[zone], appearance: colorScheme))
+        })
     }
 
     private func labels<Key: Hashable>(from tallies: [Key: Tally]) -> [Key: String] {
