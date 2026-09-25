@@ -40,5 +40,14 @@ struct GoalkeeperCardView: View {
         // header already shows "#1 · Name".
         .navigationTitle("Goalkeeper")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                NavigationLink {
+                    TeamReportView(team: team, goalkeeperNumber: playerNumber)
+                } label: {
+                    Label("Team Report", systemImage: "square.and.arrow.up")
+                }
+            }
+        }
     }
 }
