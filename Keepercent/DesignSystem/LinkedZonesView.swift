@@ -38,6 +38,8 @@ struct LinkedZonesView: View {
         VStack(alignment: .leading, spacing: 24) {
             goalColumn
             courtColumn
+            captionView
+            distributionCharts
         }
     }
 
@@ -102,8 +104,6 @@ struct LinkedZonesView: View {
                 isAccessibleAction: false,
                 onTargetTapped: { _ in }
             )
-            captionView
-            distributionCharts
         }
     }
 
