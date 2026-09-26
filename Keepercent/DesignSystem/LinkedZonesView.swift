@@ -48,6 +48,8 @@ struct LinkedZonesView: View {
                 selection: selection,
                 zoneTints: courtTints,
                 zoneLabels: labels(from: engine.originTallies(reading)),
+                accessibilityTallies: engine.originTallies(reading),
+                accessibilityReading: reading,
                 onOriginTapped: { origin, _ in
                     // Tapping the already-selected zone clears it: a
                     // second tap toggles back to "nothing selected"
@@ -95,6 +97,9 @@ struct LinkedZonesView: View {
             GoalView(
                 zoneTints: goalTints,
                 zoneLabels: labels(from: goalEngine.goalZoneTallies(reading)),
+                accessibilityTallies: goalEngine.goalZoneTallies(reading),
+                accessibilityReading: reading,
+                isAccessibleAction: false,
                 onTargetTapped: { _ in }
             )
             captionView
