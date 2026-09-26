@@ -56,6 +56,8 @@ struct CourtView: View {
     /// An optional short label per origin ("3/5"), drawn at the tinted
     /// shape's centroid. Empty by default; see `GoalView.zoneLabels`.
     let zoneLabels: [ShotOrigin: String]
+    let accessibilityTallies: [ShotOrigin: Tally]?
+    let accessibilityReading: StatsReading
     /// Reports both the classified `ShotOrigin` AND the raw normalized tap
     /// (T3.3, docs/mvp.md §5.2: "store the raw normalized tap point, and
     /// derive the zone from it"). Before T3.3 this view only reported the
@@ -75,12 +77,16 @@ struct CourtView: View {
         selection: ShotOrigin? = nil,
         zoneTints: [ShotOrigin: Color] = [:],
         zoneLabels: [ShotOrigin: String] = [:],
+        accessibilityTallies: [ShotOrigin: Tally]? = nil,
+        accessibilityReading: StatsReading = .effectiveness,
         onOriginTapped: @escaping (ShotOrigin, CourtPoint?) -> Void
     ) {
         self.geometry = geometry
         self.selection = selection
         self.zoneTints = zoneTints
         self.zoneLabels = zoneLabels
+        self.accessibilityTallies = accessibilityTallies
+        self.accessibilityReading = accessibilityReading
         self.onOriginTapped = onOriginTapped
     }
 
@@ -103,11 +109,74 @@ struct CourtView: View {
                     }
             }
         }
-        // Full per-zone VoiceOver support (announcing the specific sector,
-        // depth band or the 7 m mark under a tap) is T6.1; this is a
-        // minimal, honest label so the control is not silently
-        // inaccessible today — same level of detail as GoalView's.
-        .accessibilityLabel("Half-court. Tap where the shot was taken from.")
+        .accessibilityRepresentation {
+            GeometryReader { proxy in
+                ZStack(alignment: .topLeading) {
+                    ForEach(CourtZone.allCases, id: \.code) { zone in
+                        accessibleZone(zone, size: proxy.size)
+                    }
+                    let rect = pixelRect(for: geometry.sevenMeterMarkRegion, in: proxy.size)
+                    Button("7 m mark") { onOriginTapped(.sevenMeters, nil) }
+                        .accessibilityValue(accessibilitySample(for: .sevenMeters))
+                        .frame(width: rect.width, height: rect.height)
+                        .position(x: rect.midX, y: rect.midY)
+                }
+            }
+        }
+    }
+
+    private func accessibleZone(_ zone: CourtZone, size: CGSize) -> some View {
+        let points = geometry.shape(for: zone).map { pixelPoint(for: $0, in: size) }
+        let bounds = points.reduce(CGRect.null) { $0.union(CGRect(origin: $1, size: .zero)) }
+        var outline = Path()
+        if let first = points.first {
+            outline.move(to: CGPoint(x: first.x - bounds.minX, y: first.y - bounds.minY))
+            for point in points.dropFirst() {
+                outline.addLine(to: CGPoint(x: point.x - bounds.minX, y: point.y - bounds.minY))
+            }
+            outline.closeSubpath()
+        }
+        return Button {
+            guard let point = representativePoint(for: zone) else { return }
+            onOriginTapped(.zone(zone), point)
+        } label: {
+            outline.fill(.clear)
+                .frame(width: bounds.width, height: bounds.height)
+        }
+        .accessibilityLabel("Court, \(zone.sector.displayName), \(zone.depth.displayName)")
+        .accessibilityValue(accessibilitySample(for: .zone(zone)))
+        .position(x: bounds.midX, y: bounds.midY)
+    }
+
+    /// Accessibility activation must supply a real, valid raw point, just
+    /// like a touch. Never create an origin in the forbidden 6 m area.
+    private func representativePoint(for zone: CourtZone) -> CourtPoint? {
+        let vertices = geometry.shape(for: zone)
+        guard !vertices.isEmpty else { return nil }
+        let center = CourtPoint(
+            x: vertices.map(\.x).reduce(0, +) / Double(vertices.count),
+            y: vertices.map(\.y).reduce(0, +) / Double(vertices.count)
+        )
+        for vertex in vertices {
+            for step in 0...20 {
+                let fraction = Double(step) / 21
+                let point = CourtPoint(
+                    x: center.x * (1 - fraction) + vertex.x * fraction,
+                    y: center.y * (1 - fraction) + vertex.y * fraction
+                )
+                if geometry.origin(at: point) == .zone(zone) { return point }
+            }
+        }
+        return nil
+    }
+
+    private func accessibilitySample(for origin: ShotOrigin) -> String {
+        guard let accessibilityTallies else { return "" }
+        guard let tally = accessibilityTallies[origin], tally.attempts > 0 else { return "No data" }
+        switch accessibilityReading {
+        case .effectiveness: return "\(tally.successes) goals in \(tally.attempts) shots"
+        case .saveRate: return "\(tally.successes) saves in \(tally.attempts) shots on target"
+        }
     }
 
     // MARK: - Layout

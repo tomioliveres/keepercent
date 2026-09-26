@@ -37,6 +37,10 @@ struct GoalView: View {
     /// `zoneTints` has nothing for that zone either, so a caller that
     /// only wants colour and no digits can leave this empty.
     let zoneLabels: [GoalZone: String]
+    /// Non-nil on a linked card; empty tallies mean no recorded attempts.
+    let accessibilityTallies: [GoalZone: Tally]?
+    let accessibilityReading: StatsReading
+    let isAccessibleAction: Bool
     let onTargetTapped: (GoalTarget) -> Void
 
     init(
@@ -44,12 +48,18 @@ struct GoalView: View {
         selection: GoalTarget? = nil,
         zoneTints: [GoalZone: Color] = [:],
         zoneLabels: [GoalZone: String] = [:],
+        accessibilityTallies: [GoalZone: Tally]? = nil,
+        accessibilityReading: StatsReading = .effectiveness,
+        isAccessibleAction: Bool = true,
         onTargetTapped: @escaping (GoalTarget) -> Void
     ) {
         self.geometry = geometry
         self.selection = selection
         self.zoneTints = zoneTints
         self.zoneLabels = zoneLabels
+        self.accessibilityTallies = accessibilityTallies
+        self.accessibilityReading = accessibilityReading
+        self.isAccessibleAction = isAccessibleAction
         self.onTargetTapped = onTargetTapped
     }
 
@@ -135,10 +145,68 @@ struct GoalView: View {
                     }
             }
         }
-        // Full per-zone VoiceOver support (announcing the specific zone/post
-        // segment/miss direction under a tap) is T6.1; this is a minimal,
-        // honest label so the control is not silently inaccessible today.
-        .accessibilityLabel("Goal. Tap where the shot went.")
+        .accessibilityRepresentation {
+            GeometryReader { proxy in
+                ZStack(alignment: .topLeading) {
+                    ForEach(GoalTarget.allCases, id: \.code) { target in
+                        let regions = geometry.regions(for: target, within: normalizedBounds(for: proxy.size))
+                        ForEach(regions.indices, id: \.self) { index in
+                            let rect = pixelRect(for: regions[index], in: proxy.size)
+                            accessibleRegion(target, rect: rect)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func accessibleRegion(_ target: GoalTarget, rect: CGRect) -> some View {
+        if isAccessibleAction {
+            Button(accessibilityName(for: target)) { onTargetTapped(target) }
+                .accessibilityValue(accessibilitySample(for: target))
+                .frame(width: rect.width, height: rect.height)
+                .position(x: rect.midX, y: rect.midY)
+        } else {
+            Text(accessibilityName(for: target))
+                .accessibilityValue(accessibilitySample(for: target))
+                .frame(width: rect.width, height: rect.height)
+                .position(x: rect.midX, y: rect.midY)
+        }
+    }
+
+    private func accessibilityName(for target: GoalTarget) -> String {
+        switch target {
+        case .inside(let zone): return "Goal, \(zone.displayName)"
+        case .post(let segment):
+            switch segment {
+            case .leftPostTop: return "Left post, top"
+            case .leftPostMiddle: return "Left post, middle"
+            case .leftPostBottom: return "Left post, bottom"
+            case .crossbarLeft: return "Crossbar, left"
+            case .crossbarCenter: return "Crossbar, center"
+            case .crossbarRight: return "Crossbar, right"
+            case .rightPostTop: return "Right post, top"
+            case .rightPostMiddle: return "Right post, middle"
+            case .rightPostBottom: return "Right post, bottom"
+            }
+        case .out(let direction):
+            switch direction {
+            case .wideLeft: return "Miss, wide left"
+            case .wideRight: return "Miss, wide right"
+            case .over: return "Miss, over"
+            }
+        }
+    }
+
+    private func accessibilitySample(for target: GoalTarget) -> String {
+        guard let accessibilityTallies else { return "" }
+        guard case .inside(let zone) = target else { return "" }
+        guard let tally = accessibilityTallies[zone], tally.attempts > 0 else { return "No data" }
+        switch accessibilityReading {
+        case .effectiveness: return "\(tally.successes) goals in \(tally.attempts) shots"
+        case .saveRate: return "\(tally.successes) saves in \(tally.attempts) shots on target"
+        }
     }
 
     // MARK: - Layout
