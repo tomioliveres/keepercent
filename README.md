@@ -12,20 +12,25 @@ A goalkeeper needs the detail those tools drop: *which* post, *which* part of th
 
 ## What it does
 
-- **Record a shot in 3–4 taps**: shooter, court origin, goal target, outcome. Live from the bench, or calmly while watching a rival's match video.
-- **Goal-frame detail no other app has**: left/right post (top, middle, bottom), crossbar (left, center, right), and misses by direction.
+- **Record shots** in live or video-tagged sessions: shooter, court origin, goal target, outcome, and optional context. Video plays on a separate screen.
+- **Goal-frame detail**: left/right post (top, middle, bottom), crossbar (left, center, right), and misses by direction.
 - **Shooter card**: court and goal heatmaps that filter each other. Pick a court zone, see where those shots went.
 - **Rival goalkeeper card**: save rate per goal zone, so you can tell your teammates where to shoot.
-- **Insights in plain language**, generated on device.
+- **Plain-language insights** from tested statistics, with an on-device model when available and a deterministic fallback otherwise.
+- **Shareable rival goalkeeper report** rendered as an image from recorded shots.
 
 ## Status
 
-Work in progress during the hackathon (Sep 18–27, 2026). See [docs/mvp.md](docs/mvp.md) for the full definition, scope and plan.
+Immediate hackathon MVP: teams and manual rosters, live/video session shot entry, a shot log with last-shot Undo, linked scouting cards, insights and image sharing are available.
+
+Roster OCR/PDF import is deferred to a later version; its branch is not part of this MVP. Earlier shots can be deleted and re-recorded, not edited in place. T6.1 iPad/iPhone polish and accessibility testing remain open; this is not a claim of complete UI validation or App Store readiness. See [docs/mvp.md](docs/mvp.md) for the original scope and [the task ledger](odd/tasks/keepercent.md) for current status.
 
 ## Requirements
 
-- Xcode 26, iOS/iPadOS 26
+- Xcode 27; iOS/iPadOS 26 minimum
 - No dependencies, no account, no backend. All data stays on the device.
+
+Open `Keepercent.xcodeproj` in Xcode 27, select the shared `Keepercent` scheme and an iOS 26-or-newer iPhone or iPad simulator, then Run. The app opens on a seeded demo rival team. To run the pure Swift domain tests locally: `swift test --package-path Domain`.
 
 ## AI usage
 
