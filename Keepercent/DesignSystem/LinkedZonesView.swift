@@ -98,12 +98,20 @@ struct LinkedZonesView: View {
             GoalView(
                 zoneTints: goalTints,
                 zoneLabels: labels(from: goalEngine.goalZoneTallies(reading)),
+                missLabels: missLabels,
                 accessibilityTallies: goalEngine.goalZoneTallies(reading),
                 accessibilityReading: reading,
                 isAccessibleAction: false,
                 onTargetTapped: { _ in }
             )
         }
+    }
+
+    /// How many of the active `goalEngine`'s shots missed into each out
+    /// zone, drawn in that zone so the card says where misses went. Empty
+    /// zones get no label, the same way untried goal cells stay blank.
+    private var missLabels: [GoalTarget: String] {
+        goalEngine.missCounts.filter { $0.value > 0 }.mapValues(String.init)
     }
 
     /// States the active filter and its sample size, so a caption alone —
