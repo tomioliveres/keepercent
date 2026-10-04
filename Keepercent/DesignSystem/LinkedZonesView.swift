@@ -15,6 +15,12 @@
 // the zone a tap resolves to (T2.1's rule). `HeatmapColor` turns a `Tally`
 // into that colour and label; this view only decides WHICH tally goes
 // where.
+//
+// T6.8 adds two arrow modes over the same court: "Directions" (one arrow per
+// origin towards its most frequent goal side, `StatsEngine.dominantDirections`)
+// and "Every shot" (one thin arrow per shot, coloured by outcome). The mode
+// lives in local `@State`: it is a per-screen viewing choice, never stored.
+// Tapping still selects a zone exactly as in the heatmap mode.
 
 import SwiftUI
 import KeepercentDomain
@@ -24,6 +30,16 @@ struct LinkedZonesView: View {
     let reading: StatsReading
     @Binding var selection: ShotOrigin?
     @Environment(\.colorScheme) private var colorScheme
+    @State private var courtMode: CourtMode = .zones
+
+    /// What the court draws over its zones.
+    enum CourtMode: String, CaseIterable, Identifiable {
+        case zones = "Zones"
+        case directions = "Directions"
+        case everyShot = "Every shot"
+
+        var id: Self { self }
+    }
 
     /// The engine the goal side (tints AND chart) reads from: every field
     /// shot with nothing selected, or exactly the selected origin's shots
@@ -45,12 +61,20 @@ struct LinkedZonesView: View {
     private var courtColumn: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Origin").font(.headline)
+            Picker("Court view", selection: $courtMode) {
+                ForEach(CourtMode.allCases) { mode in
+                    Text(mode.rawValue).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
             CourtView(
                 selection: selection,
                 zoneTints: courtTints,
-                zoneLabels: labels(from: engine.originTallies(reading)),
+                zoneLabels: courtMode == .zones ? labels(from: engine.originTallies(reading)) : [:],
+                arrows: arrows,
                 accessibilityTallies: engine.originTallies(reading),
                 accessibilityReading: reading,
+                accessibilityNotes: courtMode == .zones ? [:] : directionNotes,
                 onOriginTapped: { origin, _ in
                     // Tapping the already-selected zone clears it: a
                     // second tap toggles back to "nothing selected"
@@ -67,6 +91,7 @@ struct LinkedZonesView: View {
             Text(sevenMeterCaption)
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            arrowLegend
         }
     }
 
@@ -81,6 +106,126 @@ struct LinkedZonesView: View {
             let origin = ShotOrigin.zone(zone)
             return (origin, HeatmapColor.tint(for: tallies[origin], appearance: colorScheme))
         } + [(.sevenMeters, HeatmapColor.tint(for: tallies[.sevenMeters], appearance: colorScheme))])
+        .mapValues { courtMode == .zones ? $0 : $0.opacity(0.3) }
+    }
+
+    // MARK: - Arrows (T6.8)
+
+    private var arrows: [CourtArrow] {
+        switch courtMode {
+        case .zones: return []
+        case .directions: return directionArrows
+        case .everyShot: return everyShotArrows
+        }
+    }
+
+    /// With a zone selected, its arrows stay strong and every other one
+    /// fades, so the arrow behind the filtered goal stands out.
+    private func emphasis(for origin: ShotOrigin?) -> Double {
+        guard let selection else { return 1 }
+        return origin == selection ? 1 : 0.25
+    }
+
+    /// One arrow per origin towards its most frequent side: width grows
+    /// with the shots to that side (2-10 pt), colour follows how they
+    /// converted, and "4/6" sits by the tail.
+    private var directionArrows: [CourtArrow] {
+        engine.dominantDirections(reading).map { direction in
+            CourtArrow(
+                tail: .origin(direction.origin),
+                tip: CourtGeometry.standard.goalPoint(for: direction.side),
+                width: min(10, max(2, 1.2 * CGFloat(direction.shots.successes))),
+                color: HeatmapColor.arrowColor(for: direction.conversion).opacity(emphasis(for: direction.origin)),
+                label: HeatmapColor.label(for: direction.shots)
+            )
+        }
+    }
+
+    /// One thin arrow per shot, from its exact tap (or the 7 m mark) to
+    /// the side it was aimed at, coloured by outcome. Low opacity lets
+    /// overlapping arrows read as density.
+    private var everyShotArrows: [CourtArrow] {
+        engine.shots.compactMap { shot in
+            let tail: CourtArrow.Tail
+            if shot.isSevenMeters {
+                tail = .origin(.sevenMeters)
+            } else if let point = shot.originPoint {
+                tail = .point(point)
+            } else {
+                return nil
+            }
+            return CourtArrow(
+                tail: tail,
+                tip: CourtGeometry.standard.goalPoint(for: ShotClassification.targetSide(shot.target)),
+                width: 1.5,
+                color: outcomeColor(shot.outcome).opacity(0.55 * emphasis(for: shot.origin)),
+                label: nil
+            )
+        }
+    }
+
+    private func outcomeColor(_ outcome: ShotOutcome) -> Color {
+        switch outcome {
+        case .goal: return Palette.goal
+        case .saved: return Palette.saved
+        case .post: return Palette.post
+        case .out: return Palette.miss
+        }
+    }
+
+    /// What VoiceOver hears on each zone in the arrow modes, the same
+    /// facts the direction arrow draws: "Most shots aimed right: 4 of 6,
+    /// 3 goals".
+    private var directionNotes: [ShotOrigin: String] {
+        Dictionary(uniqueKeysWithValues: engine.dominantDirections(reading).map { direction in
+            let share = "Most shots aimed \(direction.side.rawValue): \(direction.shots.successes) of \(direction.shots.attempts)"
+            let conversion = direction.conversion
+            switch reading {
+            case .effectiveness:
+                return (direction.origin, "\(share), \(conversion.successes) goal\(conversion.successes == 1 ? "" : "s")")
+            case .saveRate:
+                return (direction.origin, "\(share), \(conversion.successes) saves of \(conversion.attempts) on target")
+            }
+        })
+    }
+
+    @ViewBuilder
+    private var arrowLegend: some View {
+        switch courtMode {
+        case .zones:
+            EmptyView()
+        case .directions:
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Width: shots · Colour: \(reading == .effectiveness ? "goal rate" : "save rate")")
+                HStack(spacing: 12) {
+                    ForEach(Array(zip(["Low", "Mid", "High"], HeatmapColor.arrowSteps)), id: \.0) { name, color in
+                        swatch(name, color: color)
+                    }
+                    swatch("No rate", color: HeatmapColor.arrowNoRate)
+                }
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        case .everyShot:
+            HStack(spacing: 12) {
+                swatch("Goal", color: Palette.goal)
+                swatch("Saved", color: Palette.saved)
+                swatch("Post", color: Palette.post)
+                swatch("Out", color: Palette.miss)
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
+    }
+
+    private func swatch(_ name: String, color: Color) -> some View {
+        HStack(spacing: 4) {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(color)
+                .frame(width: 12, height: 4)
+                .accessibilityHidden(true)
+            Text(name)
+        }
     }
 
     /// "7 m: 1/2" when the 7 m mark has an on-target attempt recorded for

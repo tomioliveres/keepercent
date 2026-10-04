@@ -39,6 +39,25 @@ enum HeatmapColor {
         return recordedTint(rate: rate, appearance: appearance)
     }
 
+    /// The three steps of the arrow scale (T6.8), lowest first. A clear
+    /// step scale reads better on a thin line than a smooth blend, and it
+    /// stays one hue family (cyan to indigo) like the zone tints, so it
+    /// never reads as a good/bad traffic light. System colours adapt to
+    /// light and dark on their own.
+    static let arrowSteps: [Color] = [Color(.systemCyan), Color(.systemBlue), Color(.systemIndigo)]
+
+    /// An arrow whose conversion has no rate.
+    static let arrowNoRate = Color(.systemGray)
+
+    /// The colour of a shot-direction arrow for its conversion: gray when
+    /// there is no rate (e.g. no shot on target for a goalkeeper),
+    /// otherwise the third of `arrowSteps` the rate falls in.
+    static func arrowColor(for tally: Tally) -> Color {
+        guard let rate = tally.rate else { return arrowNoRate }
+        let step = min(Int(rate * 3), arrowSteps.count - 1)
+        return arrowSteps[step]
+    }
+
     /// A short "successes/attempts" label for the zone, or nil when there
     /// is nothing recorded to show. A tally with no attempts is "no data",
     /// as in `tint(for:)`, so it gets no label rather than "0/0".
