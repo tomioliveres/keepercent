@@ -129,6 +129,13 @@ struct LinkedZonesView: View {
     /// One arrow per origin towards its most frequent side: width grows
     /// with the shots to that side (2-10 pt), colour follows how they
     /// converted, and "4/6" sits by the tail.
+    /// "4/6", or "7 m 1/2": the 7 m arrow starts right beside the
+    /// center-near zone's arrow, so its label names itself.
+    private func directionLabel(for direction: ShotDirection) -> String? {
+        guard let label = HeatmapColor.label(for: direction.shots) else { return nil }
+        return direction.origin == .sevenMeters ? "7 m \(label)" : label
+    }
+
     private var directionArrows: [CourtArrow] {
         engine.dominantDirections(reading).map { direction in
             CourtArrow(
@@ -136,7 +143,7 @@ struct LinkedZonesView: View {
                 tip: CourtGeometry.standard.goalPoint(for: direction.side),
                 width: min(10, max(2, 1.2 * CGFloat(direction.shots.successes))),
                 color: HeatmapColor.arrowColor(for: direction.conversion).opacity(emphasis(for: direction.origin)),
-                label: HeatmapColor.label(for: direction.shots)
+                label: directionLabel(for: direction)
             )
         }
     }

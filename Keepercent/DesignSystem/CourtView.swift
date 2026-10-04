@@ -39,6 +39,11 @@ import KeepercentDomain
 /// One arrow drawn on the court (T6.8): from a tail to a point on the goal
 /// mouth. Like `zoneTints`, it arrives with its colour and width already
 /// resolved, so CourtView only draws it and never decides what it means.
+private func isSevenMeters(_ tail: CourtArrow.Tail) -> Bool {
+    if case .origin(.sevenMeters) = tail { return true }
+    return false
+}
+
 struct CourtArrow {
     /// Where the arrow starts: an exact recorded tap, or an origin, which
     /// CourtView resolves to the same anchor its zone labels use (the 7 m
@@ -558,9 +563,12 @@ struct CourtView: View {
             context.fill(head, with: .color(arrow.color))
 
             if let label = arrow.label {
-                // Behind the round cap, plus room for half a label.
+                // Behind the round cap, plus room for half a label. The 7 m
+                // label goes beside the mark instead: behind it is where the
+                // center-near arrow's own label sits.
                 let gap = arrow.width / 2 + 12
-                let anchor = clampedToCourt(CGPoint(x: start.x - along.x * gap, y: start.y - along.y * gap), in: size)
+                let behind = CGPoint(x: start.x - along.x * gap, y: start.y - along.y * gap)
+                let anchor = clampedToCourt(isSevenMeters(arrow.tail) ? CGPoint(x: start.x + 34, y: start.y) : behind, in: size)
                 let text = Text(label).font(.caption2.weight(.semibold)).foregroundStyle(.primary)
                 context.draw(context.resolve(text), at: anchor)
             }
