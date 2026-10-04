@@ -1,10 +1,12 @@
 /// Facts for one card, already counted and ranked by `StatsEngine`. The
 /// shooter tally is goals over shots; the goalkeeper tally is saves over
 /// shots on target. A weak-zone tally counts goals conceded over shots on
-/// target in that zone. No writer needs the raw shots or computes a rate.
+/// target in that zone. `patterns` are the top `ScoutingPattern`s, already
+/// ranked: the template leaves them to the patterns list, and the on-device
+/// model may mention them. No writer needs the raw shots or computes a rate.
 public enum InsightFacts: Equatable, Sendable {
-    case shooter(overall: Tally, leadingZone: RankedTally<GoalZone>?)
-    case goalkeeper(overall: Tally, weakZone: RankedTally<GoalZone>?)
+    case shooter(overall: Tally, leadingZone: RankedTally<GoalZone>?, patterns: [ScoutingPattern] = [])
+    case goalkeeper(overall: Tally, weakZone: RankedTally<GoalZone>?, patterns: [ScoutingPattern] = [])
 }
 
 /// Turns supplied scouting facts into text. The asynchronous, throwing

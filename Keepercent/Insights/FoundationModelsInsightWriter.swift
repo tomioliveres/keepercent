@@ -10,9 +10,11 @@ struct FoundationModelsInsightWriter: InsightWriter {
     func write(_ facts: InsightFacts) async throws -> String {
         let baseline = fallback.write(facts)
         let attempts: Int
+        let patterns: [ScoutingPattern]
         switch facts {
-        case .shooter(let overall, _), .goalkeeper(let overall, _):
+        case .shooter(let overall, _, let found), .goalkeeper(let overall, _, let found):
             attempts = overall.attempts
+            patterns = found
         }
 
         // No evidence (or only one attempt) is not a trend to interpret.
@@ -23,16 +25,30 @@ struct FoundationModelsInsightWriter: InsightWriter {
         case .unavailable: return baseline
         }
 
+        // Patterns arrive already phrased by the same deterministic code the
+        // card shows, so the model only ever sees finished, counted facts.
+        let patternNotes = patterns.map(PatternPhraser.sentence(for:))
+        var prompt = "Rephrase this scouting note: \(baseline)"
+        if !patternNotes.isEmpty {
+            prompt += " You may also mention these patterns: \(patternNotes.joined(separator: "; "))."
+        }
+
         do {
             let session = LanguageModelSession(model: model) {
                 "You write brief handball scouting notes in English. Rephrase only the supplied text. "
                 + "Keep every count and its sample, preserve which outcome belongs to which player, "
                 + "and do not invent statistics, rates, reasons, predictions, or new observations. "
-                + "Never describe a small sample as a proven tendency. Reply with one or two sentences only."
+                + "Use only these numbers. "
+                + "Never describe a small sample as a proven tendency. Reply with two or three sentences only."
             }
-            let response = try await session.respond(to: "Rephrase this scouting note: \(baseline)")
+            let response = try await session.respond(to: prompt)
             let text = response.content.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !text.isEmpty, !text.contains("%"), numbers(in: text) == numbers(in: baseline) else {
+            let supplied = numbers(in: ([baseline] + patternNotes).joined(separator: " "))
+            guard !text.isEmpty,
+                  !text.contains("%"),
+                  isSubset(numbers(in: baseline), of: numbers(in: text)),
+                  isSubset(numbers(in: text), of: supplied)
+            else {
                 return baseline
             }
             return text
@@ -42,9 +58,22 @@ struct FoundationModelsInsightWriter: InsightWriter {
         }
     }
 
-    /// Reject added, missing or repeated numeric samples, not just added rates.
+    /// Every numeric token in the text, so added, missing or repeated
+    /// samples can be detected, not just added rates.
     private func numbers(in text: String) -> [String] {
         let pattern = /[0-9]+/
-        return text.matches(of: pattern).map { String($0.output) }.sorted()
+        return text.matches(of: pattern).map { String($0.output) }
+    }
+
+    /// Whether every number in `part` appears in `whole`, counting
+    /// repeats: the note must keep the baseline's counts, and may only use
+    /// numbers that were supplied — mentioning a pattern is optional.
+    private func isSubset(_ part: [String], of whole: [String]) -> Bool {
+        var remaining = whole
+        for number in part {
+            guard let index = remaining.firstIndex(of: number) else { return false }
+            remaining.remove(at: index)
+        }
+        return true
     }
 }

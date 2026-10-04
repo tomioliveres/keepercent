@@ -1,11 +1,13 @@
 /// A deterministic, offline fallback. It describes counts and their sample
 /// without labeling a rate or extrapolating a trend from a single attempt.
+/// Patterns are not repeated here: the card already lists them, phrased by
+/// `PatternPhraser`.
 public struct TemplateInsightWriter: InsightWriter {
     public init() {}
 
     public func write(_ facts: InsightFacts) -> String {
         switch facts {
-        case .shooter(let overall, let leadingZone):
+        case .shooter(let overall, let leadingZone, _):
             guard overall.attempts > 0 else { return "No shots recorded for this shooter." }
             let count = "In \(overall.attempts) recorded \(plural(overall.attempts, "shot")), "
                 + "\(overall.successes) \(plural(overall.successes, "goal"))."
@@ -14,7 +16,7 @@ public struct TemplateInsightWriter: InsightWriter {
                 + "(\(leadingZone.tally.successes) of \(leadingZone.tally.attempts) "
                 + "\(plural(leadingZone.tally.attempts, "shot")))."
 
-        case .goalkeeper(let overall, let weakZone):
+        case .goalkeeper(let overall, let weakZone, _):
             guard overall.attempts > 0 else { return "No shots on target recorded for this goalkeeper." }
             let count = "In \(overall.attempts) \(plural(overall.attempts, "shot")) on target, "
                 + "\(overall.successes) \(plural(overall.successes, "save"))."
