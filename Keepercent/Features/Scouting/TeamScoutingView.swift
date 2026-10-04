@@ -43,6 +43,15 @@ struct TeamScoutingView: View {
         }
     }
 
+    /// The team-wide patterns for the current reading: the rival
+    /// shooters' tendencies, or the rival goalkeepers' weaknesses.
+    private var patterns: [ScoutingPattern] {
+        switch reading {
+        case .effectiveness: return readingEngine.shooterPatterns()
+        case .saveRate: return readingEngine.goalkeeperPatterns()
+        }
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
@@ -56,6 +65,8 @@ struct TeamScoutingView: View {
                 // selected under the OTHER reading would silently narrow
                 // a filter the scout never chose under this one.
                 .onChange(of: reading) { selection = nil }
+
+                PatternsSection(patterns: patterns, shotCount: readingEngine.shots.count)
 
                 LinkedZonesView(engine: readingEngine, reading: reading, selection: $selection)
             }

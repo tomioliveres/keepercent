@@ -32,12 +32,15 @@ struct ShooterCardContentView: View {
     private var fieldShots: StatsEngine { engine.fieldShots }
 
     var body: some View {
+        let patterns = engine.shooterPatterns()
         VStack(alignment: .leading, spacing: 24) {
             header
             InsightTextView(facts: .shooter(
                 overall: engine.effectiveness,
-                leadingZone: fieldShots.topGoalZones(limit: 1).first
+                leadingZone: fieldShots.topGoalZones(limit: 1).first,
+                patterns: Array(patterns.prefix(PatternsSection.limit))
             ))
+            PatternsSection(patterns: patterns, shotCount: engine.shots.count)
             LinkedZonesView(engine: engine, reading: .effectiveness, selection: $selection)
             whereTheyScoreSection
             shotShapeSection
