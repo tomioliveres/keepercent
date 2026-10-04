@@ -7,8 +7,10 @@
 // no statistic itself — every number comes from `StatsEngine`.
 //
 // The bar is plain SwiftUI shapes rather than Swift Charts: three segments
-// with a label inside are simpler to lay out by hand. Bars share one scale
-// (the fullest row), so rows compare by length.
+// with a label inside are simpler to lay out by hand. Every bar is drawn on
+// a faint track whose full width is ALL the chart's shots, so a bar reads as
+// that row's share of the total — one shot out of one is a full bar because
+// it really is all of them, not because it is the biggest row.
 
 import SwiftUI
 import KeepercentDomain
@@ -26,15 +28,26 @@ struct OutcomeBreakdownChart: View {
     let rows: [Row]
     let reading: StatsReading
 
-    /// The shot count the longest bar stands for; at least 1 so an empty
-    /// chart never divides by zero.
+    /// The shot count a full track stands for: every shot in the chart's
+    /// rows. At least 1 so an empty chart never divides by zero.
     private var scale: Int {
-        max(rows.map(\.breakdown.shots).max() ?? 0, 1)
+        max(rows.map(\.breakdown.shots).reduce(0, +), 1)
+    }
+
+    /// What the right-hand figure counts, said once in the header instead of
+    /// on every row, so the figure stays short enough for one line.
+    private var figureCaption: String {
+        reading == .saveRate ? "saves / on target" : "goals / shots"
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+            HStack {
+                Text(title).font(.caption.weight(.semibold))
+                Spacer()
+                Text(figureCaption).font(.caption2)
+            }
+            .foregroundStyle(.secondary)
             ForEach(rows) { row in
                 rowView(row)
             }
@@ -53,6 +66,8 @@ struct OutcomeBreakdownChart: View {
             Text(figure(for: row.breakdown))
                 .font(.caption.monospacedDigit())
                 .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
                 .frame(width: 96, alignment: .trailing)
         }
         .accessibilityElement(children: .ignore)
@@ -67,6 +82,8 @@ struct OutcomeBreakdownChart: View {
                 segment(count: breakdown.saved, color: Palette.saved, width: unit)
                 segment(count: breakdown.posts, color: Palette.post, width: unit)
             }
+            .frame(width: proxy.size.width, alignment: .leading)
+            .background(Color(.tertiarySystemFill))
         }
     }
 
@@ -89,15 +106,15 @@ struct OutcomeBreakdownChart: View {
         }
     }
 
-    /// "3/5 · 60%" for the shooter, "2/5 saved · 40%" for the goalkeeper.
+    /// "3/5 · 60%": goals over shots for the shooter, saves over shots on
+    /// target for the goalkeeper (the header's `figureCaption` says which).
     /// A row with nothing to measure says so instead of showing 0%.
     private func figure(for breakdown: OutcomeBreakdown) -> String {
         let tally = breakdown.tally(reading)
         guard let rate = tally.rate else {
             return breakdown.shots == 0 ? "No shots" : "None on target"
         }
-        let saved = reading == .saveRate ? " saved" : ""
-        return "\(tally.successes)/\(tally.attempts)\(saved) · \(percent(rate))%"
+        return "\(tally.successes)/\(tally.attempts) · \(percent(rate))%"
     }
 
     /// "Top: 5 shots, 3 goals, 2 saved, 0 post. 3 of 5 goals, 60 percent".
