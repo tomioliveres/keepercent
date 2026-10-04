@@ -54,15 +54,17 @@ struct PatternsSection: View {
         .accessibilityLabel(sentence)
     }
 
-    /// "7/10 · 70%", or "5/7 · 1/6" for a comparison (two rates side by
-    /// side already say which is bigger, and a percentage each would not fit).
+    /// The sentence already says "6 of 7", so the trailing figure adds only
+    /// the rate: "86 %", or "71 % vs 17 %" for a comparison.
     private func figure(for pattern: ScoutingPattern) -> String {
-        let main = "\(pattern.tally.successes)/\(pattern.tally.attempts)"
-        guard let contrast = pattern.contrast else {
-            guard let rate = pattern.tally.rate else { return main }
-            return "\(main) · \(rate.formatted(.percent.precision(.fractionLength(0))))"
-        }
-        return "\(main) · \(contrast.successes)/\(contrast.attempts)"
+        let main = percentText(pattern.tally)
+        guard let contrast = pattern.contrast else { return main }
+        return "\(main) vs \(percentText(contrast))"
+    }
+
+    private func percentText(_ tally: Tally) -> String {
+        guard let rate = tally.rate else { return "–" }
+        return rate.formatted(.percent.precision(.fractionLength(0)))
     }
 
     private func symbol(for kind: ScoutingPatternKind) -> String {
