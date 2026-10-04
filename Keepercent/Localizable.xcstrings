@@ -2228,7 +2228,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Añadir dorsal desconocido"
+            "value" : "Añadir dorsal"
           }
         },
         "es-419" : {
@@ -5004,7 +5004,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "N.º desconocido"
+            "value" : "Nuevo dorsal"
           }
         },
         "es-419" : {
