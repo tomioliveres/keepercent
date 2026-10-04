@@ -49,10 +49,4 @@ enum Palette {
 
     /// The 7 m mark, kept orange so it stands apart from the court zones.
     static let sevenMeterMark = Color(.systemOrange).opacity(0.45)
-
-    // MARK: - Selection
-
-    /// The selected shooter tile. Uses the brand accent, not blue, so it
-    /// never reads as a heatmap rate.
-    static let shooterSelection = Color.accentColor.opacity(0.3)
 }

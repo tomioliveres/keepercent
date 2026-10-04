@@ -33,18 +33,12 @@ struct ShooterGridColumn: View {
                 Button {
                     onSelect(player.number)
                 } label: {
-                    PlayerTileView(player: player)
-                        .overlay {
-                            // A FILL, not a border: the heavy accent border is
-                            // already how a goalkeeper tile is marked, so a
-                            // selected shooter drawn with one looked like a
-                            // third goalkeeper. The fill uses the brand accent,
-                            // not blue, so it never reads as a heatmap rate.
-                            if selectedNumber == player.number {
-                                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                    .fill(Palette.shooterSelection)
-                            }
-                        }
+                    // A FILL, not a border: the heavy accent border is already
+                    // how a goalkeeper tile is marked, so a selected shooter
+                    // drawn with one looked like a third goalkeeper. The fill
+                    // is brand amber, not blue, so it never reads as a
+                    // heatmap rate.
+                    PlayerTileView(player: player, isSelected: selectedNumber == player.number)
                 }
                 .buttonStyle(.plain)
             }
