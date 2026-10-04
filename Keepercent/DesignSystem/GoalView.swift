@@ -96,29 +96,6 @@ struct GoalView: View {
     /// `GoalGeometry`.
     private let netCellsAcross = 12
 
-    /// The tint for each `MissDirection`'s share of the out band.
-    ///
-    /// `regions(for:within:)` tiles the WHOLE band, so leaving all three
-    /// on one shade would repaint a single flat field and hide the split
-    /// this task exists to make visible. But three DIFFERENT shades lie
-    /// the other way: `wideLeft` and `wideRight` are the same miss
-    /// mirrored, and giving them different weights implies a difference
-    /// that does not exist. They also never touch — the whole goal sits
-    /// between them — so position alone already tells them apart, with no
-    /// help from colour.
-    ///
-    /// So colour carries the one distinction position cannot: wide (the
-    /// miss a keeper dives for) against high (the one that goes over).
-    /// The two wide areas share a shade, `.over` takes the other, and the
-    /// only two areas that actually share an edge — a wide one and
-    /// `.over`, at each top corner — are the two that differ.
-    private func outBandTint(for direction: MissDirection) -> Color {
-        switch direction {
-        case .wideLeft, .wideRight: return Color(.systemGray4)
-        case .over: return Color(.systemGray2)
-        }
-    }
-
     var body: some View {
         Canvas { context, size in
             draw(in: &context, size: size)
@@ -322,40 +299,15 @@ struct GoalView: View {
     /// The out band: a visible margin beyond the frame band, distinct from
     /// both the mouth and the frame, because it is out of play.
     ///
-    /// Split into three tinted areas, one per `MissDirection` (T2.3) — a
-    /// selected miss needs somewhere to visibly land, and a single flat
-    /// fill gave it nowhere.
-    ///
-    /// An earlier version tinted only `geometry.region(for: direction)`
-    /// verbatim — a single rect that was, by that function's own
-    /// documented contract, a finite SUBSET of the true, unbounded miss
-    /// area (see `GoalPoint`'s header comment: `target(at:)` never
-    /// clamps). That was the same "what you see is what you tap" defect
-    /// `drawFrame`'s header comment documents fixing once already, just
-    /// for the out band instead of the frame: most of the drawn margin sat
-    /// past that small rect, reading as undifferentiated gray while still
-    /// hit-testing as that same miss direction. `regions(for:within:)`
-    /// replaces it with the exact tiling of `bounds` — this view's own
-    /// canvas, via `normalizedBounds(for:)` — so every pixel that
-    /// `target(at:)` would resolve to a given `MissDirection` carries that
-    /// direction's own tint, all the way to the canvas edge.
-    ///
-    /// The base `.systemGray5` fill underneath still matters: it is the
-    /// fallback for whatever `bounds` does NOT reach (a degenerate/tiny
-    /// canvas can make `regions(for:within:)` return fewer rects, or none
-    /// — see that function's doc comment), so no pixel is ever left
-    /// undrawn.
+    /// The whole canvas gets one shade, so every miss area (wide left,
+    /// wide right, over) reads as the same "outside the goal" field all the
+    /// way to the canvas edge — what you see is what `target(at:)` hits,
+    /// since it never clamps. A selected miss still lands visibly:
+    /// `drawSelectionHighlight` tints exactly that miss's
+    /// `regions(for:within:)` on top. Separate shades per direction were
+    /// tried and read as a rendering glitch above the crossbar.
     private func drawOutBand(in context: inout GraphicsContext, size: CGSize) {
-        let fullRect = CGRect(origin: .zero, size: size)
-        context.fill(Path(fullRect), with: .color(Color(.systemGray5)))
-
-        let bounds = normalizedBounds(for: size)
-        for direction in MissDirection.allCases {
-            for region in geometry.regions(for: direction, within: bounds) {
-                let rect = pixelRect(for: region, in: size)
-                context.fill(Path(rect), with: .color(outBandTint(for: direction)))
-            }
-        }
+        context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Color(.systemGray4)))
     }
 
     /// The mouth: the 3 m x 2 m goal opening, with a net texture and the 3x3
