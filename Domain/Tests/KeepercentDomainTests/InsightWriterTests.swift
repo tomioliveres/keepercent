@@ -85,4 +85,23 @@ struct InsightWriterTests {
         #expect(!shooterText.contains("%"))
         #expect(!goalkeeperText.contains("%"))
     }
+
+    @Test("Patterns travel with the facts but never change the template text")
+    func patternsLeaveTemplateUnchanged() async throws {
+        let zone = GoalZone(row: .top, column: .left)
+        let pattern = ScoutingPattern(kind: .line(.crossShot), tally: Tally(successes: 7, attempts: 10))
+        let plain = InsightFacts.shooter(
+            overall: Tally(successes: 3, attempts: 6),
+            leadingZone: RankedTally(key: zone, tally: Tally(successes: 2, attempts: 4))
+        )
+        let withPatterns = InsightFacts.shooter(
+            overall: Tally(successes: 3, attempts: 6),
+            leadingZone: RankedTally(key: zone, tally: Tally(successes: 2, attempts: 4)),
+            patterns: [pattern]
+        )
+        #expect(plain != withPatterns)
+        #expect(try await writer.write(withPatterns) == writer.write(plain))
+        let goalkeeper = InsightFacts.goalkeeper(overall: Tally(successes: 1, attempts: 1), weakZone: nil, patterns: [pattern])
+        #expect(try await writer.write(goalkeeper) == "In 1 shot on target, 1 save.")
+    }
 }
