@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import KeepercentDomain
 
@@ -15,7 +16,7 @@ struct PatternPhraserTests {
             tally: Tally(successes: successes, attempts: attempts),
             conversion: conversion,
             contrast: contrast
-        ))
+        ), locale: Locale(identifier: "en"))
     }
 
     @Test("Line tendencies, overall and per sector and hand")

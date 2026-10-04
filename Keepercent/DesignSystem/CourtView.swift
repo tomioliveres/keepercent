@@ -178,7 +178,7 @@ struct CourtView: View {
             outline.fill(.clear)
                 .frame(width: bounds.width, height: bounds.height)
         }
-        .accessibilityLabel("Court, \(zone.sector.displayName), \(zone.depth.displayName)")
+        .accessibilityLabel("Court, \(zone.sector.displayName()), \(zone.depth.displayName())")
         .accessibilityValue(accessibilitySample(for: .zone(zone)))
         .position(x: bounds.midX, y: bounds.midY)
     }

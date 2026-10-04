@@ -161,7 +161,7 @@ struct GoalView: View {
 
     private func accessibilityName(for target: GoalTarget) -> String {
         switch target {
-        case .inside(let zone): return "Goal, \(zone.displayName)"
+        case .inside(let zone): return "Goal, \(zone.displayName())"
         case .post(let segment):
             switch segment {
             case .leftPostTop: return "Left post, top"
@@ -182,7 +182,7 @@ struct GoalView: View {
             case .over: directionName = "Miss, over"
             }
             guard let part else { return directionName }
-            return "\(directionName), \(part.displayName)"
+            return "\(directionName), \(part.displayName())"
         }
     }
 

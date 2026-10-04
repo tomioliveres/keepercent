@@ -281,7 +281,7 @@ struct LinkedZonesView: View {
         case .sevenMeters:
             return "7 m throws"
         case .zone(let zone):
-            return "From \(zone.sector.displayName) · \(zone.depth.displayName)"
+            return "From \(zone.sector.displayName()) · \(zone.depth.displayName())"
         }
     }
 
@@ -337,30 +337,6 @@ struct LinkedZonesView: View {
             if let label = HeatmapColor.label(for: entry.value) {
                 result[entry.key] = label
             }
-        }
-    }
-}
-
-// Not `private`: the shooter card (T4.3) reuses these same names for its
-// "Where they score" origin list, so a scout never sees two different
-// names for the same zone.
-extension CourtSector {
-    var displayName: String {
-        switch self {
-        case .leftWing: return "left wing"
-        case .leftBack: return "left back"
-        case .center: return "center"
-        case .rightBack: return "right back"
-        case .rightWing: return "right wing"
-        }
-    }
-}
-
-extension CourtDepth {
-    var displayName: String {
-        switch self {
-        case .near: return "near"
-        case .far: return "far"
         }
     }
 }

@@ -3,6 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "KeepercentDomain",
+    defaultLocalization: "en",
     platforms: [
         .iOS(.v26),
         .macOS(.v26)
@@ -17,7 +18,8 @@ let package = Package(
     targets: [
         .target(
             name: "KeepercentDomain",
-            dependencies: []
+            dependencies: [],
+            resources: [.process("Resources")]
         ),
         .testTarget(
             name: "KeepercentDomainTests",

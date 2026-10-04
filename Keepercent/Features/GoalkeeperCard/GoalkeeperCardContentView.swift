@@ -101,7 +101,7 @@ struct GoalkeeperCardContentView: View {
             } else {
                 ForEach(Array(ranked.enumerated()), id: \.offset) { _, entry in
                     HStack {
-                        Text(entry.key.displayName)
+                        Text(entry.key.displayName())
                         Spacer()
                         // `HeatmapColor.label` already turns a `Tally` into
                         // exactly the "successes/attempts" text this

@@ -4,6 +4,10 @@ import Testing
 
 private let referenceDate = Date(timeIntervalSince1970: 0)
 
+/// English is pinned so the expectations never depend on the machine's
+/// language; LocalizationTests.swift covers the Spanish variants.
+private let english = Locale(identifier: "en")
+
 /// Builds a normalized point directly from a metric offset from the goal
 /// centre, matching the helper in CourtGeometryTests.swift and
 /// ShotTests.swift, so this file states intent (metres from the goal)
@@ -29,7 +33,7 @@ struct ShotSummaryTests {
             outcome: .post,
             date: referenceDate
         )
-        let summary = ShotSummary(shot: shot)
+        let summary = ShotSummary(shot: shot, locale: english)
         #expect(summary.subject == "#7")
         #expect(summary.origin == "left back")
         #expect(summary.target == "crossbar center")
@@ -47,7 +51,7 @@ struct ShotSummaryTests {
             outcome: .goal,
             date: referenceDate
         )
-        let summary = ShotSummary(shot: shot)
+        let summary = ShotSummary(shot: shot, locale: english)
         #expect(summary.origin == "7 m")
     }
 
@@ -61,7 +65,7 @@ struct ShotSummaryTests {
             outcome: .out,
             date: referenceDate
         )
-        let summary = ShotSummary(shot: shot)
+        let summary = ShotSummary(shot: shot, locale: english)
         #expect(summary.subject == "vs #12")
     }
 
@@ -75,7 +79,7 @@ struct ShotSummaryTests {
             outcome: .goal,
             date: referenceDate
         )
-        let summary = ShotSummary(shot: shot)
+        let summary = ShotSummary(shot: shot, locale: english)
         #expect(summary.target == "top left")
     }
 
@@ -96,7 +100,7 @@ struct ShotSummaryTests {
             outcome: .out,
             date: referenceDate
         )
-        let summary = ShotSummary(shot: shot)
+        let summary = ShotSummary(shot: shot, locale: english)
         #expect(summary.target == expected)
     }
 
@@ -110,7 +114,7 @@ struct ShotSummaryTests {
             outcome: .out,
             date: referenceDate
         )
-        let summary = ShotSummary(shot: shot)
+        let summary = ShotSummary(shot: shot, locale: english)
         #expect(summary.target == "wide right")
     }
 
@@ -124,7 +128,7 @@ struct ShotSummaryTests {
             outcome: .out,
             date: referenceDate
         )
-        let summary = ShotSummary(shot: shot)
+        let summary = ShotSummary(shot: shot, locale: english)
         #expect(summary.subject == "—")
     }
 
@@ -139,7 +143,7 @@ struct ShotSummaryTests {
             outcome: .out,
             date: referenceDate
         )
-        let summary = ShotSummary(shot: shot)
+        let summary = ShotSummary(shot: shot, locale: english)
         #expect(summary.origin == "—")
     }
 }

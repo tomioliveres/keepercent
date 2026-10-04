@@ -1,49 +1,51 @@
+import Foundation
+
 /// A deterministic, offline fallback. It describes counts and their sample
 /// without labeling a rate or extrapolating a trend from a single attempt.
 /// Patterns are not repeated here: the card already lists them, phrased by
 /// `PatternPhraser`.
+///
+/// It writes in `locale`'s language. Counted nouns ("3 goals", "1 save")
+/// are their own catalog entries with plural variants, so each language
+/// agrees them with the number its own way.
 public struct TemplateInsightWriter: InsightWriter {
-    public init() {}
+    private let locale: Locale
+
+    public init(locale: Locale = .current) {
+        self.locale = locale
+    }
 
     public func write(_ facts: InsightFacts) -> String {
         switch facts {
         case .shooter(let overall, let leadingZone, _):
-            guard overall.attempts > 0 else { return "No shots recorded for this shooter." }
-            let count = "In \(overall.attempts) recorded \(plural(overall.attempts, "shot")), "
-                + "\(overall.successes) \(plural(overall.successes, "goal"))."
+            guard overall.attempts > 0 else {
+                return String(domain: "No shots recorded for this shooter.", locale: locale)
+            }
+            let shots = String(domain: "\(overall.attempts) recorded shots", locale: locale)
+            let goals = String(domain: "\(overall.successes) goals", locale: locale)
+            let count = String(domain: "In \(shots), \(goals).", locale: locale)
             guard let leadingZone else { return count }
-            return count + " Most goals: \(name(leadingZone.key)) "
-                + "(\(leadingZone.tally.successes) of \(leadingZone.tally.attempts) "
-                + "\(plural(leadingZone.tally.attempts, "shot")))."
+            let sample = String(domain: "\(leadingZone.tally.attempts) shots", locale: locale)
+            let zone = leadingZone.key.displayName(locale: locale)
+            return count + " " + String(
+                domain: "Most goals: \(zone) (\(leadingZone.tally.successes) of \(sample)).",
+                locale: locale
+            )
 
         case .goalkeeper(let overall, let weakZone, _):
-            guard overall.attempts > 0 else { return "No shots on target recorded for this goalkeeper." }
-            let count = "In \(overall.attempts) \(plural(overall.attempts, "shot")) on target, "
-                + "\(overall.successes) \(plural(overall.successes, "save"))."
+            guard overall.attempts > 0 else {
+                return String(domain: "No shots on target recorded for this goalkeeper.", locale: locale)
+            }
+            let shots = String(domain: "\(overall.attempts) shots on target", locale: locale)
+            let saves = String(domain: "\(overall.successes) saves", locale: locale)
+            let count = String(domain: "In \(shots), \(saves).", locale: locale)
             guard let weakZone else { return count }
-            return count + " Most goals conceded: \(name(weakZone.key)) "
-                + "(\(weakZone.tally.successes) of \(weakZone.tally.attempts) "
-                + "\(plural(weakZone.tally.attempts, "shot")) on target)."
+            let sample = String(domain: "\(weakZone.tally.attempts) shots on target", locale: locale)
+            let zone = weakZone.key.displayName(locale: locale)
+            return count + " " + String(
+                domain: "Most goals conceded: \(zone) (\(weakZone.tally.successes) of \(sample)).",
+                locale: locale
+            )
         }
-    }
-
-    private func plural(_ count: Int, _ singular: String) -> String {
-        count == 1 ? singular : singular + "s"
-    }
-
-    private func name(_ zone: GoalZone) -> String {
-        let row: String
-        switch zone.row {
-        case .top: row = "top"
-        case .middle: row = "middle"
-        case .bottom: row = "bottom"
-        }
-        let column: String
-        switch zone.column {
-        case .left: column = "left"
-        case .center: column = "center"
-        case .right: column = "right"
-        }
-        return "\(row) \(column)"
     }
 }

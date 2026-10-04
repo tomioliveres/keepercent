@@ -1,9 +1,10 @@
+import Foundation
 import Testing
 @testable import KeepercentDomain
 
 @Suite("Template insight writer")
 struct InsightWriterTests {
-    private let writer: any InsightWriter = TemplateInsightWriter()
+    private let writer: any InsightWriter = TemplateInsightWriter(locale: Locale(identifier: "en"))
 
     @Test("No shooter shots do not imply a zero-percent performance")
     func emptyShooter() async throws {

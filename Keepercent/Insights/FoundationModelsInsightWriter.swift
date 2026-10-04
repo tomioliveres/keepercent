@@ -27,7 +27,7 @@ struct FoundationModelsInsightWriter: InsightWriter {
 
         // Patterns arrive already phrased by the same deterministic code the
         // card shows, so the model only ever sees finished, counted facts.
-        let patternNotes = patterns.map(PatternPhraser.sentence(for:))
+        let patternNotes = patterns.map { PatternPhraser.sentence(for: $0) }
         var prompt = "Rephrase this scouting note: \(baseline)"
         if !patternNotes.isEmpty {
             prompt += " You may also mention these patterns: \(patternNotes.joined(separator: "; "))."

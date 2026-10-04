@@ -75,7 +75,7 @@ struct TeamReportCardView: View {
         let goals = (tally?.attempts ?? 0) - (tally?.successes ?? 0)
         let saves = tally?.successes ?? 0
         return VStack(spacing: 3) {
-            Text(zone.displayName)
+            Text(zone.displayName())
                 .font(.caption2)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
@@ -86,7 +86,7 @@ struct TeamReportCardView: View {
         .frame(height: 54)
         .background(HeatmapColor.tint(for: tally, appearance: colorScheme))
         .clipShape(RoundedRectangle(cornerRadius: 6))
-        .accessibilityLabel("\(zone.displayName): \(tally == nil ? "no on-target shots" : "\(goals) goals, \(saves) saves")")
+        .accessibilityLabel("\(zone.displayName()): \(tally == nil ? "no on-target shots" : "\(goals) goals, \(saves) saves")")
     }
 
     private func zoneList(title: String, entries: [RankedTally<GoalZone>], unit: String) -> some View {
@@ -97,7 +97,7 @@ struct TeamReportCardView: View {
             } else {
                 ForEach(entries, id: \.key) { entry in
                     HStack {
-                        Text(entry.key.displayName)
+                        Text(entry.key.displayName())
                         Spacer()
                         Text("\(entry.tally.successes) \(unit) / \(entry.tally.attempts) on target")
                             .monospacedDigit()
