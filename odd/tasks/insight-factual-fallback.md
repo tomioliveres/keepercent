@@ -34,7 +34,9 @@ invented-number rejection does not establish factual attribution.
   (9 tests), full `swift test --package-path Domain` passed (404 tests),
   generic iOS Simulator build passed, and `git diff --check` passed.
   Visual checks on the exact commit remain pending. Work-unit commit: `4e41ed0`.
-  RDD assessment/outcome: pending until visual handoff is resolved.
+  RDD committed-only assessment from `d0db49d`: medium, 5 paths / 262 lines,
+  `review_due: false` (`under_budget`); review outcome pending until the visual
+  handoff is resolved and the task closes.
 
 ## Evidence and next step
 
@@ -42,6 +44,5 @@ invented-number rejection does not establish factual attribution.
   moving 2 zone goals to 3 passed `InsightNumberGuard.accepts`; an invented 9
   was rejected. Optional pattern counts permitted another attribution swap.
 - User chose template-only accuracy over paraphrase with residual semantic risk.
-- Next: delegated implementation and functional verification, then assess the
-  resulting candidate before any claim of review authority. Claude `/verify-ui`
-  needs a ready exact-SHA handoff; do not request it yet.
+- Next: Claude `/verify-ui IF-1` on the exact SHA in `.git/handoff/IF-1.md`;
+  reconcile its verdict before any RDD review or claim of review authority.
