@@ -17,7 +17,6 @@
 // where.
 
 import SwiftUI
-import Charts
 import KeepercentDomain
 
 struct LinkedZonesView: View {
@@ -126,31 +125,40 @@ struct LinkedZonesView: View {
         }
     }
 
-    /// Two small bar charts over the active `goalEngine`, kept separate
-    /// rather than one combined chart: height and outcome are different
-    /// units (a target band vs. a result), and readable over clever wins
-    /// here (this file's header comment).
+    /// Where the active `goalEngine`'s shots went, as two charts built
+    /// from the same component: by height band and by side of the goal,
+    /// each row split into goal / saved / post (T6.5). Misses have no band
+    /// or column (see `StatsEngine.outcomesByHeight`), so they get one
+    /// "Out" line shared by both charts, above the colour legend.
     private var distributionCharts: some View {
         VStack(alignment: .leading, spacing: 16) {
-            distributionChart(
+            OutcomeBreakdownChart(
                 title: "Height",
-                data: ShotHeight.allCases.map { ($0.rawValue, goalEngine.heightDistribution[$0] ?? 0) }
+                rows: ShotHeight.allCases.map { height in
+                    .init(name: height.rawValue, highlight: .height(height), breakdown: breakdown(goalEngine.outcomesByHeight[height]))
+                },
+                reading: reading
             )
-            distributionChart(
-                title: "Outcome",
-                data: ShotOutcome.allCases.map { ($0.rawValue, goalEngine.outcomeCounts[$0] ?? 0) }
+            OutcomeBreakdownChart(
+                title: "Side",
+                rows: ShotSide.allCases.map { side in
+                    .init(name: side.rawValue, highlight: .side(side), breakdown: breakdown(goalEngine.outcomesBySide[side]))
+                },
+                reading: reading
             )
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Out (wide/over): \(goalEngine.outcomeCounts[.out] ?? 0)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                OutcomeLegend()
+            }
         }
     }
 
-    private func distributionChart(title: String, data: [(label: String, count: Int)]) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title).font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-            Chart(data, id: \.label) { entry in
-                BarMark(x: .value("Count", entry.count), y: .value("Label", entry.label))
-            }
-            .frame(height: CGFloat(data.count) * 24 + 16)
-        }
+    /// Both breakdown maps are zero-filled, so the fallback never shows;
+    /// it only spares the view a force unwrap.
+    private func breakdown(_ value: OutcomeBreakdown?) -> OutcomeBreakdown {
+        value ?? OutcomeBreakdown(goals: 0, saved: 0, posts: 0)
     }
 
     // MARK: - Tally -> tint/label
