@@ -71,8 +71,8 @@ struct ShooterCardContentView: View {
     /// measured weakness rather than an absence of data.
     private var headerStatsLine: String {
         let tally = engine.effectiveness
-        guard tally.attempts > 0, let rate = tally.rate else { return "No shots recorded yet" }
-        return "\(tally.attempts) shot\(tally.attempts == 1 ? "" : "s") · \(tally.successes) goal\(tally.successes == 1 ? "" : "s") · \(percentText(rate))"
+        guard tally.attempts > 0, let rate = tally.rate else { return String(localized: "No shots recorded yet") }
+        return String(localized: "\(tally.attempts) shots · \(tally.successes) goals · \(percentText(rate))")
     }
 
     // MARK: - Where they score
@@ -93,7 +93,7 @@ struct ShooterCardContentView: View {
     /// the ranking is empty — a shooter with only misses/saves recorded
     /// still has an effectiveness Tally, just nothing to rank here.
     private func rankingColumn<Key>(
-        title: String,
+        title: LocalizedStringKey,
         ranked: [RankedTally<Key>],
         name: @escaping (Key) -> String
     ) -> some View {
@@ -138,23 +138,23 @@ struct ShooterCardContentView: View {
         let lines = fieldShots.lineDistribution
         let crossShot = lines[.crossShot] ?? 0
         let nearPost = lines[.nearPost] ?? 0
-        guard crossShot + nearPost > 0 else { return "No open-play shots yet" }
-        return "Cross-shot \(crossShot) · Near-post \(nearPost)"
+        guard crossShot + nearPost > 0 else { return String(localized: "No open-play shots yet") }
+        return String(localized: "Cross-shot \(crossShot) · Near-post \(nearPost)")
     }
 
     private var dominantHeightText: String {
         let heights = fieldShots.heightDistribution
         let most = heights.values.max() ?? 0
-        guard most > 0 else { return "No dominant height yet" }
+        guard most > 0 else { return String(localized: "No dominant height yet") }
         // Walk the heights in their declared order so a tie is named the
         // same way every time; a tie names every tied height instead of
         // hiding which ones they were.
         let leaders = ShotHeight.allCases.filter { heights[$0] == most }
         guard leaders.count > 1 else {
-            return "Mostly \(leaders[0].rawValue) (\(most))"
+            return String(localized: "Mostly \(leaders[0].displayName()) (\(most))")
         }
-        let tied = leaders.map(\.rawValue).formatted(.list(type: .and))
-        return "Tied: \(tied) (\(most) each)"
+        let tied = leaders.map { $0.displayName() }.formatted(.list(type: .and))
+        return String(localized: "Tied: \(tied) (\(most) each)")
     }
 
     // MARK: - Formatting

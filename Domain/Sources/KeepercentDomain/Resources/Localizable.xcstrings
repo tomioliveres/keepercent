@@ -26,12 +26,6 @@
             "state" : "translated",
             "value" : "%1$@, apunta %2$@ %3$@"
           }
-        },
-        "es-419" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@, apunta %2$@ %3$@"
-          }
         }
       }
     },
@@ -39,12 +33,6 @@
       "extractionState" : "manual",
       "localizations" : {
         "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@, apunta %2$@ %3$@%4$@"
-          }
-        },
-        "es-419" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%1$@, apunta %2$@ %3$@%4$@"
@@ -90,24 +78,6 @@
               }
             }
           }
-        },
-        "es-419" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld gol"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld goles"
-                }
-              }
-            }
-          }
         }
       }
     },
@@ -115,12 +85,6 @@
       "extractionState" : "manual",
       "localizations" : {
         "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$lld de %2$lld"
-          }
-        },
-        "es-419" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%1$lld de %2$lld"
@@ -372,12 +336,6 @@
             "state" : "translated",
             "value" : "7 m: apunta %1$@ %2$@"
           }
-        },
-        "es-419" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "7 m: apunta %1$@ %2$@"
-          }
         }
       }
     },
@@ -406,12 +364,6 @@
             "state" : "translated",
             "value" : "Tras marcar, repite la misma zona %@"
           }
-        },
-        "es-419" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Después de marcar, repite la misma zona %@"
-          }
         }
       }
     },
@@ -419,12 +371,6 @@
       "extractionState" : "manual",
       "localizations" : {
         "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Apunta %1$@ %2$@"
-          }
-        },
-        "es-419" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Apunta %1$@ %2$@"
@@ -474,12 +420,6 @@
             "state" : "translated",
             "value" : "En %1$@, %2$@."
           }
-        },
-        "es-419" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "En %1$@, %2$@."
-          }
         }
       }
     },
@@ -504,12 +444,6 @@
       "extractionState" : "manual",
       "localizations" : {
         "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Más goles: %1$@ (%2$lld de %3$@)."
-          }
-        },
-        "es-419" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Más goles: %1$@ (%2$lld de %3$@)."
@@ -576,12 +510,6 @@
             "state" : "translated",
             "value" : "Marca de cerca %1$@; de lejos, %2$@"
           }
-        },
-        "es-419" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Marca de cerca %1$@; de lejos, %2$@"
-          }
         }
       }
     },
@@ -633,12 +561,6 @@
             "state" : "translated",
             "value" : "Desde la izquierda"
           }
-        },
-        "es-419" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Desde la izquierda"
-          }
         }
       }
     },
@@ -652,12 +574,6 @@
           }
         },
         "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Desde la derecha"
-          }
-        },
-        "es-419" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Desde la derecha"
@@ -679,12 +595,6 @@
             "state" : "translated",
             "value" : "De frente"
           }
-        },
-        "es-419" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "De frente"
-          }
         }
       }
     },
@@ -698,12 +608,6 @@
           }
         },
         "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "En suspensión"
-          }
-        },
-        "es-419" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "En suspensión"
@@ -748,12 +652,6 @@
             "state" : "translated",
             "value" : "lejos"
           }
-        },
-        "es-419" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "lejos"
-          }
         }
       }
     },
@@ -767,12 +665,6 @@
           }
         },
         "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "cerca"
-          }
-        },
-        "es-419" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "cerca"
@@ -1001,12 +893,6 @@
             "state" : "translated",
             "value" : "Zurdo"
           }
-        },
-        "es-419" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zurdo"
-          }
         }
       }
     },
@@ -1020,12 +906,6 @@
           }
         },
         "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Diestro"
-          }
-        },
-        "es-419" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Diestro"
@@ -1047,12 +927,6 @@
             "state" : "translated",
             "value" : "abajo"
           }
-        },
-        "es-419" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "abajo"
-          }
         }
       }
     },
@@ -1066,12 +940,6 @@
           }
         },
         "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "a media altura"
-          }
-        },
-        "es-419" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "a media altura"
@@ -1093,12 +961,6 @@
             "state" : "translated",
             "value" : "arriba"
           }
-        },
-        "es-419" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "arriba"
-          }
         }
       }
     },
@@ -1112,12 +974,6 @@
           }
         },
         "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "cruzado"
-          }
-        },
-        "es-419" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "cruzado"
@@ -1162,12 +1018,6 @@
             "state" : "translated",
             "value" : "por el centro"
           }
-        },
-        "es-419" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "por el centro"
-          }
         }
       }
     },
@@ -1184,12 +1034,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "por encima"
-          }
-        },
-        "es-419" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "por arriba"
           }
         }
       }
@@ -1250,12 +1094,6 @@
           }
         },
         "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "GOL"
-          }
-        },
-        "es-419" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "GOL"
@@ -1346,12 +1184,6 @@
             "state" : "translated",
             "value" : "abajo"
           }
-        },
-        "es-419" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "abajo"
-          }
         }
       }
     },
@@ -1365,12 +1197,6 @@
           }
         },
         "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "centro"
-          }
-        },
-        "es-419" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "centro"
@@ -1392,12 +1218,6 @@
             "state" : "translated",
             "value" : "izquierda"
           }
-        },
-        "es-419" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "izquierda"
-          }
         }
       }
     },
@@ -1411,12 +1231,6 @@
           }
         },
         "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "medio"
-          }
-        },
-        "es-419" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "medio"
@@ -1438,12 +1252,6 @@
             "state" : "translated",
             "value" : "derecha"
           }
-        },
-        "es-419" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "derecha"
-          }
         }
       }
     },
@@ -1457,12 +1265,6 @@
           }
         },
         "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "arriba"
-          }
-        },
-        "es-419" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "arriba"
@@ -1484,12 +1286,6 @@
             "state" : "translated",
             "value" : "central"
           }
-        },
-        "es-419" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "central"
-          }
         }
       }
     },
@@ -1503,12 +1299,6 @@
           }
         },
         "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "lateral izquierdo"
-          }
-        },
-        "es-419" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "lateral izquierdo"
@@ -1530,12 +1320,6 @@
             "state" : "translated",
             "value" : "extremo izquierdo"
           }
-        },
-        "es-419" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "extremo izquierdo"
-          }
         }
       }
     },
@@ -1549,12 +1333,6 @@
           }
         },
         "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "lateral derecho"
-          }
-        },
-        "es-419" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "lateral derecho"
@@ -1576,12 +1354,6 @@
             "state" : "translated",
             "value" : "extremo derecho"
           }
-        },
-        "es-419" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "extremo derecho"
-          }
         }
       }
     },
@@ -1595,12 +1367,6 @@
           }
         },
         "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "al centro"
-          }
-        },
-        "es-419" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "al centro"
@@ -1622,12 +1388,6 @@
             "state" : "translated",
             "value" : "a la izquierda"
           }
-        },
-        "es-419" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "a la izquierda"
-          }
         }
       }
     },
@@ -1645,12 +1405,6 @@
             "state" : "translated",
             "value" : "a la derecha"
           }
-        },
-        "es-419" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "a la derecha"
-          }
         }
       }
     },
@@ -1658,12 +1412,6 @@
       "extractionState" : "manual",
       "localizations" : {
         "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "vs. #%lld"
-          }
-        },
-        "es-419" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "vs. #%lld"

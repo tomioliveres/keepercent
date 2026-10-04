@@ -25,7 +25,7 @@ struct TeamReportView: View {
                     ShareLink(
                         item: sharedImage,
                         subject: Text("Goalkeeper scouting report"),
-                        preview: SharePreview("Goalkeeper #\(goalkeeperNumber) report", image: sharedImage)
+                        preview: SharePreview(Text("Goalkeeper #\(goalkeeperNumber) report"), image: sharedImage)
                     ) {
                         // Navy on amber: white text on the light amber
                         // fill would be unreadable, in dark mode above all.

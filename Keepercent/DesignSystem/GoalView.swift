@@ -161,25 +161,25 @@ struct GoalView: View {
 
     private func accessibilityName(for target: GoalTarget) -> String {
         switch target {
-        case .inside(let zone): return "Goal, \(zone.displayName())"
+        case .inside(let zone): return String(localized: "Goal, \(zone.displayName())")
         case .post(let segment):
             switch segment {
-            case .leftPostTop: return "Left post, top"
-            case .leftPostMiddle: return "Left post, middle"
-            case .leftPostBottom: return "Left post, bottom"
-            case .crossbarLeft: return "Crossbar, left"
-            case .crossbarCenter: return "Crossbar, center"
-            case .crossbarRight: return "Crossbar, right"
-            case .rightPostTop: return "Right post, top"
-            case .rightPostMiddle: return "Right post, middle"
-            case .rightPostBottom: return "Right post, bottom"
+            case .leftPostTop: return String(localized: "Left post, top")
+            case .leftPostMiddle: return String(localized: "Left post, middle")
+            case .leftPostBottom: return String(localized: "Left post, bottom")
+            case .crossbarLeft: return String(localized: "Crossbar, left")
+            case .crossbarCenter: return String(localized: "Crossbar, center")
+            case .crossbarRight: return String(localized: "Crossbar, right")
+            case .rightPostTop: return String(localized: "Right post, top")
+            case .rightPostMiddle: return String(localized: "Right post, middle")
+            case .rightPostBottom: return String(localized: "Right post, bottom")
             }
         case .out(let direction, let part):
             let directionName: String
             switch direction {
-            case .wideLeft: directionName = "Miss, wide left"
-            case .wideRight: directionName = "Miss, wide right"
-            case .over: directionName = "Miss, over"
+            case .wideLeft: directionName = String(localized: "Miss, wide left")
+            case .wideRight: directionName = String(localized: "Miss, wide right")
+            case .over: directionName = String(localized: "Miss, over")
             }
             guard let part else { return directionName }
             return "\(directionName), \(part.displayName())"
@@ -189,10 +189,10 @@ struct GoalView: View {
     private func accessibilitySample(for target: GoalTarget) -> String {
         guard let accessibilityTallies else { return "" }
         guard case .inside(let zone) = target else { return "" }
-        guard let tally = accessibilityTallies[zone], tally.attempts > 0 else { return "No data" }
+        guard let tally = accessibilityTallies[zone], tally.attempts > 0 else { return String(localized: "No data") }
         switch accessibilityReading {
-        case .effectiveness: return "\(tally.successes) goals in \(tally.attempts) shots"
-        case .saveRate: return "\(tally.successes) saves in \(tally.attempts) shots on target"
+        case .effectiveness: return String(localized: "\(tally.successes) goals in \(tally.attempts) shots")
+        case .saveRate: return String(localized: "\(tally.successes) saves in \(tally.attempts) shots on target")
         }
     }
 

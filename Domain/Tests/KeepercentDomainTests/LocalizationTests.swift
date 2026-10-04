@@ -25,6 +25,10 @@ struct LocalizationTests {
         #expect(PatternPhraser.sentence(for: crossCourt, locale: latinAmerica)
             == "Zurdo desde lateral izquierdo: tira cruzado 5 de 6")
 
+        let conceded = pattern(.concededHeight(.bottom), 6, 8)
+        #expect(PatternPhraser.sentence(for: conceded, locale: spain) == "Encaja abajo 6 de 8 goles")
+        #expect(PatternPhraser.sentence(for: conceded, locale: latinAmerica) == "Recibe abajo 6 de 8 goles")
+
         let saves = pattern(.sevenMeterSaves, 2, 6)
         #expect(PatternPhraser.sentence(for: saves, locale: spain) == "7 m: para 2 de 6")
         #expect(PatternPhraser.sentence(for: saves, locale: latinAmerica) == "7 m: ataja 2 de 6")
@@ -54,11 +58,48 @@ struct LocalizationTests {
             == "No hay tiros registrados de este tirador.")
     }
 
+    @Test("Sparse regional catalog inherits shared wording and preserves count plurals")
+    func regionalInheritance() async throws {
+        let repeatZone = pattern(.repeatAfterGoal, 4, 6)
+        #expect(PatternPhraser.sentence(for: repeatZone, locale: latinAmerica)
+            == PatternPhraser.sentence(for: repeatZone, locale: spain))
+        // Any Latin American region, and the bare `es-419` the app passes,
+        // resolves to `es-419`, then `es`.
+        for regional in [Locale(identifier: "es_MX"), Locale(identifier: "es-419")] {
+            #expect(PatternPhraser.sentence(for: repeatZone, locale: regional)
+                == PatternPhraser.sentence(for: repeatZone, locale: spain))
+            #expect(PatternPhraser.sentence(for: pattern(.sevenMeterSaves, 2, 6), locale: regional)
+                == "7 m: ataja 2 de 6")
+        }
+        for count in [0, 1, 2] {
+            let facts = InsightFacts.shooter(overall: Tally(successes: count, attempts: count), leadingZone: nil)
+            let text = try await TemplateInsightWriter(locale: latinAmerica).write(facts)
+            if count == 0 {
+                #expect(text == "No hay tiros registrados de este tirador.")
+            } else if count == 1 {
+                #expect(text == "En 1 tiro registrado, 1 gol.")
+            } else {
+                #expect(text == "En 2 tiros registrados, 2 goles.")
+            }
+        }
+    }
+
     @Test("The last-shot card speaks each variant")
     func shotSummary() {
         let shot = Shot(attackingSide: .rival, shooter: Player(number: 7), isSevenMeters: true,
                         target: .post(.crossbarCenter), outcome: .post, date: Date(timeIntervalSince1970: 0))
         #expect(ShotSummary(shot: shot, locale: spain).text == "#7 · 7 m · larguero centro · POSTE")
         #expect(ShotSummary(shot: shot, locale: latinAmerica).text == "#7 · 7 m · travesaño centro · PALO")
+    }
+}
+
+@Suite("Display names for heights and sides")
+struct HeightAndSideDisplayNameTests {
+    @Test("Heights and sides share the goal's position words")
+    func names() {
+        let english = Locale(identifier: "en")
+        let spain = Locale(identifier: "es_ES")
+        #expect(ShotHeight.allCases.map { $0.displayName(locale: english) } == ["top", "middle", "bottom"])
+        #expect(ShotSide.allCases.map { $0.displayName(locale: spain) } == ["izquierda", "centro", "derecha"])
     }
 }

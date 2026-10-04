@@ -118,7 +118,7 @@ struct ShotLogView: View {
     /// `StoredSession.kind` and `StoredShot.domainShot` already use
     /// elsewhere (see `SessionRowView`'s "Unknown kind").
     private func summaryText(for stored: StoredShot) -> String {
-        guard let shot = stored.domainShot else { return "Unrecorded shot" }
+        guard let shot = stored.domainShot else { return String(localized: "Unrecorded shot") }
         return ShotSummary(shot: shot).text
     }
 
@@ -135,7 +135,7 @@ struct ShotLogView: View {
             try modelContext.save()
         } catch {
             modelContext.rollback()
-            errorMessage = "Couldn't delete this shot (\(error.localizedDescription))."
+            errorMessage = String(localized: "Couldn't delete this shot (\(error.localizedDescription)).")
             return
         }
         onDeletedShot(id)

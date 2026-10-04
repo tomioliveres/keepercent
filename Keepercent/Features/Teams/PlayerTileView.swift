@@ -35,12 +35,12 @@ struct PlayerTileView: View {
     var isSelected = false
 
     private var accessibilityDescription: String {
-        var parts = ["Number \(player.number)"]
+        var parts = [String(localized: "Number \(player.number)")]
         if let name = player.name, !name.isEmpty {
             parts.append(name)
         }
         if player.isGoalkeeper {
-            parts.append("Goalkeeper")
+            parts.append(String(localized: "Goalkeeper"))
         }
         return parts.joined(separator: ", ")
     }
@@ -81,7 +81,7 @@ struct PlayerTileView: View {
                 }
             }
 
-            Text(player.name ?? "Unnamed")
+            Text(player.name ?? String(localized: "Unnamed"))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)

@@ -14,14 +14,14 @@ import KeepercentDomain
 func shotEntryErrorMessage(_ error: ShotEntryError) -> String {
     switch error {
     case .missingShooter:
-        return "Select who took the shot."
+        return String(localized: "Select who took the shot.")
     case .missingRivalGoalkeeper:
-        return "Select the active rival goalkeeper first."
+        return String(localized: "Select the active rival goalkeeper first.")
     case .missingOrigin:
-        return "Tap the court to record where the shot was taken from."
+        return String(localized: "Tap the court to record where the shot was taken from.")
     case .missingOutcome:
-        return "Choose whether the shot was a goal or saved."
+        return String(localized: "Choose whether the shot was a goal or saved.")
     case .outcomeContradictsTarget:
-        return "That outcome doesn't match the selected target."
+        return String(localized: "That outcome doesn't match the selected target.")
     }
 }

@@ -5,10 +5,20 @@ import KeepercentDomain
 /// Phrases precomputed scouting facts on-device. The template remains the
 /// authoritative result whenever generation cannot safely describe them.
 struct FoundationModelsInsightWriter: InsightWriter {
-    private let fallback = TemplateInsightWriter()
+    /// Resolve the app language, not the device's region or formatting locale.
+    /// One variant drives model support, instructions and deterministic prose.
+    static var appLocale: Locale {
+        Locale(identifier: Bundle.main.preferredLocalizations.first ?? "en")
+    }
+
+    let locale: Locale
+
+    init(locale: Locale = Self.appLocale) {
+        self.locale = locale
+    }
 
     func write(_ facts: InsightFacts) async throws -> String {
-        let baseline = fallback.write(facts)
+        let baseline = TemplateInsightWriter(locale: locale).write(facts)
         let attempts: Int
         let patterns: [ScoutingPattern]
         switch facts {
@@ -24,10 +34,13 @@ struct FoundationModelsInsightWriter: InsightWriter {
         case .available: break
         case .unavailable: return baseline
         }
+        // A language the model cannot write keeps the template, which is
+        // already in the scout's language.
+        guard model.supportsLocale(locale) else { return baseline }
 
         // Patterns arrive already phrased by the same deterministic code the
         // card shows, so the model only ever sees finished, counted facts.
-        let patternNotes = patterns.map { PatternPhraser.sentence(for: $0) }
+        let patternNotes = patterns.map { PatternPhraser.sentence(for: $0, locale: locale) }
         var prompt = "Rephrase this scouting note: \(baseline)"
         if !patternNotes.isEmpty {
             prompt += " You may also mention these patterns: \(patternNotes.joined(separator: "; "))."
@@ -35,7 +48,7 @@ struct FoundationModelsInsightWriter: InsightWriter {
 
         do {
             let session = LanguageModelSession(model: model) {
-                "You write brief handball scouting notes in English. Rephrase only the supplied text. "
+                "You write brief handball scouting notes in \(noteLanguage). Rephrase only the supplied text. "
                 + "Keep every count and its sample, preserve which outcome belongs to which player, "
                 + "and do not invent statistics, rates, reasons, predictions, or new observations. "
                 + "Use only these numbers. "
@@ -43,11 +56,9 @@ struct FoundationModelsInsightWriter: InsightWriter {
             }
             let response = try await session.respond(to: prompt)
             let text = response.content.trimmingCharacters(in: .whitespacesAndNewlines)
-            let supplied = numbers(in: ([baseline] + patternNotes).joined(separator: " "))
-            guard !text.isEmpty,
-                  !text.contains("%"),
-                  isSubset(numbers(in: baseline), of: numbers(in: text)),
-                  isSubset(numbers(in: text), of: supplied)
+            // No rates are supplied by today's templates or pattern sentences.
+            // The guard therefore rejects generated rates, even if calculable.
+            guard InsightNumberGuard.accepts(text, baseline: baseline, optionalNotes: patternNotes)
             else {
                 return baseline
             }
@@ -58,22 +69,19 @@ struct FoundationModelsInsightWriter: InsightWriter {
         }
     }
 
-    /// Every numeric token in the text, so added, missing or repeated
-    /// samples can be detected, not just added rates.
-    private func numbers(in text: String) -> [String] {
-        let pattern = /[0-9]+/
-        return text.matches(of: pattern).map { String($0.output) }
+    /// The language the app is showing, spelled out for the model with the
+    /// variant's own handball vocabulary, so the note reads like the
+    /// template it rephrases: Spain and Latin America name the goalkeeper,
+    /// the save and the shot differently.
+    private var noteLanguage: String {
+        switch locale.identifier {
+        case "es":
+            "Spanish as used in Spain (portero, parada, lanzamiento, encajar)"
+        case "es-419":
+            "Latin American Spanish (arquero, atajada, tiro, recibir)"
+        default:
+            "English"
+        }
     }
 
-    /// Whether every number in `part` appears in `whole`, counting
-    /// repeats: the note must keep the baseline's counts, and may only use
-    /// numbers that were supplied — mentioning a pattern is optional.
-    private func isSubset(_ part: [String], of whole: [String]) -> Bool {
-        var remaining = whole
-        for number in part {
-            guard let index = remaining.firstIndex(of: number) else { return false }
-            remaining.remove(at: index)
-        }
-        return true
-    }
 }

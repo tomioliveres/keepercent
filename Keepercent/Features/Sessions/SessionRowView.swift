@@ -14,7 +14,7 @@ struct SessionRowView: View {
     let shotCount: Int
 
     private var kindText: String {
-        kind.map(sessionKindLabel) ?? "Unknown kind"
+        kind.map(sessionKindLabel) ?? String(localized: "Unknown kind")
     }
 
     var body: some View {
@@ -27,7 +27,7 @@ struct SessionRowView: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            Text("\(shotCount) shot\(shotCount == 1 ? "" : "s")")
+            Text("\(shotCount) shots")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             Image(systemName: "chevron.right")

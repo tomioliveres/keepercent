@@ -113,7 +113,7 @@ struct ShotEntryContextPanel: View {
                 ) {
                     Text("None").tag(Int?.none)
                     ForEach(goalkeepers, id: \.number) { goalkeeper in
-                        Text("#\(goalkeeper.number)\(goalkeeper.name.map { " \($0)" } ?? "")")
+                        Text(verbatim: "#\(goalkeeper.number)\(goalkeeper.name.map { " \($0)" } ?? "")")
                             .tag(Int?.some(goalkeeper.number))
                     }
                 }
@@ -170,7 +170,7 @@ struct ShotEntryContextPanel: View {
     /// (T3.3 decision, "tap again to clear") — `SessionView` owns that
     /// comparison (`delivery == value ? nil : value`), this view only
     /// reports which chip was tapped.
-    private func chip(_ title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+    private func chip(_ title: LocalizedStringKey, isSelected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)
                 .font(.subheadline.weight(isSelected ? .bold : .regular))

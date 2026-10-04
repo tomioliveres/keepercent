@@ -172,10 +172,10 @@ struct SessionView: View {
     }
 
     private var headerSubtitle: String {
-        let kindText = session.kind.map(sessionKindLabel) ?? "Unknown kind"
+        let kindText = session.kind.map(sessionKindLabel) ?? String(localized: "Unknown kind")
         let dateText = session.date.formatted(date: .abbreviated, time: .omitted)
         let count = session.shots.count
-        return "\(kindText) · \(dateText) · \(count) shot\(count == 1 ? "" : "s") recorded"
+        return String(localized: "\(kindText) · \(dateText) · \(count) shots recorded")
     }
 
     // MARK: - Layout
@@ -383,7 +383,7 @@ struct SessionView: View {
             try modelContext.save()
         } catch {
             modelContext.rollback()
-            errorMessage = "Couldn't save this shot (\(error.localizedDescription))."
+            errorMessage = String(localized: "Couldn't save this shot (\(error.localizedDescription)).")
             return
         }
 
@@ -423,7 +423,7 @@ struct SessionView: View {
             try modelContext.save()
         } catch {
             modelContext.rollback()
-            errorMessage = "Couldn't undo this shot (\(error.localizedDescription))."
+            errorMessage = String(localized: "Couldn't undo this shot (\(error.localizedDescription)).")
             return
         }
 

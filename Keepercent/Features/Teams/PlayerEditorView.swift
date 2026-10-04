@@ -68,7 +68,8 @@ struct PlayerEditorView: View {
                     Picker("Handedness", selection: $handedness) {
                         Text("Unknown").tag(Handedness?.none)
                         ForEach(Handedness.allCases, id: \.self) { hand in
-                            Text(hand == .left ? "Left" : "Right").tag(Handedness?.some(hand))
+                            Text(hand == .left ? LocalizedStringKey("Left") : LocalizedStringKey("Right"))
+                                .tag(Handedness?.some(hand))
                         }
                     }
                 }

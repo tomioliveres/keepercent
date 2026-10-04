@@ -87,3 +87,25 @@ extension ShotOrigin {
         }
     }
 }
+
+extension ShotHeight {
+    /// "top", "middle" or "bottom": the goal row's own words.
+    public func displayName(locale: Locale = .current) -> String {
+        switch self {
+        case .top: GoalRow.top.displayName(locale: locale)
+        case .middle: GoalRow.middle.displayName(locale: locale)
+        case .bottom: GoalRow.bottom.displayName(locale: locale)
+        }
+    }
+}
+
+extension ShotSide {
+    /// "left", "center" or "right": the goal column's own words.
+    public func displayName(locale: Locale = .current) -> String {
+        switch self {
+        case .left: GoalColumn.left.displayName(locale: locale)
+        case .center: GoalColumn.center.displayName(locale: locale)
+        case .right: GoalColumn.right.displayName(locale: locale)
+        }
+    }
+}

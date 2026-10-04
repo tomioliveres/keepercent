@@ -46,18 +46,26 @@ struct TeamReportCardView: View {
                     }
                 }
 
-                zoneList(title: "Where goals went in", entries: field.weakGoalZones(limit: 3), unit: "goals")
-                zoneList(title: "Where shots were saved", entries: field.strongGoalZones(limit: 3), unit: "saves")
+                zoneList(title: "Where goals went in", entries: field.weakGoalZones(limit: 3)) { tally in
+                    Text("\(tally.successes) goals / \(tally.attempts) on target")
+                }
+                zoneList(title: "Where shots were saved", entries: field.strongGoalZones(limit: 3)) { tally in
+                    Text("\(tally.successes) saves / \(tally.attempts) on target")
+                }
                 Text("A zone can appear in both lists. These counts describe observed shots, not future outcomes.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
             Divider()
-            Text(sevenMeters.attempts == 0
-                 ? "7 m throws: no shots on target recorded"
-                 : "7 m throws: \(sevenMeters.attempts - sevenMeters.successes) goals · \(sevenMeters.successes) saves / \(sevenMeters.attempts) on target")
-                .font(.caption)
+            Group {
+                if sevenMeters.attempts == 0 {
+                    Text("7 m throws: no shots on target recorded")
+                } else {
+                    Text("7 m throws: \(sevenMeters.attempts - sevenMeters.successes) goals · \(sevenMeters.successes) saves / \(sevenMeters.attempts) on target")
+                }
+            }
+            .font(.caption)
             Text("Only shots faced by #\(goalkeeperNumber) are included. Frame hits and misses are not goal-zone samples.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
@@ -79,17 +87,25 @@ struct TeamReportCardView: View {
                 .font(.caption2)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
-            Text(tally == nil ? "—" : "\(goals) / \(saves)")
+            Text(verbatim: tally == nil ? "—" : "\(goals) / \(saves)")
                 .font(.caption.bold().monospacedDigit())
         }
         .frame(maxWidth: .infinity)
         .frame(height: 54)
         .background(HeatmapColor.tint(for: tally, appearance: colorScheme))
         .clipShape(RoundedRectangle(cornerRadius: 6))
-        .accessibilityLabel("\(zone.displayName()): \(tally == nil ? "no on-target shots" : "\(goals) goals, \(saves) saves")")
+        .accessibilityLabel(tally == nil
+            ? Text("\(zone.displayName()): no on-target shots")
+            : Text("\(zone.displayName()): \(goals) goals, \(saves) saves"))
     }
 
-    private func zoneList(title: String, entries: [RankedTally<GoalZone>], unit: String) -> some View {
+    /// `count` phrases one entry's tally ("3 goals / 5 on target"), so each
+    /// list keeps its own noun as one translatable sentence.
+    private func zoneList(
+        title: LocalizedStringKey,
+        entries: [RankedTally<GoalZone>],
+        count: @escaping (Tally) -> Text
+    ) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title).font(.headline)
             if entries.isEmpty {
@@ -99,7 +115,7 @@ struct TeamReportCardView: View {
                     HStack {
                         Text(entry.key.displayName())
                         Spacer()
-                        Text("\(entry.tally.successes) \(unit) / \(entry.tally.attempts) on target")
+                        count(entry.tally)
                             .monospacedDigit()
                     }
                     .font(.caption)

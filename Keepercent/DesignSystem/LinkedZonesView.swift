@@ -33,12 +33,20 @@ struct LinkedZonesView: View {
     @State private var courtMode: CourtMode = .zones
 
     /// What the court draws over its zones.
-    enum CourtMode: String, CaseIterable, Identifiable {
-        case zones = "Zones"
-        case directions = "Directions"
-        case everyShot = "Every shot"
+    enum CourtMode: CaseIterable, Identifiable {
+        case zones
+        case directions
+        case everyShot
 
         var id: Self { self }
+
+        var title: LocalizedStringKey {
+            switch self {
+            case .zones: "Zones"
+            case .directions: "Directions"
+            case .everyShot: "Every shot"
+            }
+        }
     }
 
     /// The engine the goal side (tints AND chart) reads from: every field
@@ -63,7 +71,7 @@ struct LinkedZonesView: View {
             Text("Origin").font(.headline)
             Picker("Court view", selection: $courtMode) {
                 ForEach(CourtMode.allCases) { mode in
-                    Text(mode.rawValue).tag(mode)
+                    Text(mode.title).tag(mode)
                 }
             }
             .pickerStyle(.segmented)
@@ -185,15 +193,26 @@ struct LinkedZonesView: View {
     /// 3 goals".
     private var directionNotes: [ShotOrigin: String] {
         Dictionary(uniqueKeysWithValues: engine.dominantDirections(reading).map { direction in
-            let share = "Most shots aimed \(direction.side.rawValue): \(direction.shots.successes) of \(direction.shots.attempts)"
+            let share = share(of: direction)
             let conversion = direction.conversion
             switch reading {
             case .effectiveness:
-                return (direction.origin, "\(share), \(conversion.successes) goal\(conversion.successes == 1 ? "" : "s")")
+                return (direction.origin, String(localized: "\(share), \(conversion.successes) goals"))
             case .saveRate:
-                return (direction.origin, "\(share), \(conversion.successes) saves of \(conversion.attempts) on target")
+                return (direction.origin, String(localized: "\(share), \(conversion.successes) saves of \(conversion.attempts) on target"))
             }
         })
+    }
+
+    /// "Most shots aimed right: 4 of 6" — one sentence per side, so each
+    /// language words the side its own way.
+    private func share(of direction: ShotDirection) -> String {
+        let shots = direction.shots
+        switch direction.side {
+        case .left: return String(localized: "Most shots aimed left: \(shots.successes) of \(shots.attempts)")
+        case .center: return String(localized: "Most shots aimed center: \(shots.successes) of \(shots.attempts)")
+        case .right: return String(localized: "Most shots aimed right: \(shots.successes) of \(shots.attempts)")
+        }
     }
 
     @ViewBuilder
@@ -203,10 +222,14 @@ struct LinkedZonesView: View {
             EmptyView()
         case .directions:
             VStack(alignment: .leading, spacing: 4) {
-                Text("Width: shots · Color: \(reading == .effectiveness ? "goal rate" : "save rate")")
+                if reading == .effectiveness {
+                    Text("Width: shots · Color: goal rate")
+                } else {
+                    Text("Width: shots · Color: save rate")
+                }
                 HStack(spacing: 12) {
-                    ForEach(Array(zip(["Low", "Mid", "High"], HeatmapColor.arrowSteps)), id: \.0) { name, color in
-                        swatch(name, color: color)
+                    ForEach(Array(HeatmapColor.arrowSteps.enumerated()), id: \.offset) { index, color in
+                        swatch(arrowStepNames[index], color: color)
                     }
                     swatch("No rate", color: HeatmapColor.arrowNoRate)
                 }
@@ -225,7 +248,10 @@ struct LinkedZonesView: View {
         }
     }
 
-    private func swatch(_ name: String, color: Color) -> some View {
+    /// One name per `HeatmapColor.arrowSteps` colour, lowest rate first.
+    private let arrowStepNames: [LocalizedStringKey] = ["Low", "Mid", "High"]
+
+    private func swatch(_ name: LocalizedStringKey, color: Color) -> some View {
         HStack(spacing: 4) {
             RoundedRectangle(cornerRadius: 2)
                 .fill(color)
@@ -240,13 +266,14 @@ struct LinkedZonesView: View {
     /// number that could be misread as a rate.
     private var sevenMeterCaption: String {
         let tally = engine.originTallies(reading)[.sevenMeters]
-        guard let label = HeatmapColor.label(for: tally) else { return "7 m: no shots" }
-        return "7 m: \(label)"
+        guard let label = HeatmapColor.label(for: tally) else { return String(localized: "7 m: no shots") }
+        return String(localized: "7 m: \(label)")
     }
 
     private var goalColumn: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(reading == .effectiveness ? "Effectiveness" : "Save rate").font(.headline)
+            Text(reading == .effectiveness ? LocalizedStringKey("Effectiveness") : LocalizedStringKey("Save rate"))
+                .font(.headline)
             GoalView(
                 zoneTints: goalTints,
                 zoneLabels: labels(from: goalEngine.goalZoneTallies(reading)),
@@ -270,18 +297,18 @@ struct LinkedZonesView: View {
     /// with no legend — tells a scout exactly what the goal side is
     /// showing right now.
     private var captionView: some View {
-        Text("\(filterDescription) · \(goalEngine.shots.count) shot\(goalEngine.shots.count == 1 ? "" : "s")")
+        Text("\(filterDescription) · \(goalEngine.shots.count) shots")
             .font(.caption)
             .foregroundStyle(.secondary)
     }
 
     private var filterDescription: String {
-        guard let selection else { return "All field shots" }
+        guard let selection else { return String(localized: "All field shots") }
         switch selection {
         case .sevenMeters:
-            return "7 m throws"
+            return String(localized: "7 m throws")
         case .zone(let zone):
-            return "From \(zone.sector.displayName()) · \(zone.depth.displayName())"
+            return String(localized: "From \(zone.sector.displayName()) · \(zone.depth.displayName())")
         }
     }
 
@@ -295,14 +322,14 @@ struct LinkedZonesView: View {
             OutcomeBreakdownChart(
                 title: "Height",
                 rows: ShotHeight.allCases.map { height in
-                    .init(name: height.rawValue, highlight: .height(height), breakdown: breakdown(goalEngine.outcomesByHeight[height]))
+                    .init(name: height.displayName().localizedCapitalized, highlight: .height(height), breakdown: breakdown(goalEngine.outcomesByHeight[height]))
                 },
                 reading: reading
             )
             OutcomeBreakdownChart(
                 title: "Side",
                 rows: ShotSide.allCases.map { side in
-                    .init(name: side.rawValue, highlight: .side(side), breakdown: breakdown(goalEngine.outcomesBySide[side]))
+                    .init(name: side.displayName().localizedCapitalized, highlight: .side(side), breakdown: breakdown(goalEngine.outcomesBySide[side]))
                 },
                 reading: reading
             )

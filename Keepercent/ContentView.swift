@@ -46,7 +46,7 @@ struct ContentView: View {
             }
             .padding(.horizontal)
 
-            Text(lastTappedTarget.map { "Last tap: \($0.code)" } ?? "Tap the goal to try it")
+            (lastTappedTarget.map { Text("Last tap: \($0.code)") } ?? Text("Tap the goal to try it"))
                 .font(.callout.monospaced())
                 .foregroundStyle(.secondary)
 
@@ -55,7 +55,7 @@ struct ContentView: View {
             }
             .padding(.horizontal)
 
-            Text(lastTappedOrigin.map { "Last tap: \($0.code)" } ?? "Tap the court to try it")
+            (lastTappedOrigin.map { Text("Last tap: \($0.code)") } ?? Text("Tap the court to try it"))
                 .font(.callout.monospaced())
                 .foregroundStyle(.secondary)
         }
@@ -127,7 +127,7 @@ struct DebugLaunchView: View {
         }
     }
 
-    private func unavailable(_ title: String, description: String) -> some View {
+    private func unavailable(_ title: LocalizedStringKey, description: LocalizedStringKey) -> some View {
         ContentUnavailableView(title, systemImage: "chart.bar.xaxis", description: Text(description))
             .navigationTitle(title)
     }

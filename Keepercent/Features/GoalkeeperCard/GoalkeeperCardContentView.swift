@@ -68,8 +68,8 @@ struct GoalkeeperCardContentView: View {
     /// read as a measured weakness rather than an absence of data.
     private var headerStatsLine: String {
         let tally = engine.saveRate
-        guard tally.attempts > 0, let rate = tally.rate else { return "No shots faced yet" }
-        return "\(tally.attempts) shot\(tally.attempts == 1 ? "" : "s") on target · \(tally.successes) save\(tally.successes == 1 ? "" : "s") · \(percentText(rate))"
+        guard tally.attempts > 0, let rate = tally.rate else { return String(localized: "No shots faced yet") }
+        return String(localized: "\(tally.attempts) shots on target · \(tally.successes) saves · \(percentText(rate))")
     }
 
     // MARK: - Weak / strong zones
@@ -90,9 +90,9 @@ struct GoalkeeperCardContentView: View {
     /// shape, one section per ranking instead of two side by side, since
     /// each of the goalkeeper's rankings gets its own headline here.
     private func rankingSection(
-        title: String,
+        title: LocalizedStringKey,
         ranked: [RankedTally<GoalZone>],
-        emptyText: String
+        emptyText: LocalizedStringKey
     ) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title).font(.headline)

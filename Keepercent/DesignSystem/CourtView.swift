@@ -213,10 +213,10 @@ struct CourtView: View {
 
     private func tallySample(for origin: ShotOrigin) -> String {
         guard let accessibilityTallies else { return "" }
-        guard let tally = accessibilityTallies[origin], tally.attempts > 0 else { return "No data" }
+        guard let tally = accessibilityTallies[origin], tally.attempts > 0 else { return String(localized: "No data") }
         switch accessibilityReading {
-        case .effectiveness: return "\(tally.successes) goals in \(tally.attempts) shots"
-        case .saveRate: return "\(tally.successes) saves in \(tally.attempts) shots on target"
+        case .effectiveness: return String(localized: "\(tally.successes) goals in \(tally.attempts) shots")
+        case .saveRate: return String(localized: "\(tally.successes) saves in \(tally.attempts) shots on target")
         }
     }
 

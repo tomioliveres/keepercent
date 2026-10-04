@@ -24,7 +24,7 @@ struct OutcomeBreakdownChart: View {
         var id: String { name }
     }
 
-    let title: String
+    let title: LocalizedStringKey
     let rows: [Row]
     let reading: StatsReading
 
@@ -37,7 +37,7 @@ struct OutcomeBreakdownChart: View {
     /// What the right-hand figure counts, said once in the header instead of
     /// on every row, so the figure stays short enough for one line.
     private var figureCaption: String {
-        reading == .saveRate ? "saves / on target" : "goals / shots"
+        reading == .saveRate ? String(localized: "saves / on target") : String(localized: "goals / shots")
     }
 
     var body: some View {
@@ -58,7 +58,7 @@ struct OutcomeBreakdownChart: View {
         HStack(spacing: 8) {
             GoalGlyph(highlight: row.highlight)
                 .accessibilityHidden(true)
-            Text(row.name.capitalized)
+            Text(row.name)
                 .font(.caption)
                 .frame(width: 52, alignment: .leading)
             bar(for: row.breakdown)
@@ -112,27 +112,30 @@ struct OutcomeBreakdownChart: View {
     private func figure(for breakdown: OutcomeBreakdown) -> String {
         let tally = breakdown.tally(reading)
         guard let rate = tally.rate else {
-            return breakdown.shots == 0 ? "No shots" : "None on target"
+            return breakdown.shots == 0 ? String(localized: "No shots") : String(localized: "None on target")
         }
-        return "\(tally.successes)/\(tally.attempts) · \(percent(rate))%"
+        return "\(tally.successes)/\(tally.attempts) · \(percent(rate))"
     }
 
-    /// "Top: 5 shots, 3 goals, 2 saved, 0 post. 3 of 5 goals, 60 percent".
+    /// "Top: 5 shots, 3 goals, 2 saved, 0 post. 3 of 5 goals, 60%".
     private func accessibilityLabel(for row: Row) -> String {
         let breakdown = row.breakdown
-        let name = row.name.capitalized
-        guard breakdown.shots > 0 else { return "\(name): no shots" }
-        let counts = "\(name): \(breakdown.shots) shot\(breakdown.shots == 1 ? "" : "s"), "
-            + "\(breakdown.goals) goal\(breakdown.goals == 1 ? "" : "s"), "
-            + "\(breakdown.saved) saved, \(breakdown.posts) post"
+        let name = row.name
+        guard breakdown.shots > 0 else { return String(localized: "\(name): no shots") }
+        let counts = String(localized: "\(name): \(breakdown.shots) shots, \(breakdown.goals) goals, \(breakdown.saved) saved, \(breakdown.posts) post")
         let tally = breakdown.tally(reading)
-        guard let rate = tally.rate else { return "\(counts). None on target" }
-        let noun = reading == .saveRate ? "saved" : "goals"
-        return "\(counts). \(tally.successes) of \(tally.attempts) \(noun), \(percent(rate)) percent"
+        guard let rate = tally.rate else { return String(localized: "\(counts). None on target") }
+        switch reading {
+        case .saveRate:
+            return String(localized: "\(counts). \(tally.successes) of \(tally.attempts) saved, \(percent(rate))")
+        case .effectiveness:
+            return String(localized: "\(counts). \(tally.successes) of \(tally.attempts) goals, \(percent(rate))")
+        }
     }
 
-    private func percent(_ rate: Double) -> Int {
-        Int((rate * 100).rounded())
+    /// "60%" in English, "60 %" in Spanish: the current locale decides.
+    private func percent(_ rate: Double) -> String {
+        rate.formatted(.percent.precision(.fractionLength(0)))
     }
 }
 
@@ -149,7 +152,7 @@ struct OutcomeLegend: View {
         .foregroundStyle(.secondary)
     }
 
-    private func entry(_ name: String, color: Color) -> some View {
+    private func entry(_ name: LocalizedStringKey, color: Color) -> some View {
         HStack(spacing: 4) {
             RoundedRectangle(cornerRadius: 2)
                 .fill(color)
@@ -166,7 +169,7 @@ struct OutcomeLegend: View {
         OutcomeBreakdownChart(
             title: "Height",
             rows: ShotHeight.allCases.map {
-                .init(name: $0.rawValue, highlight: .height($0), breakdown: engine.outcomesByHeight[$0] ?? OutcomeBreakdown(goals: 0, saved: 0, posts: 0))
+                .init(name: $0.displayName().localizedCapitalized, highlight: .height($0), breakdown: engine.outcomesByHeight[$0] ?? OutcomeBreakdown(goals: 0, saved: 0, posts: 0))
             },
             reading: .effectiveness
         )

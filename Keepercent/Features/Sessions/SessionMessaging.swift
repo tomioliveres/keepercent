@@ -11,16 +11,16 @@ import KeepercentDomain
 func sessionKindLabel(_ kind: SessionKind) -> String {
     switch kind {
     case .live:
-        return "Live"
+        return String(localized: "Live")
     case .video:
-        return "Video"
+        return String(localized: "Video")
     }
 }
 
 func sessionErrorMessage(_ error: Error) -> String {
     switch error {
     case SessionError.matchDateInFuture:
-        return "The match date can't be in the future."
+        return String(localized: "The match date can't be in the future.")
     default:
         return error.localizedDescription
     }

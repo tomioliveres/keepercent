@@ -121,7 +121,7 @@ struct TeamsView: View {
                 do {
                     try DemoDataSeeder.seed(into: modelContext)
                 } catch {
-                    seedErrorMessage = "Couldn't load demo data: \(error.localizedDescription)"
+                    seedErrorMessage = String(localized: "Couldn't load demo data: \(error.localizedDescription)")
                 }
             }
             selectFirstTeamIfNeeded()

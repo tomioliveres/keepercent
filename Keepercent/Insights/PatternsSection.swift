@@ -31,9 +31,9 @@ struct PatternsSection: View {
 
     private var emptyText: String {
         if shotCount < ScoutingPattern.minimumSample {
-            return "Not enough shots for patterns yet (at least \(ScoutingPattern.minimumSample) needed)"
+            return String(localized: "Not enough shots for patterns yet (at least \(ScoutingPattern.minimumSample) needed)")
         }
-        return "No clear pattern yet"
+        return String(localized: "No clear pattern yet")
     }
 
     private func row(_ pattern: ScoutingPattern) -> some View {
@@ -59,7 +59,7 @@ struct PatternsSection: View {
     private func figure(for pattern: ScoutingPattern) -> String {
         let main = percentText(pattern.tally)
         guard let contrast = pattern.contrast else { return main }
-        return "\(main) vs \(percentText(contrast))"
+        return String(localized: "\(main) vs \(percentText(contrast))")
     }
 
     private func percentText(_ tally: Tally) -> String {

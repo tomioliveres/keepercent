@@ -8,7 +8,9 @@ struct InsightTextView: View {
     @State private var resolvedFacts: InsightFacts?
     @State private var resolvedText: String?
 
-    private var template: String { TemplateInsightWriter().write(facts) }
+    private var template: String {
+        TemplateInsightWriter(locale: FoundationModelsInsightWriter.appLocale).write(facts)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
