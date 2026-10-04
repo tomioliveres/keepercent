@@ -68,7 +68,12 @@ struct ShotClassificationTargetSideTests {
         ]
     )
     func outSideFollowsDirection(direction: MissDirection, expected: ShotSide) {
-        #expect(ShotClassification.targetSide(.out(direction)) == expected)
+        // The third a miss went to never changes its side, and a legacy
+        // record with no third keeps the same side too.
+        let parts: [MissPart?] = [nil] + direction.parts
+        for part in parts {
+            #expect(ShotClassification.targetSide(.out(direction, part)) == expected)
+        }
     }
 }
 
@@ -106,7 +111,10 @@ struct ShotClassificationTargetHeightTests {
 
     @Test("Out targets never have a height, including `over`", arguments: MissDirection.allCases)
     func outHasNoHeight(direction: MissDirection) {
-        #expect(ShotClassification.targetHeight(.out(direction)) == nil)
+        let parts: [MissPart?] = [nil] + direction.parts
+        for part in parts {
+            #expect(ShotClassification.targetHeight(.out(direction, part)) == nil)
+        }
     }
 }
 
@@ -145,8 +153,8 @@ struct ShotClassificationLineTests {
     @Test("Line classification also integrates with post and out targets, via their derived side")
     func lineIntegratesWithPostAndOutTargets() {
         #expect(ShotClassification.line(from: Self.leftOrigin, to: .post(.rightPostTop)) == .crossShot)
-        #expect(ShotClassification.line(from: Self.rightOrigin, to: .out(.wideRight)) == .nearPost)
-        #expect(ShotClassification.line(from: Self.leftOrigin, to: .out(.over)) == .neutral)
+        #expect(ShotClassification.line(from: Self.rightOrigin, to: .out(.wideRight, .middle)) == .nearPost)
+        #expect(ShotClassification.line(from: Self.leftOrigin, to: .out(.over, .center)) == .neutral)
         #expect(ShotClassification.line(from: Self.leftOrigin, to: .post(.crossbarCenter)) == .neutral)
     }
 }

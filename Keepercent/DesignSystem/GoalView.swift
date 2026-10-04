@@ -167,12 +167,15 @@ struct GoalView: View {
             case .rightPostMiddle: return "Right post, middle"
             case .rightPostBottom: return "Right post, bottom"
             }
-        case .out(let direction):
+        case .out(let direction, let part):
+            let directionName: String
             switch direction {
-            case .wideLeft: return "Miss, wide left"
-            case .wideRight: return "Miss, wide right"
-            case .over: return "Miss, over"
+            case .wideLeft: directionName = "Miss, wide left"
+            case .wideRight: directionName = "Miss, wide right"
+            case .over: directionName = "Miss, over"
             }
+            guard let part else { return directionName }
+            return "\(directionName), \(part.displayName)"
         }
     }
 
@@ -522,7 +525,7 @@ struct GoalView: View {
 }
 
 #Preview("GoalView - Selected") {
-    GoalView(selection: .out(.wideLeft)) { target in
+    GoalView(selection: .out(.wideLeft, .top)) { target in
         print("Tapped: \(target.code)")
     }
     .padding()

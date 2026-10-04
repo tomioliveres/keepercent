@@ -192,14 +192,14 @@ struct GoalGeometryCornerRuleTests {
     func justAboveLeftPostBandTopIsWideLeft() {
         let x = -geometry.normalizedFrameBandThicknessX / 2
         let y = -geometry.normalizedFrameBandThicknessY - 0.01
-        #expect(geometry.target(at: GoalPoint(x: x, y: y)) == .out(.wideLeft))
+        #expect(geometry.target(at: GoalPoint(x: x, y: y)) == .out(.wideLeft, .top))
     }
 
     @Test("Just above the top of the right post band (still band-width in x) is a miss, not the post")
     func justAboveRightPostBandTopIsWideRight() {
         let x = 1 + geometry.normalizedFrameBandThicknessX / 2
         let y = -geometry.normalizedFrameBandThicknessY - 0.01
-        #expect(geometry.target(at: GoalPoint(x: x, y: y)) == .out(.wideRight))
+        #expect(geometry.target(at: GoalPoint(x: x, y: y)) == .out(.wideRight, .top))
     }
 
     @Test("Just below that same bound, still inside the corner square, is still the left post top segment")
@@ -225,19 +225,19 @@ struct GoalGeometryMissTests {
     @Test("Beyond the post band on the left is wideLeft")
     func beyondLeftPostBandIsWideLeft() {
         let x = -geometry.normalizedFrameBandThicknessX * 2
-        #expect(geometry.target(at: GoalPoint(x: x, y: 0.5)) == .out(.wideLeft))
+        #expect(geometry.target(at: GoalPoint(x: x, y: 0.5)) == .out(.wideLeft, .middle))
     }
 
     @Test("Beyond the post band on the right is wideRight")
     func beyondRightPostBandIsWideRight() {
         let x = 1 + geometry.normalizedFrameBandThicknessX * 2
-        #expect(geometry.target(at: GoalPoint(x: x, y: 0.5)) == .out(.wideRight))
+        #expect(geometry.target(at: GoalPoint(x: x, y: 0.5)) == .out(.wideRight, .middle))
     }
 
     @Test("Above the crossbar band, within the mouth's horizontal extent, is over")
     func aboveCrossbarBandWithinMouthIsOver() {
         let y = -geometry.normalizedFrameBandThicknessY * 2
-        #expect(geometry.target(at: GoalPoint(x: 0.5, y: y)) == .out(.over))
+        #expect(geometry.target(at: GoalPoint(x: 0.5, y: y)) == .out(.over, .center))
     }
 
     @Test(
@@ -249,7 +249,7 @@ struct GoalGeometryMissTests {
     )
     func highAndWideResolvesToWide(input: (x: Double, expected: MissDirection)) {
         let y = -geometry.normalizedFrameBandThicknessY * 5
-        #expect(geometry.target(at: GoalPoint(x: input.x, y: y)) == .out(input.expected))
+        #expect(geometry.target(at: GoalPoint(x: input.x, y: y)) == .out(input.expected, .top))
     }
 }
 
@@ -382,13 +382,13 @@ struct GoalGeometryNonDefaultGeometryTests {
     @Test("A point beyond the left post band resolves to wideLeft")
     func beyondLeftPostBandResolvesToWideLeft() {
         let x = -geometry.normalizedFrameBandThicknessX * 2
-        #expect(geometry.target(at: GoalPoint(x: x, y: 0.5)) == .out(.wideLeft))
+        #expect(geometry.target(at: GoalPoint(x: x, y: 0.5)) == .out(.wideLeft, .middle))
     }
 
     @Test("A point above the crossbar band, inside the mouth, resolves to over")
     func aboveCrossbarBandResolvesToOver() {
         let y = -geometry.normalizedFrameBandThicknessY * 2
-        #expect(geometry.target(at: GoalPoint(x: 0.5, y: y)) == .out(.over))
+        #expect(geometry.target(at: GoalPoint(x: 0.5, y: y)) == .out(.over, .center))
     }
 
     // `GoalPoint` deliberately does not clamp, so a `y` below the ground
@@ -465,8 +465,12 @@ struct GoalGeometryMissDirectionRegionsTests {
             var sampledAtLeastOnePoint = false
             for point in denseGridPoints(in: bounds) where isPointInRegion(point, rect) {
                 sampledAtLeastOnePoint = true
+                guard case .out(let resolved, _) = geometry.target(at: point) else {
+                    Issue.record("\(point) inside \(direction)'s rect \(rect) is not a miss")
+                    continue
+                }
                 #expect(
-                    geometry.target(at: point) == .out(direction),
+                    resolved == direction,
                     "\(point) inside \(direction)'s rect \(rect) resolved to \(geometry.target(at: point))"
                 )
             }
@@ -484,7 +488,7 @@ struct GoalGeometryMissDirectionRegionsTests {
         )
 
         for point in denseGridPoints(in: bounds) {
-            guard case .out(let direction) = geometry.target(at: point) else { continue }
+            guard case .out(let direction, _) = geometry.target(at: point) else { continue }
 
             // The gap half is the regression test for the original defect:
             // a miss point that landed in NONE of its own direction's
@@ -511,7 +515,7 @@ struct GoalGeometryMissDirectionRegionsTests {
         )
 
         for point in denseGridPoints(in: bounds, columns: 151, rows: 127) {
-            guard case .out(let direction) = custom.target(at: point) else { continue }
+            guard case .out(let direction, _) = custom.target(at: point) else { continue }
             let ownMatches = (rectsByDirection[direction] ?? []).filter { isPointInRegion(point, $0) }
             #expect(ownMatches.count == 1, "\(point), resolved to \(direction), landed in \(ownMatches.count) rects on a non-default geometry")
         }
@@ -537,6 +541,114 @@ struct GoalGeometryMissDirectionRegionsTests {
         #expect(geometry.regions(for: .wideRight, within: bounds).count == 2)
         #expect(geometry.regions(for: .over, within: bounds).count == 1)
     }
+
+    @Test(
+        "Every point in bounds that target(at:) resolves to a miss third lands inside exactly one rect of that third, and in no other third's rect",
+        arguments: [GoalGeometry.standard, GoalGeometry(widthInMeters: 4, heightInMeters: 2, frameBandInMeters: 0.5)]
+    )
+    func missThirdPointsTileExactlyOneRect(geometry: GoalGeometry) {
+        let bounds = generousBounds(for: geometry)
+        let concreteMisses = MissDirection.allCases.flatMap { direction in
+            direction.parts.map { (direction: direction, part: $0) }
+        }
+
+        for point in denseGridPoints(in: bounds, columns: 151, rows: 127) {
+            guard case .out(let direction, let resolvedPart) = geometry.target(at: point) else { continue }
+            guard let part = resolvedPart else {
+                Issue.record("\(point) resolved to a miss with no third")
+                continue
+            }
+            for miss in concreteMisses {
+                let matches = geometry.regions(for: miss.direction, part: miss.part, within: bounds)
+                    .filter { isPointInRegion(point, $0) }
+                let isOwn = miss.direction == direction && miss.part == part
+                #expect(
+                    matches.count == (isOwn ? 1 : 0),
+                    "\(point), resolved to \(direction) \(part), landed in \(matches.count) rects of \(miss.direction) \(miss.part)"
+                )
+            }
+        }
+    }
+
+    @Test("A third that does not belong to its direction has no region")
+    func mismatchedThirdHasNoRegion() {
+        let bounds = generousBounds(for: geometry)
+        #expect(geometry.regions(for: .over, part: .top, within: bounds).isEmpty)
+        #expect(geometry.regions(for: .wideLeft, part: .center, within: bounds).isEmpty)
+    }
+}
+
+@Suite("GoalGeometry miss thirds")
+struct GoalGeometryMissThirdTests {
+
+    let geometry = GoalGeometry.standard
+
+    @Test(
+        "A wide miss splits by the mouth's height thirds",
+        arguments: [
+            (y: 0.1, part: MissPart.top),
+            (y: 0.5, part: MissPart.middle),
+            (y: 0.9, part: MissPart.bottom)
+        ]
+    )
+    func wideMissSplitsByHeight(input: (y: Double, part: MissPart)) {
+        let farLeft = -geometry.normalizedFrameBandThicknessX * 2
+        let farRight = 1 + geometry.normalizedFrameBandThicknessX * 2
+        #expect(geometry.target(at: GoalPoint(x: farLeft, y: input.y)) == .out(.wideLeft, input.part))
+        #expect(geometry.target(at: GoalPoint(x: farRight, y: input.y)) == .out(.wideRight, input.part))
+    }
+
+    @Test(
+        "An over miss splits by the mouth's width thirds",
+        arguments: [
+            (x: 0.1, part: MissPart.left),
+            (x: 0.5, part: MissPart.center),
+            (x: 0.9, part: MissPart.right)
+        ]
+    )
+    func overMissSplitsByWidth(input: (x: Double, part: MissPart)) {
+        let y = -geometry.normalizedFrameBandThicknessY * 2
+        #expect(geometry.target(at: GoalPoint(x: input.x, y: y)) == .out(.over, input.part))
+    }
+
+    @Test("Everything above the crossbar beside the goal, corner strip included, is the wide side's top third")
+    func highAndWideIsTheWideTopThird() {
+        let cornerStripX = -geometry.normalizedFrameBandThicknessX / 2
+        let aboveFrameY = -geometry.normalizedFrameBandThicknessY - 0.01
+        #expect(geometry.target(at: GoalPoint(x: cornerStripX, y: aboveFrameY)) == .out(.wideLeft, .top))
+        #expect(geometry.target(at: GoalPoint(x: -1, y: -1)) == .out(.wideLeft, .top))
+        #expect(geometry.target(at: GoalPoint(x: 2, y: -1)) == .out(.wideRight, .top))
+    }
+
+    @Test("A wide miss below the ground line resolves onto the bottom third")
+    func wideMissBelowGroundIsBottomThird() {
+        let farLeft = -geometry.normalizedFrameBandThicknessX * 2
+        #expect(geometry.target(at: GoalPoint(x: farLeft, y: 1.5)) == .out(.wideLeft, .bottom))
+    }
+
+    @Test(
+        "A miss third always agrees with the inside grid's row or column at the same height or width, boundaries included",
+        arguments: [0.05, 1.0 / 3.0, 0.4, 2.0 / 3.0, 0.95]
+    )
+    func missThirdAgreesWithTheInsideGrid(value: Double) throws {
+        guard case .inside(let zone) = geometry.target(at: GoalPoint(x: value, y: value)) else {
+            Issue.record("(\(value), \(value)) is not inside the mouth")
+            return
+        }
+        let farLeft = -geometry.normalizedFrameBandThicknessX * 2
+        let aboveFrameY = -geometry.normalizedFrameBandThicknessY * 2
+
+        guard case .out(.wideLeft, let widePart) = geometry.target(at: GoalPoint(x: farLeft, y: value)) else {
+            Issue.record("a wide-left point at y \(value) is not a wide-left miss")
+            return
+        }
+        guard case .out(.over, let overPart) = geometry.target(at: GoalPoint(x: value, y: aboveFrameY)) else {
+            Issue.record("an over point at x \(value) is not an over miss")
+            return
+        }
+        #expect(try #require(widePart).rawValue == zone.row.rawValue)
+        #expect(try #require(overPart).rawValue == zone.column.rawValue)
+    }
 }
 
 @Suite("GoalGeometry regions(for: GoalTarget, within:) dispatcher")
@@ -558,11 +670,19 @@ struct GoalGeometryTargetDispatcherTests {
         #expect(geometry.regions(for: GoalTarget.post(.crossbarCenter), within: bounds) == [geometry.region(for: PostSegment.crossbarCenter)])
     }
 
-    @Test("Dispatching on .out matches regions(for: MissDirection, within:)")
+    @Test("Dispatching on .out matches regions(for: MissDirection, part:, within:)")
     func dispatchesOutToDirectionRegions() {
         #expect(
-            geometry.regions(for: GoalTarget.out(.wideLeft), within: bounds)
-                == geometry.regions(for: MissDirection.wideLeft, within: bounds)
+            geometry.regions(for: GoalTarget.out(.wideLeft, .top), within: bounds)
+                == geometry.regions(for: MissDirection.wideLeft, part: .top, within: bounds)
+        )
+    }
+
+    @Test("A legacy miss with no recorded third highlights its whole direction")
+    func dispatchesLegacyOutToWholeDirection() {
+        #expect(
+            geometry.regions(for: GoalTarget.out(.over, nil), within: bounds)
+                == geometry.regions(for: MissDirection.over, within: bounds)
         )
     }
 }

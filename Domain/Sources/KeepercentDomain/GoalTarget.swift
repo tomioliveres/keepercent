@@ -59,6 +59,29 @@ public enum MissDirection: String, CaseIterable, Equatable, Hashable, Sendable {
     case wideLeft
     case wideRight
     case over
+
+    /// The thirds this direction splits into: a wide miss by the mouth's
+    /// height, an over miss by the mouth's width. These are the only
+    /// valid (direction, part) pairs.
+    public var parts: [MissPart] {
+        switch self {
+        case .wideLeft, .wideRight: return [.top, .middle, .bottom]
+        case .over: return [.left, .center, .right]
+        }
+    }
+}
+
+/// Which third of its `MissDirection` a miss went to, from the shooter's
+/// perspective. Wide left/right use `top`/`middle`/`bottom` (the mouth's
+/// height thirds); over uses `left`/`center`/`right` (the mouth's width
+/// thirds). See `MissDirection.parts`.
+public enum MissPart: String, CaseIterable, Equatable, Hashable, Sendable {
+    case top
+    case middle
+    case bottom
+    case left
+    case center
+    case right
 }
 
 /// The outcome of a recorded shot.
@@ -77,14 +100,18 @@ public enum ShotOutcome: String, CaseIterable, Equatable, Hashable, Sendable {
 public enum GoalTarget: Equatable, Hashable, Sendable {
     case inside(GoalZone)
     case post(PostSegment)
-    case out(MissDirection)
+    /// A miss and the third it went to. The part is `nil` only for a shot
+    /// recorded before misses were split into thirds: that third is
+    /// unknown and is never guessed.
+    case out(MissDirection, MissPart?)
 }
 
 extension GoalTarget {
     /// Persistence code format (stable, readable, round-trips losslessly):
     ///   - inside: "inside.<row>.<column>"   e.g. "inside.top.left"
     ///   - post:   "post.<segment>"          e.g. "post.crossbarCenter"
-    ///   - out:    "out.<direction>"         e.g. "out.wideLeft"
+    ///   - out:    "out.<direction>.<part>"  e.g. "out.wideLeft.top"
+    ///   - legacy out, third unknown: "out.<direction>"  e.g. "out.wideLeft"
     ///
     /// SwiftData stores this primitive string; the domain exposes the rich
     /// enum. An unknown or malformed code decodes to `nil`.
@@ -94,7 +121,9 @@ extension GoalTarget {
             return "inside.\(zone.row.rawValue).\(zone.column.rawValue)"
         case .post(let segment):
             return "post.\(segment.rawValue)"
-        case .out(let direction):
+        case .out(let direction, let part?):
+            return "out.\(direction.rawValue).\(part.rawValue)"
+        case .out(let direction, nil):
             return "out.\(direction.rawValue)"
         }
     }
@@ -117,10 +146,17 @@ extension GoalTarget {
             self = .post(segment)
 
         case "out":
-            guard parts.count == 2,
+            guard parts.count == 2 || parts.count == 3,
                   let direction = MissDirection(rawValue: parts[1])
             else { return nil }
-            self = .out(direction)
+            if parts.count == 2 {
+                self = .out(direction, nil)
+            } else {
+                guard let part = MissPart(rawValue: parts[2]),
+                      direction.parts.contains(part)
+                else { return nil }
+                self = .out(direction, part)
+            }
 
         default:
             return nil
@@ -143,11 +179,15 @@ extension GoalTarget {
 }
 
 extension GoalTarget: CaseIterable {
-    /// Every possible target, derived from the underlying CaseIterable
-    /// enums so this list cannot drift as cases are added.
+    /// Every target a tap can produce, derived from the underlying
+    /// CaseIterable enums so this list cannot drift as cases are added.
+    /// Misses are the nine concrete (direction, part) pairs; a legacy miss
+    /// with no third is decodable but never tappable, so it is not listed.
     public static var allCases: [GoalTarget] {
         GoalZone.allCases.map(GoalTarget.inside)
             + PostSegment.allCases.map(GoalTarget.post)
-            + MissDirection.allCases.map(GoalTarget.out)
+            + MissDirection.allCases.flatMap { direction in
+                direction.parts.map { GoalTarget.out(direction, $0) }
+            }
     }
 }
