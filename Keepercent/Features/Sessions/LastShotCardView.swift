@@ -51,7 +51,7 @@ struct LastShotCardView: View {
                         .padding(.vertical, 10)
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(.red)
+                .tint(Palette.destructive)
 
             case .removed:
                 Text("Shot removed")

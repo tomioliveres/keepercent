@@ -237,7 +237,7 @@ struct CourtView: View {
     /// top of it.
     private func drawSurface(in context: inout GraphicsContext, size: CGSize) {
         let rect = CGRect(origin: .zero, size: size)
-        context.fill(Path(rect), with: .color(Color(.systemGreen).opacity(0.12)))
+        context.fill(Path(rect), with: .color(Palette.courtSurface))
     }
 
     /// The court's boundary — touchlines, far edge and goal line — as the
@@ -316,7 +316,7 @@ struct CourtView: View {
     /// taps as inside the frame.
     private func drawSevenMeterMark(in context: inout GraphicsContext, size: CGSize) {
         let rect = pixelRect(for: geometry.sevenMeterMarkRegion, in: size)
-        context.fill(Path(rect), with: .color(Color(.systemOrange).opacity(0.45)))
+        context.fill(Path(rect), with: .color(Palette.sevenMeterMark))
     }
 
     /// The closed shape a `.zone` origin resolves to, from

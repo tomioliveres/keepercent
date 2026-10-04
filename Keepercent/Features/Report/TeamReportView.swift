@@ -27,9 +27,13 @@ struct TeamReportView: View {
                         subject: Text("Goalkeeper scouting report"),
                         preview: SharePreview("Goalkeeper #\(goalkeeperNumber) report", image: sharedImage)
                     ) {
+                        // Navy on amber: white text on the light amber
+                        // fill would be unreadable, in dark mode above all.
                         Label("Share Image", systemImage: "square.and.arrow.up")
+                            .foregroundStyle(Palette.onBrandAmber)
                     }
                     .buttonStyle(.borderedProminent)
+                    .tint(Palette.brandAmber)
                 } else {
                     Button("Prepare Image", action: renderImage)
                         .buttonStyle(.bordered)
