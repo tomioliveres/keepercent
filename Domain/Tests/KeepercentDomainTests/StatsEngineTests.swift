@@ -869,3 +869,100 @@ struct StrongGoalZonesTests {
         #expect(strong.tally == Tally(successes: 1, attempts: 2))
     }
 }
+
+@Suite("StatsEngine.outcomesByHeight and outcomesBySide")
+struct OutcomeBreakdownTests {
+    private let empty = OutcomeBreakdown(goals: 0, saved: 0, posts: 0)
+
+    @Test("an empty engine has every row present and empty, with no rate")
+    func emptyEngineIsZeroFilled() {
+        let engine = StatsEngine(shots: [])
+        for height in ShotHeight.allCases {
+            #expect(engine.outcomesByHeight[height] == empty)
+        }
+        for side in ShotSide.allCases {
+            #expect(engine.outcomesBySide[side] == empty)
+        }
+        #expect(empty.shots == 0)
+        #expect(empty.tally(.effectiveness).rate == nil)
+        #expect(empty.tally(.saveRate).rate == nil)
+    }
+
+    @Test("splits each height band by goal, saved and post")
+    func splitsHeightBandsByOutcome() {
+        let engine = StatsEngine(shots: [
+            shot(target: .inside(GoalZone(row: .top, column: .left)), outcome: .goal),
+            shot(target: .inside(GoalZone(row: .top, column: .right)), outcome: .saved),
+            shot(target: .post(.crossbarCenter), outcome: .post),
+            shot(target: .inside(GoalZone(row: .bottom, column: .center)), outcome: .goal),
+            shot(target: .post(.leftPostMiddle), outcome: .post)
+        ])
+        let byHeight = engine.outcomesByHeight
+        #expect(byHeight[.top] == OutcomeBreakdown(goals: 1, saved: 1, posts: 1))
+        #expect(byHeight[.middle] == OutcomeBreakdown(goals: 0, saved: 0, posts: 1))
+        #expect(byHeight[.bottom] == OutcomeBreakdown(goals: 1, saved: 0, posts: 0))
+    }
+
+    @Test("misses never land in a band or a column, including over the bar")
+    func missesAreExcludedFromRows() {
+        let engine = StatsEngine(shots: [
+            shot(target: .out(.wideLeft), outcome: .out),
+            shot(target: .out(.over), outcome: .out),
+            shot(target: .out(.wideRight), outcome: .out)
+        ])
+        #expect(engine.outcomesByHeight.values.allSatisfy { $0 == empty })
+        #expect(engine.outcomesBySide.values.allSatisfy { $0 == empty })
+        #expect(engine.outcomeCounts[.out] == 3)
+    }
+
+    @Test("maps inside columns and posts to their side; the crossbar centre is centre")
+    func mapsCellsAndPostsToSides() {
+        let engine = StatsEngine(shots: [
+            shot(target: .inside(GoalZone(row: .middle, column: .left)), outcome: .goal),
+            shot(target: .post(.leftPostBottom), outcome: .post),
+            shot(target: .inside(GoalZone(row: .top, column: .center)), outcome: .saved),
+            shot(target: .post(.crossbarCenter), outcome: .post),
+            shot(target: .inside(GoalZone(row: .bottom, column: .right)), outcome: .goal),
+            shot(target: .post(.crossbarRight), outcome: .post)
+        ])
+        let bySide = engine.outcomesBySide
+        #expect(bySide[.left] == OutcomeBreakdown(goals: 1, saved: 0, posts: 1))
+        #expect(bySide[.center] == OutcomeBreakdown(goals: 0, saved: 1, posts: 1))
+        #expect(bySide[.right] == OutcomeBreakdown(goals: 1, saved: 0, posts: 1))
+    }
+
+    @Test("the shooter figure matches effectiveness: goals over every shot in the row")
+    func shooterFigureMatchesEffectiveness() throws {
+        let rowShots = [
+            shot(target: .inside(GoalZone(row: .top, column: .left)), outcome: .goal),
+            shot(target: .inside(GoalZone(row: .top, column: .left)), outcome: .goal),
+            shot(target: .inside(GoalZone(row: .top, column: .right)), outcome: .saved),
+            shot(target: .post(.crossbarLeft), outcome: .post)
+        ]
+        let top = try #require(StatsEngine(shots: rowShots).outcomesByHeight[.top])
+        #expect(top.tally(.effectiveness) == Tally(successes: 2, attempts: 4))
+        #expect(top.tally(.effectiveness) == StatsEngine(shots: rowShots).effectiveness)
+    }
+
+    @Test("the goalkeeper figure matches saveRate: saves over shots on target, posts excluded")
+    func goalkeeperFigureMatchesSaveRate() throws {
+        let rowShots = [
+            shot(target: .inside(GoalZone(row: .middle, column: .left)), outcome: .saved),
+            shot(target: .inside(GoalZone(row: .bottom, column: .left)), outcome: .goal),
+            shot(target: .post(.leftPostTop), outcome: .post)
+        ]
+        let left = try #require(StatsEngine(shots: rowShots).outcomesBySide[.left])
+        #expect(left.tally(.saveRate) == Tally(successes: 1, attempts: 2))
+        #expect(left.tally(.saveRate) == StatsEngine(shots: rowShots).saveRate)
+    }
+
+    @Test("over DemoData, rows plus misses account for every field shot")
+    func rowsPlusMissesCoverEveryShot() {
+        let engine = StatsEngine(shots: DemoData.shots).fieldShots
+        let misses = engine.outcomeCounts[.out] ?? 0
+        let heightTotal = engine.outcomesByHeight.values.reduce(0) { $0 + $1.shots }
+        let sideTotal = engine.outcomesBySide.values.reduce(0) { $0 + $1.shots }
+        #expect(heightTotal + misses == engine.shots.count)
+        #expect(sideTotal + misses == engine.shots.count)
+    }
+}

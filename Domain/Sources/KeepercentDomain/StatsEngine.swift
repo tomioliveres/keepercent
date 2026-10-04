@@ -369,3 +369,79 @@ extension StatsEngine {
         return counts
     }
 }
+
+// MARK: - Outcomes by height and side
+
+/// How the shots in one height band or one side of the goal ended: goal,
+/// saved, or post. Misses are never part of a breakdown (see
+/// `StatsEngine.outcomesByHeight`), so these three counts are every shot
+/// the row holds.
+public struct OutcomeBreakdown: Equatable, Hashable, Sendable {
+    public let goals: Int
+    public let saved: Int
+    public let posts: Int
+
+    public init(goals: Int, saved: Int, posts: Int) {
+        self.goals = goals
+        self.saved = saved
+        self.posts = posts
+    }
+
+    /// Every shot in the row.
+    public var shots: Int {
+        goals + saved + posts
+    }
+
+    /// The row's figure for the given reading, with the same definitions as
+    /// the rest of the app so the numbers match: `.effectiveness` is goals
+    /// over every shot (as `StatsEngine.effectiveness`), `.saveRate` is
+    /// saves over shots on target, posts excluded (as `StatsEngine.saveRate`).
+    public func tally(_ reading: StatsReading) -> Tally {
+        switch reading {
+        case .effectiveness: return Tally(successes: goals, attempts: shots)
+        case .saveRate: return Tally(successes: saved, attempts: goals + saved)
+        }
+    }
+}
+
+extension StatsEngine {
+    /// Goal / saved / post counts for each height band, every band
+    /// zero-filled.
+    ///
+    /// Misses are left out of every band: a shot whose outcome is `.out` (or
+    /// whose target is `.out`) has no known height, and `.over` is not a
+    /// "top" shot. The view reads misses from `outcomeCounts[.out]` as their
+    /// own line instead. `outcomesBySide` applies the same rule, so both
+    /// charts hold exactly the same shots.
+    public var outcomesByHeight: [ShotHeight: OutcomeBreakdown] {
+        breakdowns(keys: ShotHeight.allCases) { ShotClassification.targetHeight($0) }
+    }
+
+    /// Goal / saved / post counts for each side of the goal (shooter's
+    /// perspective), every side zero-filled. Misses are left out, exactly
+    /// as in `outcomesByHeight`: although `targetSide` gives a wide shot a
+    /// side, a miss belongs on the "Out" line in both charts, never in a
+    /// column.
+    public var outcomesBySide: [ShotSide: OutcomeBreakdown] {
+        breakdowns(keys: ShotSide.allCases) { target in
+            if case .out = target { return nil }
+            return ShotClassification.targetSide(target)
+        }
+    }
+
+    /// Counts every non-miss shot under the row `key(_:)` assigns to its
+    /// target. A shot whose target yields no key is skipped.
+    private func breakdowns<Key: Hashable>(
+        keys: [Key],
+        key: (GoalTarget) -> Key?
+    ) -> [Key: OutcomeBreakdown] {
+        var counts = Dictionary(uniqueKeysWithValues: keys.map { ($0, [ShotOutcome: Int]()) })
+        for shot in shots where shot.outcome != .out {
+            guard let row = key(shot.target) else { continue }
+            counts[row, default: [:]][shot.outcome, default: 0] += 1
+        }
+        return counts.mapValues {
+            OutcomeBreakdown(goals: $0[.goal] ?? 0, saved: $0[.saved] ?? 0, posts: $0[.post] ?? 0)
+        }
+    }
+}
