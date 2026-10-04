@@ -26,7 +26,7 @@ struct NewTeamSheet: View {
                 if let errorMessage {
                     Section {
                         Text(errorMessage)
-                            .foregroundStyle(.red)
+                            .foregroundStyle(Palette.error)
                     }
                 }
             }

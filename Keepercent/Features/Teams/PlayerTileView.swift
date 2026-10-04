@@ -8,7 +8,7 @@
 // in bright gym light). This view uses two additional channels together —
 // a heavier, accent-tinted border, and a glove glyph badge — so the
 // distinction survives even if colour perception or lighting removes one
-// of them. All colours are semantic system colours (`Color.accentColor`,
+// of them. All colours are semantic (`Palette.accent`, `Palette.brandAmber`,
 // `Color(.secondarySystemBackground)`, `.primary`/`.secondary`), never a
 // hardcoded light-mode grey, so the grid reads correctly in dark mode too.
 //
@@ -50,7 +50,7 @@ struct PlayerTileView: View {
                     .overlay {
                         RoundedRectangle(cornerRadius: 14, style: .continuous)
                             .strokeBorder(
-                                player.isGoalkeeper ? Color.accentColor : Color(.separator),
+                                player.isGoalkeeper ? Palette.accent : Color(.separator),
                                 lineWidth: player.isGoalkeeper ? 3 : 1
                             )
                     }
@@ -71,8 +71,8 @@ struct PlayerTileView: View {
                     Image(systemName: "hand.raised.fill")
                         .font(.caption2.bold())
                         .padding(4)
-                        .background(Color.accentColor, in: Circle())
-                        .foregroundStyle(Color(.systemBackground))
+                        .background(Palette.brandAmber, in: Circle())
+                        .foregroundStyle(Palette.onBrandAmber)
                         .offset(x: 6, y: -6)
                         .accessibilityHidden(true)
                 }

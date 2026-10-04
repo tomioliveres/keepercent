@@ -73,7 +73,7 @@ struct ShotEntryContextPanel: View {
             if let errorMessage {
                 Text(errorMessage)
                     .font(.subheadline)
-                    .foregroundStyle(Color(.systemRed))
+                    .foregroundStyle(Palette.error)
                     .fixedSize(horizontal: false, vertical: true)
                     .transition(.opacity)
             }
@@ -156,9 +156,9 @@ struct ShotEntryContextPanel: View {
                 .font(.headline)
             HStack(spacing: 12) {
                 Button("Goal") { onChooseOutcome(.goal) }
-                    .tint(.green)
+                    .tint(Palette.goal)
                 Button("Saved") { onChooseOutcome(.saved) }
-                    .tint(.orange)
+                    .tint(Palette.saved)
             }
             .buttonStyle(.borderedProminent)
             .font(.title3.bold())
@@ -177,11 +177,11 @@ struct ShotEntryContextPanel: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(
-                    isSelected ? Color.accentColor.opacity(0.22) : Color(.tertiarySystemFill),
+                    isSelected ? Palette.accent.opacity(0.22) : Color(.tertiarySystemFill),
                     in: Capsule()
                 )
                 .overlay {
-                    Capsule().stroke(isSelected ? Color.accentColor : .clear, lineWidth: 1.5)
+                    Capsule().stroke(isSelected ? Palette.accent : .clear, lineWidth: 1.5)
                 }
         }
         .buttonStyle(.plain)

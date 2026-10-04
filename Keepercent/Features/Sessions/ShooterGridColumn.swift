@@ -38,11 +38,11 @@ struct ShooterGridColumn: View {
                             // A FILL, not a border: the heavy accent border is
                             // already how a goalkeeper tile is marked, so a
                             // selected shooter drawn with one looked like a
-                            // third goalkeeper. A blue fill is also how
-                            // GoalView and CourtView show their selection.
+                            // third goalkeeper. The fill uses the brand accent,
+                            // not blue, so it never reads as a heatmap rate.
                             if selectedNumber == player.number {
                                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                    .fill(Color(.systemBlue).opacity(0.3))
+                                    .fill(Palette.shooterSelection)
                             }
                         }
                 }
