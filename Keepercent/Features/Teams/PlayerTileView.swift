@@ -30,6 +30,9 @@ let rosterTileMinimumDimension: CGFloat = 44
 
 struct PlayerTileView: View {
     let player: Player
+    /// Shot entry marks the chosen shooter by filling the square (not the
+    /// name below it) with solid brand amber; the roster grid never selects.
+    var isSelected = false
 
     private var accessibilityDescription: String {
         var parts = ["Number \(player.number)"]
@@ -46,7 +49,7 @@ struct PlayerTileView: View {
         VStack(spacing: 4) {
             ZStack(alignment: .topTrailing) {
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(Color(.secondarySystemBackground))
+                    .fill(isSelected ? Palette.brandAmber : Color(.secondarySystemBackground))
                     .overlay {
                         RoundedRectangle(cornerRadius: 14, style: .continuous)
                             .strokeBorder(
@@ -57,7 +60,7 @@ struct PlayerTileView: View {
                     .overlay {
                         Text("\(player.number)")
                             .font(.title2.bold().monospacedDigit())
-                            .foregroundStyle(.primary)
+                            .foregroundStyle(isSelected ? Palette.onBrandAmber : .primary)
                             .minimumScaleFactor(0.6)
                             .padding(4)
                     }
@@ -85,7 +88,7 @@ struct PlayerTileView: View {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityDescription)
-        .accessibilityAddTraits(.isButton)
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
 }
 
