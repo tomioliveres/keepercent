@@ -196,7 +196,7 @@ struct LinkedZonesView: View {
             EmptyView()
         case .directions:
             VStack(alignment: .leading, spacing: 4) {
-                Text("Width: shots · Colour: \(reading == .effectiveness ? "goal rate" : "save rate")")
+                Text("Width: shots · Color: \(reading == .effectiveness ? "goal rate" : "save rate")")
                 HStack(spacing: 12) {
                     ForEach(Array(zip(["Low", "Mid", "High"], HeatmapColor.arrowSteps)), id: \.0) { name, color in
                         swatch(name, color: color)
