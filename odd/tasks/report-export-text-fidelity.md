@@ -31,6 +31,13 @@ the report in the exported image on iPhone and iPad across supported locales.
   to Claude Code or Codex to compare the exported PNG (not only preview)
   against the on-screen captions on iPhone/iPad in en/es-ES/es-419 and
   light/dark. No full UI pass until that verification succeeds.
+  Local implementation: added vertical fixed sizing to the five report
+  captions in `TeamReportCardView` so constrained ImageRenderer layout can
+  preserve wrapped text; no report copy or statistics changed. The explicit
+  `.lineLimit(1)` applies to goal-cell labels, not these captions. No app
+  test target exists, so no RED test was claimed. Domain tests passed
+  (404 tests); generic iOS Simulator build succeeded; `git diff --check`
+  passed. Export fidelity is pending exact-SHA simulator verification.
 
 ## Evidence and next step
 

@@ -23,6 +23,7 @@ struct TeamReportCardView: View {
                 Text("Shooter's view · left and right face the goal")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             Text("Field shots: \(field.shots.count) attempts · \(field.saveRate.attempts) on target")
@@ -37,6 +38,7 @@ struct TeamReportCardView: View {
                     Text("Goals / saves, each from recorded shots on target")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                     ForEach(GoalRow.allCases, id: \.self) { row in
                         HStack(spacing: 6) {
                             ForEach(GoalColumn.allCases, id: \.self) { column in
@@ -55,6 +57,7 @@ struct TeamReportCardView: View {
                 Text("A zone can appear in both lists. These counts describe observed shots, not future outcomes.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             Divider()
@@ -66,9 +69,11 @@ struct TeamReportCardView: View {
                 }
             }
             .font(.caption)
+            .fixedSize(horizontal: false, vertical: true)
             Text("Only shots faced by #\(goalkeeperNumber) are included. Frame hits and misses are not goal-zone samples.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .padding(20)
         .frame(width: 320, alignment: .leading)
