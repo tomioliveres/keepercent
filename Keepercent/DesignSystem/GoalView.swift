@@ -37,6 +37,10 @@ struct GoalView: View {
     /// `zoneTints` has nothing for that zone either, so a caller that
     /// only wants colour and no digits can leave this empty.
     let zoneLabels: [GoalZone: String]
+    /// An optional short label per out zone (the nine concrete misses),
+    /// drawn centred in that zone's main rect — the linked cards use it
+    /// to show how many shots missed there. Empty by default.
+    let missLabels: [GoalTarget: String]
     /// Non-nil on a linked card; empty tallies mean no recorded attempts.
     let accessibilityTallies: [GoalZone: Tally]?
     let accessibilityReading: StatsReading
@@ -48,6 +52,7 @@ struct GoalView: View {
         selection: GoalTarget? = nil,
         zoneTints: [GoalZone: Color] = [:],
         zoneLabels: [GoalZone: String] = [:],
+        missLabels: [GoalTarget: String] = [:],
         accessibilityTallies: [GoalZone: Tally]? = nil,
         accessibilityReading: StatsReading = .effectiveness,
         isAccessibleAction: Bool = true,
@@ -57,14 +62,15 @@ struct GoalView: View {
         self.selection = selection
         self.zoneTints = zoneTints
         self.zoneLabels = zoneLabels
+        self.missLabels = missLabels
         self.accessibilityTallies = accessibilityTallies
         self.accessibilityReading = accessibilityReading
         self.isAccessibleAction = isAccessibleAction
         self.onTargetTapped = onTargetTapped
     }
 
-    /// The visible margin drawn beyond the frame hit-band, where wideLeft /
-    /// wideRight / over are tapped.
+    /// The visible margin drawn beyond the frame hit-band, where the nine
+    /// out zones (wide left / wide right / over, each in thirds) are tapped.
     ///
     /// This is a VIEW layout constant, not a `GoalGeometry` value, because
     /// the domain deliberately does not bound the miss area — `target(at:)`
@@ -125,11 +131,12 @@ struct GoalView: View {
         .accessibilityRepresentation {
             GeometryReader { proxy in
                 ZStack(alignment: .topLeading) {
+                    // One element per target, on its main rect: a wide top
+                    // miss also owns a thin corner strip, which would
+                    // otherwise announce the same zone twice.
                     ForEach(GoalTarget.allCases, id: \.code) { target in
-                        let regions = geometry.regions(for: target, within: normalizedBounds(for: proxy.size))
-                        ForEach(regions.indices, id: \.self) { index in
-                            let rect = pixelRect(for: regions[index], in: proxy.size)
-                            accessibleRegion(target, rect: rect)
+                        if let region = mainRegion(for: target, within: normalizedBounds(for: proxy.size)) {
+                            accessibleRegion(target, rect: pixelRect(for: region, in: proxy.size))
                         }
                     }
                 }
@@ -187,6 +194,14 @@ struct GoalView: View {
         case .effectiveness: return "\(tally.successes) goals in \(tally.attempts) shots"
         case .saveRate: return "\(tally.successes) saves in \(tally.attempts) shots on target"
         }
+    }
+
+    /// The largest of a target's regions: the one rect an accessibility
+    /// element or a count label sits on. Inside and post targets have a
+    /// single rect; a wide top miss has its side column plus a thin corner
+    /// strip, and the side column is the one that reads as the zone.
+    private func mainRegion(for target: GoalTarget, within bounds: GoalRegion) -> GoalRegion? {
+        geometry.regions(for: target, within: bounds).max { $0.width * $0.height < $1.width * $1.height }
     }
 
     // MARK: - Layout
@@ -293,6 +308,7 @@ struct GoalView: View {
         let mouthRect = pixelRect(for: GoalRegion(x: 0, y: 0, width: 1, height: 1), in: size)
 
         drawOutBand(in: &context, size: size)
+        drawOutZoneSeparators(in: &context, size: size)
         drawMouth(in: &context, mouthRect: mouthRect, canvasSize: size)
         drawFrame(in: &context, size: size)
         drawSelectionHighlight(in: &context, size: size)
@@ -311,6 +327,45 @@ struct GoalView: View {
     /// tried and read as a rendering glitch above the crossbar.
     private func drawOutBand(in context: inout GraphicsContext, size: CGSize) {
         context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Color(.systemGray4)))
+    }
+
+    /// Dashed separators between the nine out zones, in the same style as
+    /// the inside grid lines so they read as "zones to aim at", never as
+    /// part of the solid frame. Every line is an edge of a
+    /// `geometry.regions(for:part:within:)` rect, so it sits exactly where
+    /// a tap changes which miss it records:
+    /// - each wide side: the top and bottom edges of its middle third;
+    /// - over: the left and right edges of the whole over band (where it
+    ///   meets the wide tops) and of its center third.
+    private func drawOutZoneSeparators(in context: inout GraphicsContext, size: CGSize) {
+        let bounds = normalizedBounds(for: size)
+        var separators = Path()
+
+        for direction in [MissDirection.wideLeft, .wideRight] {
+            for region in geometry.regions(for: direction, part: .middle, within: bounds) {
+                let rect = pixelRect(for: region, in: size)
+                for y in [rect.minY, rect.maxY] {
+                    separators.move(to: CGPoint(x: rect.minX, y: y))
+                    separators.addLine(to: CGPoint(x: rect.maxX, y: y))
+                }
+            }
+        }
+
+        let overRegions = geometry.regions(for: .over, within: bounds)
+            + geometry.regions(for: .over, part: .center, within: bounds)
+        for region in overRegions {
+            let rect = pixelRect(for: region, in: size)
+            for x in [rect.minX, rect.maxX] {
+                separators.move(to: CGPoint(x: x, y: rect.minY))
+                separators.addLine(to: CGPoint(x: x, y: rect.maxY))
+            }
+        }
+
+        context.stroke(
+            separators,
+            with: .color(.secondary.opacity(0.7)),
+            style: StrokeStyle(lineWidth: 1, dash: [4, 3])
+        )
     }
 
     /// The mouth: the 3 m x 2 m goal opening, with a net texture and the 3x3
@@ -342,6 +397,13 @@ struct GoalView: View {
         for (zone, label) in zoneLabels {
             let rect = pixelRect(for: geometry.region(for: zone), in: canvasSize)
             let text = Text(label).font(.caption2.weight(.semibold)).foregroundStyle(.primary)
+            context.draw(context.resolve(text), at: CGPoint(x: rect.midX, y: rect.midY))
+        }
+        let bounds = normalizedBounds(for: canvasSize)
+        for (target, label) in missLabels {
+            guard let region = mainRegion(for: target, within: bounds) else { continue }
+            let rect = pixelRect(for: region, in: canvasSize)
+            let text = Text(label).font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
             context.draw(context.resolve(text), at: CGPoint(x: rect.midX, y: rect.midY))
         }
     }
