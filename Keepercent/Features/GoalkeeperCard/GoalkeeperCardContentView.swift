@@ -29,12 +29,15 @@ struct GoalkeeperCardContentView: View {
     @State private var selection: ShotOrigin?
 
     var body: some View {
+        let patterns = engine.goalkeeperPatterns()
         VStack(alignment: .leading, spacing: 24) {
             header
             InsightTextView(facts: .goalkeeper(
                 overall: engine.saveRate,
-                weakZone: engine.fieldShots.weakGoalZones(limit: 1).first
+                weakZone: engine.fieldShots.weakGoalZones(limit: 1).first,
+                patterns: Array(patterns.prefix(PatternsSection.limit))
             ))
+            PatternsSection(patterns: patterns, shotCount: engine.shots.count)
             LinkedZonesView(engine: engine, reading: .saveRate, selection: $selection)
             weakZonesSection
             strongZonesSection
