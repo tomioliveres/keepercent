@@ -523,22 +523,25 @@ struct GoalView: View {
     /// within:)` is the one call that already covers all three (`.inside`,
     /// `.post`, `.out`), so this needs no `switch` of its own.
     ///
-    /// A selected `.out` target can return more than one rect — the same
-    /// `bounds`-clipped tiling `drawOutBand` fills — so every rect that
-    /// resolves to that `MissDirection` gets highlighted, not just
+    /// A selected `.out` target can return more than one rect (a wide top
+    /// miss is its side column plus the corner strip above the post), so
+    /// every rect that resolves to that miss gets highlighted, not just
     /// whichever one happens to sit nearest the frame. That keeps the
     /// highlight consistent with the same "what you see is what you tap"
     /// rule the rest of this file follows: the WHOLE area a tap there
     /// would record is the area that lights up.
+    ///
+    /// The rects are merged into one shape before filling and stroking:
+    /// stroking each rect on its own drew an outline along their shared
+    /// edge, a visible seam in the middle of a single zone.
     private func drawSelectionHighlight(in context: inout GraphicsContext, size: CGSize) {
         guard let selection else { return }
         let bounds = normalizedBounds(for: size)
-        for region in geometry.regions(for: selection, within: bounds) {
-            let rect = pixelRect(for: region, in: size)
-            let path = Path(rect)
-            context.fill(path, with: .color(HeatmapColor.selectionFill))
-            context.stroke(path, with: .color(HeatmapColor.selectionOutline), lineWidth: 3)
-        }
+        let paths = geometry.regions(for: selection, within: bounds).map { Path(pixelRect(for: $0, in: size)) }
+        guard let first = paths.first else { return }
+        let shape = paths.dropFirst().reduce(first) { $0.union($1) }
+        context.fill(shape, with: .color(HeatmapColor.selectionFill))
+        context.stroke(shape, with: .color(HeatmapColor.selectionOutline), lineWidth: 3)
     }
 
     // MARK: - Hit-testing
