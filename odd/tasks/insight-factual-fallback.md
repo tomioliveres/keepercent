@@ -33,7 +33,10 @@ invented-number rejection does not establish factual attribution.
   passed (6 tests; parent repeated it), `--filter InsightWriterTests` passed
   (9 tests), full `swift test --package-path Domain` passed (404 tests),
   generic iOS Simulator build passed, and `git diff --check` passed.
-  Visual checks on the exact commit remain pending. Work-unit commit: `4e41ed0`.
+  Claude verified the insight text on iPhone and iPad in en/es-ES/es-419,
+  light/dark, at exact SHA `70c1776`: localized figures matched the card,
+  including singular samples, and no generated prose appeared after waiting.
+  Work-unit commit: `4e41ed0`.
   RDD committed-only assessment from `d0db49d`: medium, 5 paths / 262 lines,
   `review_due: false` (`under_budget`); review outcome pending until the visual
   handoff is resolved and the task closes.
@@ -44,5 +47,15 @@ invented-number rejection does not establish factual attribution.
   moving 2 zone goals to 3 passed `InsightNumberGuard.accepts`; an invented 9
   was rejected. Optional pattern counts permitted another attribution swap.
 - User chose template-only accuracy over paraphrase with residual semantic risk.
-- Next: Claude `/verify-ui IF-1` on the exact SHA in `.git/handoff/IF-1.md`;
-  reconcile its verdict before any RDD review or claim of review authority.
+- Claude's broader IF-1 handoff remains `defects`: D1 is truncated secondary
+  text in the Share Image export (English and Spain Spanish; es-419 export not
+  verified). The report renderer and fixed-width card are unchanged from
+  `d0db49d`; D1 was observed only on the candidate, not separately replayed
+  on the base. The user explicitly chose to
+  handle it as a separate report-export task, not widen IF-1. Preserve the
+  verifier's `defects` verdict; the insight-only acceptance is scoped, not a
+  full UI pass. Number-confirmation entry and spoken VoiceOver were
+  unverified due to simulator input/accessibility limitations.
+- Next: finish native review of IF-1's committed slice, then close this task
+  without erasing D1 or claiming a report-export pass. Triage D1 separately
+  before starting another implementation task.
