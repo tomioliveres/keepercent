@@ -505,26 +505,44 @@ struct CourtView: View {
         }
     }
 
-    /// Each arrow as a round-capped shaft plus a filled triangular head.
-    /// The tip stops a little below the goal line so the goal mouth bar,
-    /// drawn last, does not cover the head. A label sits under the tail,
-    /// or beside it for the 7 m mark, whose tail is close to the centre
-    /// zone's own label.
+    /// How far short of its goal point an arrow stops, in metres. The goal
+    /// mouth is only 3 m wide on a 20 m court, so arrows that all reached
+    /// it would end in one tiny spot. Stopping along the same straight line
+    /// keeps each arrow's angle (cross-court, middle, near post) and spreads
+    /// the tips around the goal area instead.
+    private static let arrowStopDistanceInMeters: CGFloat = 4.5
+
+    /// The shortest an arrow may get, in metres, so one whose tail is close
+    /// to the goal (the 7 m mark) still shows: the stop distance shrinks
+    /// before the arrow does.
+    private static let minimumArrowLengthInMeters: CGFloat = 1.5
+
+    /// Each arrow as a round-capped shaft plus a filled triangular head,
+    /// both scaled with the line width so a thick arrow keeps a visible
+    /// head. The tip stops short of the goal point (see
+    /// `arrowStopDistanceInMeters`). A label sits just behind the tail,
+    /// away from the goal, so the arrow never crosses its own label.
     private func drawArrows(in context: inout GraphicsContext, size: CGSize) {
+        // One shared scale: see this file's header comment.
+        let pixelsPerMeter = size.width / geometry.widthInMeters
         for arrow in arrows {
             let start = tailPoint(for: arrow.tail, in: size)
-            var end = pixelPoint(for: arrow.tip, in: size)
-            end.y += 8
-            let dx = end.x - start.x
-            let dy = end.y - start.y
-            let length = hypot(dx, dy)
-            guard length > 1 else { continue }
-            // The unit vector along the arrow, and its perpendicular.
-            let along = CGPoint(x: dx / length, y: dy / length)
+            let goal = pixelPoint(for: arrow.tip, in: size)
+            let distance = hypot(start.x - goal.x, start.y - goal.y)
+            guard distance > 1 else { continue }
+            // The unit vector from the tail towards the goal, and its perpendicular.
+            let along = CGPoint(x: (goal.x - start.x) / distance, y: (goal.y - start.y) / distance)
             let across = CGPoint(x: -along.y, y: along.x)
 
-            let headLength = min(max(7, arrow.width * 2.2), length / 2)
-            let headHalfWidth = max(4, arrow.width * 1.4)
+            let stop = min(
+                Self.arrowStopDistanceInMeters * pixelsPerMeter,
+                max(0, distance - Self.minimumArrowLengthInMeters * pixelsPerMeter)
+            )
+            let end = CGPoint(x: goal.x - along.x * stop, y: goal.y - along.y * stop)
+            let length = distance - stop
+
+            let headLength = min(max(7, arrow.width * 2.5), length / 2)
+            let headHalfWidth = max(4, arrow.width * 1.6)
             let headBase = CGPoint(x: end.x - along.x * headLength, y: end.y - along.y * headLength)
 
             var shaft = Path()
@@ -540,10 +558,9 @@ struct CourtView: View {
             context.fill(head, with: .color(arrow.color))
 
             if let label = arrow.label {
-                let isSevenMeters: Bool
-                if case .origin(.sevenMeters) = arrow.tail { isSevenMeters = true } else { isSevenMeters = false }
-                let offset = isSevenMeters ? CGPoint(x: 26, y: 0) : CGPoint(x: 0, y: 14)
-                let anchor = clampedToCourt(CGPoint(x: start.x + offset.x, y: start.y + offset.y), in: size)
+                // Behind the round cap, plus room for half a label.
+                let gap = arrow.width / 2 + 12
+                let anchor = clampedToCourt(CGPoint(x: start.x - along.x * gap, y: start.y - along.y * gap), in: size)
                 let text = Text(label).font(.caption2.weight(.semibold)).foregroundStyle(.primary)
                 context.draw(context.resolve(text), at: anchor)
             }
