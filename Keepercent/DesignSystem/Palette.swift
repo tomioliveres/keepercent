@@ -37,6 +37,11 @@ enum Palette {
     /// A shot that hit the frame: neutral gray, neither a goal nor a save.
     static let post = Color.gray
 
+    /// A shot that missed the frame (T6.8 arrows): the adaptive primary
+    /// colour, black in light mode and white in dark, so it stays neutral
+    /// and still reads apart from the mid-gray `post`.
+    static let miss = Color.primary
+
     // MARK: - Feedback
 
     /// Validation and error messages.

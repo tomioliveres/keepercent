@@ -36,6 +36,26 @@
 import SwiftUI
 import KeepercentDomain
 
+/// One arrow drawn on the court (T6.8): from a tail to a point on the goal
+/// mouth. Like `zoneTints`, it arrives with its colour and width already
+/// resolved, so CourtView only draws it and never decides what it means.
+struct CourtArrow {
+    /// Where the arrow starts: an exact recorded tap, or an origin, which
+    /// CourtView resolves to the same anchor its zone labels use (the 7 m
+    /// mark's centre for `.sevenMeters`).
+    enum Tail {
+        case point(CourtPoint)
+        case origin(ShotOrigin)
+    }
+
+    let tail: Tail
+    let tip: CourtPoint
+    let width: CGFloat
+    let color: Color
+    /// An optional short label drawn next to the tail ("4/6").
+    let label: String?
+}
+
 struct CourtView: View {
     let geometry: CourtGeometry
     /// The origin this view should currently highlight, passed in by the
@@ -56,8 +76,14 @@ struct CourtView: View {
     /// An optional short label per origin ("3/5"), drawn at the tinted
     /// shape's centroid. Empty by default; see `GoalView.zoneLabels`.
     let zoneLabels: [ShotOrigin: String]
+    /// Arrows drawn over the zones (T6.8). Empty by default. They have no
+    /// hit-testing of their own: a tap still selects the zone under it.
+    let arrows: [CourtArrow]
     let accessibilityTallies: [ShotOrigin: Tally]?
     let accessibilityReading: StatsReading
+    /// Extra text appended to an origin's accessibility value, so VoiceOver
+    /// hears what the arrows show ("Most shots aimed right: 4 of 6").
+    let accessibilityNotes: [ShotOrigin: String]
     /// Reports both the classified `ShotOrigin` AND the raw normalized tap
     /// (T3.3, docs/mvp.md §5.2: "store the raw normalized tap point, and
     /// derive the zone from it"). Before T3.3 this view only reported the
@@ -77,16 +103,20 @@ struct CourtView: View {
         selection: ShotOrigin? = nil,
         zoneTints: [ShotOrigin: Color] = [:],
         zoneLabels: [ShotOrigin: String] = [:],
+        arrows: [CourtArrow] = [],
         accessibilityTallies: [ShotOrigin: Tally]? = nil,
         accessibilityReading: StatsReading = .effectiveness,
+        accessibilityNotes: [ShotOrigin: String] = [:],
         onOriginTapped: @escaping (ShotOrigin, CourtPoint?) -> Void
     ) {
         self.geometry = geometry
         self.selection = selection
         self.zoneTints = zoneTints
         self.zoneLabels = zoneLabels
+        self.arrows = arrows
         self.accessibilityTallies = accessibilityTallies
         self.accessibilityReading = accessibilityReading
+        self.accessibilityNotes = accessibilityNotes
         self.onOriginTapped = onOriginTapped
     }
 
@@ -171,6 +201,12 @@ struct CourtView: View {
     }
 
     private func accessibilitySample(for origin: ShotOrigin) -> String {
+        let sample = tallySample(for: origin)
+        guard let note = accessibilityNotes[origin] else { return sample }
+        return sample.isEmpty ? note : "\(sample). \(note)"
+    }
+
+    private func tallySample(for origin: ShotOrigin) -> String {
         guard let accessibilityTallies else { return "" }
         guard let tally = accessibilityTallies[origin], tally.attempts > 0 else { return "No data" }
         switch accessibilityReading {
@@ -228,6 +264,7 @@ struct CourtView: View {
         drawZoneGrid(in: &context, size: size)
         drawSevenMeterMark(in: &context, size: size)
         drawSelectionHighlight(in: &context, size: size)
+        drawArrows(in: &context, size: size)
         drawZoneLabels(in: &context, size: size)
         drawOutline(in: &context, size: size)
         drawGoalMouth(in: &context, size: size)
@@ -449,6 +486,67 @@ struct CourtView: View {
             let path = zonePath(for: zone, in: size)
             context.fill(path, with: .color(HeatmapColor.selectionFill))
             context.stroke(path, with: .color(HeatmapColor.selectionOutline), lineWidth: 3)
+        }
+    }
+
+    // MARK: - Arrows
+
+    /// Where an arrow's tail sits, in pixels: the exact tap for `.point`,
+    /// the zone label anchor for a zone, the mark's centre for 7 m.
+    private func tailPoint(for tail: CourtArrow.Tail, in size: CGSize) -> CGPoint {
+        switch tail {
+        case .point(let point):
+            return pixelPoint(for: point, in: size)
+        case .origin(.zone(let zone)):
+            return zoneLabelAnchor(for: zone, in: size)
+        case .origin(.sevenMeters):
+            let rect = pixelRect(for: geometry.sevenMeterMarkRegion, in: size)
+            return CGPoint(x: rect.midX, y: rect.midY)
+        }
+    }
+
+    /// Each arrow as a round-capped shaft plus a filled triangular head.
+    /// The tip stops a little below the goal line so the goal mouth bar,
+    /// drawn last, does not cover the head. A label sits under the tail,
+    /// or beside it for the 7 m mark, whose tail is close to the centre
+    /// zone's own label.
+    private func drawArrows(in context: inout GraphicsContext, size: CGSize) {
+        for arrow in arrows {
+            let start = tailPoint(for: arrow.tail, in: size)
+            var end = pixelPoint(for: arrow.tip, in: size)
+            end.y += 8
+            let dx = end.x - start.x
+            let dy = end.y - start.y
+            let length = hypot(dx, dy)
+            guard length > 1 else { continue }
+            // The unit vector along the arrow, and its perpendicular.
+            let along = CGPoint(x: dx / length, y: dy / length)
+            let across = CGPoint(x: -along.y, y: along.x)
+
+            let headLength = min(max(7, arrow.width * 2.2), length / 2)
+            let headHalfWidth = max(4, arrow.width * 1.4)
+            let headBase = CGPoint(x: end.x - along.x * headLength, y: end.y - along.y * headLength)
+
+            var shaft = Path()
+            shaft.move(to: start)
+            shaft.addLine(to: headBase)
+            context.stroke(shaft, with: .color(arrow.color), style: StrokeStyle(lineWidth: arrow.width, lineCap: .round))
+
+            var head = Path()
+            head.move(to: end)
+            head.addLine(to: CGPoint(x: headBase.x + across.x * headHalfWidth, y: headBase.y + across.y * headHalfWidth))
+            head.addLine(to: CGPoint(x: headBase.x - across.x * headHalfWidth, y: headBase.y - across.y * headHalfWidth))
+            head.closeSubpath()
+            context.fill(head, with: .color(arrow.color))
+
+            if let label = arrow.label {
+                let isSevenMeters: Bool
+                if case .origin(.sevenMeters) = arrow.tail { isSevenMeters = true } else { isSevenMeters = false }
+                let offset = isSevenMeters ? CGPoint(x: 26, y: 0) : CGPoint(x: 0, y: 14)
+                let anchor = clampedToCourt(CGPoint(x: start.x + offset.x, y: start.y + offset.y), in: size)
+                let text = Text(label).font(.caption2.weight(.semibold)).foregroundStyle(.primary)
+                context.draw(context.resolve(text), at: anchor)
+            }
         }
     }
 
