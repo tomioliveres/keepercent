@@ -120,8 +120,9 @@ extension StatsEngine {
         let lines: [ShotLine] = [.crossShot, .nearPost]
         var found: [ScoutingPattern?] = []
 
-        found.append(Self.tendency(in: lineShots, among: lines, share: ScoutingPattern.lineShare, key: \.line) { .line($0) })
-        found += Self.sectorLines(lineShots)
+        let overallLine = Self.tendency(in: lineShots, among: lines, share: ScoutingPattern.lineShare, key: \.line) { .line($0) }
+        found.append(overallLine)
+        found += Self.sectorLines(lineShots, except: overallLine?.kind)
         found.append(Self.tendency(in: field, among: ShotHeight.allCases, key: Self.height) { .height($0) })
         found.append(Self.tendency(in: field, among: ShotSide.allCases, key: Self.side) { .side($0) })
 
@@ -221,18 +222,19 @@ private extension StatsEngine {
     }
 
     /// The line split read separately for each sector and shooting hand. A
-    /// group holding every line shot is skipped: it would only repeat the
-    /// overall `.line` pattern.
-    static func sectorLines(_ lineShots: [Shot]) -> [ScoutingPattern?] {
+    /// group leaning the same way as the overall `.line` pattern is
+    /// dropped: it would only repeat it with a smaller sample.
+    static func sectorLines(_ lineShots: [Shot], except overall: ScoutingPatternKind?) -> [ScoutingPattern?] {
         let hands: [Handedness?] = Handedness.allCases + [nil]
         var found: [ScoutingPattern?] = []
         for sector in CourtSector.allCases {
             for hand in hands {
                 let group = lineShots.filter { zone(of: $0)?.sector == sector && $0.shooter?.handedness == hand }
-                guard group.count < lineShots.count else { continue }
-                found.append(tendency(in: group, among: [.crossShot, .nearPost], share: ScoutingPattern.lineShare, key: \.line) {
+                let pattern = tendency(in: group, among: [.crossShot, .nearPost], share: ScoutingPattern.lineShare, key: \.line) {
                     .lineFromSector($0, sector: sector, hand: hand)
-                })
+                }
+                guard let pattern, case .lineFromSector(let line, _, _) = pattern.kind, overall != .line(line) else { continue }
+                found.append(pattern)
             }
         }
         return found

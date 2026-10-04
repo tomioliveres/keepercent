@@ -153,6 +153,16 @@ struct ScoutingPatternLineTests {
         #expect(near.tally == Tally(successes: 5, attempts: 5))
     }
 
+    @Test("A sector pointing the same way as the overall line is not repeated")
+    func noRepeatOfOverallDirection() {
+        let shots = repeated(6) { shot(by: leftHander, from: leftBackNear, to: inside(.bottom, .right)) }
+            + [shot(by: leftHander, from: leftBackNear, to: inside(.bottom, .left))]
+            + [shot(by: rightHander, from: rightBackNear, to: inside(.bottom, .left))]
+        let patterns = shooterPatterns(shots)
+        #expect(find(.line(.crossShot), in: patterns)?.tally == Tally(successes: 7, attempts: 8))
+        #expect(!patterns.contains { if case .lineFromSector = $0.kind { true } else { false } })
+    }
+
     @Test("A sector holding every line shot does not repeat the overall pattern")
     func noDuplicateOfOverall() {
         let shots = repeated(5) { shot(by: leftHander, from: leftBackNear, to: inside(.bottom, .right)) }
