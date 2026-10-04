@@ -34,6 +34,9 @@ enum Palette {
     /// The "Saved" answer when recording a shot.
     static let saved = Color.orange
 
+    /// A shot that hit the frame: neutral gray, neither a goal nor a save.
+    static let post = Color.gray
+
     // MARK: - Feedback
 
     /// Validation and error messages.
