@@ -94,7 +94,7 @@ struct ScoutingPatternThresholdTests {
         #expect(ScoutingPattern.comparisonMinimumSample == 4)
         #expect(ScoutingPattern.comparisonGap == 0.3)
         #expect(ScoutingPattern.minimumRepeatPairs == 4)
-        #expect(ScoutingPattern.repeatShare == 0.5)
+        #expect(ScoutingPattern.repeatShare == 0.6)
     }
 
     @Test("An empty engine finds no pattern from either perspective")
@@ -315,6 +315,17 @@ struct ScoutingPatternComparisonTests {
         // Right-hander: BR(g) → TL no.
         let pattern = try #require(find(.repeatAfterGoal, in: shooterPatterns(shots)))
         #expect(pattern.tally == Tally(successes: 3, attempts: 5))
+    }
+
+    @Test("Half the pairs repeating is a coin flip, not a pattern")
+    func repeatAtHalfDoesNotFire() {
+        let topLeft = inside(.top, .left)
+        let bottomRight = inside(.bottom, .right)
+        // Goals in time order: TL TL BR BR TL → pairs: TL→TL yes, TL→BR no,
+        // BR→BR yes, BR→TL no. 2 of 4 repeat.
+        let targets = [topLeft, topLeft, bottomRight, bottomRight, topLeft]
+        let shots = targets.enumerated().map { shot(to: $1, minute: Double($0)) }
+        #expect(find(.repeatAfterGoal, in: shooterPatterns(shots)) == nil)
     }
 
     @Test("Fewer than 4 pairs after a goal does not fire")

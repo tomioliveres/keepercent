@@ -73,8 +73,9 @@ public struct ScoutingPattern: Equatable, Hashable, Sendable {
     public static let comparisonGap = 0.3
     /// Fewest "goal, then next shot" pairs the repeat rule is read from.
     public static let minimumRepeatPairs = 4
-    /// Share of those pairs that must repeat the same zone.
-    public static let repeatShare = 0.5
+    /// Share of those pairs that must repeat the same zone. Above one half:
+    /// "2 of 4" is a coin flip, not a habit worth scouting.
+    public static let repeatShare = 0.6
 
     public let kind: ScoutingPatternKind
     /// "x of y": the shots matching the tendency over the sample it was

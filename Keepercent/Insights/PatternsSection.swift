@@ -54,10 +54,14 @@ struct PatternsSection: View {
         .accessibilityLabel(sentence)
     }
 
-    /// "7/10", or "5/7 · 1/6" for a comparison.
+    /// "7/10 · 70%", or "5/7 · 1/6" for a comparison (two rates side by
+    /// side already say which is bigger, and a percentage each would not fit).
     private func figure(for pattern: ScoutingPattern) -> String {
         let main = "\(pattern.tally.successes)/\(pattern.tally.attempts)"
-        guard let contrast = pattern.contrast else { return main }
+        guard let contrast = pattern.contrast else {
+            guard let rate = pattern.tally.rate else { return main }
+            return "\(main) · \(rate.formatted(.percent.precision(.fractionLength(0))))"
+        }
         return "\(main) · \(contrast.successes)/\(contrast.attempts)"
     }
 
