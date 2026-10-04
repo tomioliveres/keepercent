@@ -2234,7 +2234,7 @@
         "es-419" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Agregar número desconocido"
+            "value" : "Agregar número"
           }
         }
       }
@@ -5010,7 +5010,7 @@
         "es-419" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "N.º desconocido"
+            "value" : "Nuevo número"
           }
         }
       }
