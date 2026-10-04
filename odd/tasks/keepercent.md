@@ -96,6 +96,9 @@ TDD: strict mode enabled for the Domain layer (RED → GREEN → REFACTOR), Swif
 - [ ] T6.2 README: screenshots/GIF, architecture, AI disclosure
 - [ ] T6.3 Final commit, tag, submit the repository link
 - [ ] T6.4 Demo video — a short screen recording of the colored app running on the demo data (simulator or a real iPad), reused for social media, the hackathon's demo channel and the README. Record only after T6.1a. Show Keepercent only: nothing from `reference/` (third-party material that must never be published).
+- [ ] T6.5 Height × outcome and side × outcome charts (user chose option A on 2026-10-03). Replace the two plain count charts in `LinkedZonesView` with one reusable stacked-bar component used twice: rows top/middle/bottom and left/center/right, each with a mini goal glyph highlighting its band/column, bars split by outcome (goal/saved/post) with counts, a right-hand perspective figure (shooter: goals/on-target %, goalkeeper: saves %), an "Out" line and a legend. Domain: new tested cross-tabulation (strict RED → GREEN → REFACTOR). Route: one delegated writer (Domain + 1–2 view files). Checks: `swift test --package-path Domain`, generic simulator build, `git diff --check`, simulator verification.
+- [ ] T6.6 Scouting patterns ("smart stats"): deterministic `Domain` pattern finder over line (cross/near-post), height, side, origin and goal zones with minimum sample and share thresholds, ranked findings shown on both cards; Foundation Models only phrases supplied findings, template fallback when unavailable. Strict TDD on Domain.
+- [ ] T6.1-A follow-up: XCTest UI-test target asserting accessibility labels, traits, order and "no data" readings, plus `performAccessibilityAudit()`, so VoiceOver checks become repeatable without a manual device pass.
 
 ## Notes
 
