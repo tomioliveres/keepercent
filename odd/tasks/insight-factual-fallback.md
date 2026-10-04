@@ -33,7 +33,7 @@ invented-number rejection does not establish factual attribution.
   passed (6 tests; parent repeated it), `--filter InsightWriterTests` passed
   (9 tests), full `swift test --package-path Domain` passed (404 tests),
   generic iOS Simulator build passed, and `git diff --check` passed.
-  Visual checks on the exact commit remain pending. Commit: pending.
+  Visual checks on the exact commit remain pending. Work-unit commit: `4e41ed0`.
   RDD assessment/outcome: pending until visual handoff is resolved.
 
 ## Evidence and next step
