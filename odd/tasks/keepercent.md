@@ -105,6 +105,17 @@ TDD: strict mode enabled for the Domain layer (RED → GREEN → REFACTOR), Swif
 - [ ] T6.6 Scouting patterns ("smart stats"): deterministic `Domain` pattern finder over line (cross/near-post), height, side, origin and goal zones with minimum sample and share thresholds, ranked findings shown on both cards; Foundation Models only phrases supplied findings, template fallback when unavailable. Strict TDD on Domain.
 - [ ] T6.1-A follow-up: XCTest UI-test target asserting accessibility labels, traits, order and "no data" readings, plus `performAccessibilityAudit()`, so VoiceOver checks become repeatable without a manual device pass.
 
+## Post-MVP roadmap (agreed with the user on 2026-10-03)
+
+Execution order: T6.6 patterns → T6.8 shot-direction arrows → T6.9 Spanish localization → T6.10 penalty (7 m) card → T6.1-A accessibility UI tests → T6.11 match and club scopes → T6.2 README → T6.4 demo assets (Claude prepares, the user publishes). Backlog items below are accepted and wait their turn.
+
+- [ ] T6.6 additions (user, 2026-10-03): patterns by delivery (standing vs jump: where and how well), by approach (moving left/right/straight: target side), cross vs near post per origin, preferred height/side, 7 m tendencies, handedness × wing, repeat-after-scoring (shot order by date), near vs far conversion, and the existing goalkeeper weak/strong zones. Minimum sample and clear share per finding; always show "x of y".
+- [ ] T6.8 Shot-direction arrows on the court: summary mode (one arrow per origin zone towards its dominant goal side, width = shots, colour = conversion) and all-shots mode (one arrow per shot from its exact `originPoint`, colour = outcome). Tapping an arrow filters the linked goal, which carries height.
+- [ ] T6.9 Spanish localization with a String Catalog (es + en), including insight templates and Foundation Models prompts.
+- [ ] T6.10 Penalty (7 m) card per shooter and per team: where each shooter shoots 7 m and the goalkeepers' 7 m record.
+- [ ] T6.11 Match and club scopes: a scope picker on scouting and cards ("All matches" / one match, today every view aggregates all `team.sessions`), and a "My club" area with own players and goalkeepers across all analysed matches (investigate how own-side players are modelled before designing).
+- [ ] Backlog: filters on cards (match, delivery, approach); edit any recorded shot, not only undo the last; PDF scouting report with PDFKit; data backup/export to a file (no CloudKit on a free account); iPad landscape layout with goal/court beside the charts.
+
 ## Notes
 
 - Dates in the day headings follow `docs/mvp.md` §10; the plan there is authoritative.
