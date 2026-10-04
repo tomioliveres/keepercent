@@ -111,6 +111,19 @@ extension StatsEngine {
         return counts
     }
 
+    /// How many shots missed into each of the nine concrete out zones
+    /// (direction and third), zero-filled so every zone has a count. A
+    /// legacy miss with no recorded third belongs to no zone, so it is
+    /// counted only in `outcomeCounts[.out]`, never placed in a guessed one.
+    public var missCounts: [GoalTarget: Int] {
+        let outZones = GoalTarget.allCases.filter { $0.impliedOutcome == .out }
+        var counts = Dictionary(uniqueKeysWithValues: outZones.map { ($0, 0) })
+        for shot in shots where counts[shot.target] != nil {
+            counts[shot.target, default: 0] += 1
+        }
+        return counts
+    }
+
     /// Goals over every shot in this engine, regardless of origin.
     public var effectiveness: Tally {
         Tally(successes: shots.filter { $0.outcome == .goal }.count, attempts: shots.count)

@@ -1,4 +1,4 @@
-// Human-readable names for GoalZone and ShotOrigin, used by the shooter
+// Human-readable names for GoalZone, MissPart and ShotOrigin, used by the shooter
 // card's "Where they score" rankings (T4.3). `CourtSector`/`CourtDepth`'s
 // own display names already live on `LinkedZonesView.swift` (T4.2) — made
 // non-`private` there so this file can reuse them instead of a second,
@@ -20,6 +20,21 @@ extension GoalRow {
 extension GoalColumn {
     var displayName: String {
         switch self {
+        case .left: return "left"
+        case .center: return "center"
+        case .right: return "right"
+        }
+    }
+}
+
+extension MissPart {
+    /// The third a miss went to, e.g. "top" or "center" — read after its
+    /// direction ("Miss, wide left, top").
+    var displayName: String {
+        switch self {
+        case .top: return "top"
+        case .middle: return "middle"
+        case .bottom: return "bottom"
         case .left: return "left"
         case .center: return "center"
         case .right: return "right"

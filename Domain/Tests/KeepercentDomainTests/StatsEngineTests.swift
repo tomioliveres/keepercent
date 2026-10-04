@@ -261,7 +261,7 @@ struct EffectivenessTests {
             shot(target: .inside(zone), outcome: .goal),
             shot(target: .inside(zone), outcome: .saved),
             shot(target: .post(.crossbarCenter), outcome: .post),
-            shot(target: .out(.wideLeft), outcome: .out)
+            shot(target: .out(.wideLeft, .middle), outcome: .out)
         ])
         let byZone = engine.effectivenessByGoalZone
         #expect(byZone.count == 1)
@@ -302,7 +302,7 @@ struct SaveRateTests {
         // The outcome alone decides "on target"; the target is not
         // re-validated against it (docs/mvp.md decision recorded in the task).
         let engine = StatsEngine(shots: [
-            shot(target: .out(.wideLeft), outcome: .saved)
+            shot(target: .out(.wideLeft, .middle), outcome: .saved)
         ])
         #expect(engine.saveRate == Tally(successes: 1, attempts: 1))
     }
@@ -343,7 +343,7 @@ struct DistributionTests {
     func heightDistributionIsZeroFilledAndSkipsMisses() {
         let engine = StatsEngine(shots: [
             shot(target: .inside(GoalZone(row: .top, column: .left)), outcome: .goal),
-            shot(target: .out(.over), outcome: .out)
+            shot(target: .out(.over, .center), outcome: .out)
         ])
         let heights = engine.heightDistribution
         #expect(heights[.top] == 1)
@@ -403,7 +403,7 @@ struct SaveRateByOriginTests {
         let engine = StatsEngine(shots: [
             // Missed entirely: has an origin, but never on target, so it
             // must not show up as a 0% save rate.
-            shot(originPoint: leftWingNear, target: .out(.wideLeft), outcome: .out),
+            shot(originPoint: leftWingNear, target: .out(.wideLeft, .middle), outcome: .out),
             shot(originPoint: rightWingNear, outcome: .saved)
         ])
         let byOrigin = engine.saveRateByOrigin
@@ -749,7 +749,7 @@ struct WeakGoalZonesTests {
         let engine = StatsEngine(shots: [
             shot(isSevenMeters: true, target: .inside(topLeft), outcome: .goal),
             shot(target: .post(.crossbarCenter), outcome: .post),
-            shot(target: .out(.wideLeft), outcome: .out)
+            shot(target: .out(.wideLeft, .middle), outcome: .out)
         ])
         let ranked = engine.weakGoalZones(limit: 3)
         #expect(ranked.count == 1)
@@ -846,7 +846,7 @@ struct StrongGoalZonesTests {
         let engine = StatsEngine(shots: [
             shot(isSevenMeters: true, target: .inside(topLeft), outcome: .saved),
             shot(target: .post(.crossbarCenter), outcome: .post),
-            shot(target: .out(.wideLeft), outcome: .out)
+            shot(target: .out(.wideLeft, .middle), outcome: .out)
         ])
         let ranked = engine.strongGoalZones(limit: 3)
         #expect(ranked.count == 1)
@@ -906,9 +906,9 @@ struct OutcomeBreakdownTests {
     @Test("misses never land in a band or a column, including over the bar")
     func missesAreExcludedFromRows() {
         let engine = StatsEngine(shots: [
-            shot(target: .out(.wideLeft), outcome: .out),
-            shot(target: .out(.over), outcome: .out),
-            shot(target: .out(.wideRight), outcome: .out)
+            shot(target: .out(.wideLeft, .middle), outcome: .out),
+            shot(target: .out(.over, .center), outcome: .out),
+            shot(target: .out(.wideRight, .middle), outcome: .out)
         ])
         #expect(engine.outcomesByHeight.values.allSatisfy { $0 == empty })
         #expect(engine.outcomesBySide.values.allSatisfy { $0 == empty })
@@ -964,5 +964,32 @@ struct OutcomeBreakdownTests {
         let sideTotal = engine.outcomesBySide.values.reduce(0) { $0 + $1.shots }
         #expect(heightTotal + misses == engine.shots.count)
         #expect(sideTotal + misses == engine.shots.count)
+    }
+}
+
+@Suite("StatsEngine miss counts per out zone")
+struct MissCountTests {
+
+    @Test("counts each concrete out zone, zero-filled across all nine")
+    func countsEachOutZone() {
+        let engine = StatsEngine(shots: [
+            shot(target: .out(.wideLeft, .top), outcome: .out),
+            shot(target: .out(.wideLeft, .top), outcome: .out),
+            shot(target: .out(.over, .center), outcome: .out),
+            shot(target: .inside(GoalZone(row: .top, column: .left)), outcome: .goal)
+        ])
+        let counts = engine.missCounts
+
+        #expect(counts.count == 9)
+        #expect(counts[.out(.wideLeft, .top)] == 2)
+        #expect(counts[.out(.over, .center)] == 1)
+        #expect(counts[.out(.wideRight, .bottom)] == 0)
+    }
+
+    @Test("a legacy miss with no recorded third is in no out zone")
+    func legacyMissIsInNoZone() {
+        let engine = StatsEngine(shots: [shot(target: .out(.wideLeft, nil), outcome: .out)])
+        #expect(engine.missCounts.values.allSatisfy { $0 == 0 })
+        #expect(engine.missCounts[.out(.wideLeft, nil)] == nil)
     }
 }

@@ -25,7 +25,7 @@ public struct ShotSummary: Equatable, Hashable, Sendable {
     /// shot has neither an origin point nor the 7 m flag.
     public let origin: String
     /// Where the shot ended up, e.g. "crossbar center", "top left",
-    /// "wide right".
+    /// "wide right top" ("wide right" for a legacy miss with no third).
     public let target: String
     /// How the shot ended, uppercased (e.g. "POST", "GOAL").
     public let outcome: String
@@ -70,7 +70,9 @@ public struct ShotSummary: Equatable, Hashable, Sendable {
             return "\(row(zone.row)) \(column(zone.column))"
         case .post(let segment):
             return postSegment(segment)
-        case .out(let direction):
+        case .out(let direction, let part?):
+            return "\(missDirection(direction)) \(missPart(part))"
+        case .out(let direction, nil):
             return missDirection(direction)
         }
     }
@@ -127,6 +129,17 @@ public struct ShotSummary: Equatable, Hashable, Sendable {
         case .wideLeft: return "wide left"
         case .wideRight: return "wide right"
         case .over: return "over"
+        }
+    }
+
+    private static func missPart(_ part: MissPart) -> String {
+        switch part {
+        case .top: return "top"
+        case .middle: return "middle"
+        case .bottom: return "bottom"
+        case .left: return "left"
+        case .center: return "center"
+        case .right: return "right"
         }
     }
 

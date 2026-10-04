@@ -57,7 +57,7 @@ struct ShotSummaryTests {
             attackingSide: .own,
             facingGoalkeeper: Player(number: 12, isGoalkeeper: true),
             originPoint: leftBackNearPoint,
-            target: .out(.wideLeft),
+            target: .out(.wideLeft, .middle),
             outcome: .out,
             date: referenceDate
         )
@@ -79,13 +79,34 @@ struct ShotSummaryTests {
         #expect(summary.target == "top left")
     }
 
-    @Test("An out target reads as its direction, e.g. 'wide right'")
-    func outTargetReadsAsItsDirection() {
+    @Test(
+        "An out target reads as its direction and third, e.g. 'wide right middle'",
+        arguments: [
+            (GoalTarget.out(.wideRight, .middle), "wide right middle"),
+            (GoalTarget.out(.wideLeft, .top), "wide left top"),
+            (GoalTarget.out(.over, .center), "over center")
+        ]
+    )
+    func outTargetReadsAsItsDirectionAndThird(target: GoalTarget, expected: String) {
         let shot = Shot(
             attackingSide: .rival,
             shooter: Player(number: 9),
             originPoint: leftBackNearPoint,
-            target: .out(.wideRight),
+            target: target,
+            outcome: .out,
+            date: referenceDate
+        )
+        let summary = ShotSummary(shot: shot)
+        #expect(summary.target == expected)
+    }
+
+    @Test("A legacy out target with no recorded third reads as its direction only, never a guessed third")
+    func legacyOutTargetReadsAsItsDirectionOnly() {
+        let shot = Shot(
+            attackingSide: .rival,
+            shooter: Player(number: 9),
+            originPoint: leftBackNearPoint,
+            target: .out(.wideRight, nil),
             outcome: .out,
             date: referenceDate
         )
@@ -99,7 +120,7 @@ struct ShotSummaryTests {
             attackingSide: .rival,
             shooter: nil,
             originPoint: leftBackNearPoint,
-            target: .out(.over),
+            target: .out(.over, .center),
             outcome: .out,
             date: referenceDate
         )
@@ -114,7 +135,7 @@ struct ShotSummaryTests {
             shooter: Player(number: 9),
             originPoint: nil,
             isSevenMeters: false,
-            target: .out(.over),
+            target: .out(.over, .center),
             outcome: .out,
             date: referenceDate
         )

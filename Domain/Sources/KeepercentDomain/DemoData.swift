@@ -183,7 +183,7 @@ extension DemoData {
         shot(
             attackingSide: .rival, shooter: leftBackPauVidal,
             originPoint: leftBackFar,
-            target: .out(.wideRight), outcome: .out,
+            target: .out(.wideRight, .top), outcome: .out,
             minutesFromStart: 14
         ),
 
@@ -197,7 +197,7 @@ extension DemoData {
         shot(
             attackingSide: .rival, shooter: rightBackJordiFerrer,
             originPoint: rightWingFar,
-            target: .out(.wideRight), outcome: .out,
+            target: .out(.wideRight, .bottom), outcome: .out,
             minutesFromStart: 18
         ),
         shot(
@@ -239,7 +239,7 @@ extension DemoData {
         shot(
             attackingSide: .rival, shooter: centerBackGerardRiu,
             originPoint: rightBackFar,
-            target: .out(.over), outcome: .out,
+            target: .out(.over, .center), outcome: .out,
             delivery: .jump, minutesFromStart: 32
         ),
         shot(
@@ -313,7 +313,7 @@ extension DemoData {
         shot(
             attackingSide: .own, facingGoalkeeper: goalkeeperMarcPuig,
             originPoint: leftWingFar,
-            target: .out(.wideLeft), outcome: .out,
+            target: .out(.wideLeft, .middle), outcome: .out,
             minutesFromStart: 56
         ),
         shot(
@@ -375,7 +375,7 @@ extension DemoData {
         shot(
             attackingSide: .own, facingGoalkeeper: goalkeeperDavidSoler,
             originPoint: leftBackFar,
-            target: .out(.over), outcome: .out,
+            target: .out(.over, .left), outcome: .out,
             delivery: .standing, minutesFromStart: 76
         ),
         shot(

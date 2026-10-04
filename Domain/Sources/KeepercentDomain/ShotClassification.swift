@@ -67,7 +67,8 @@ extension ShotClassification {
     ///   - `.inside`: from its column.
     ///   - `.post`: a post segment takes its post's side; a crossbar
     ///     segment takes its own column.
-    ///   - `.out`: wide left/right take their side; `.over` is `.center`.
+    ///   - `.out`: wide left/right take their side; `.over` is `.center`,
+    ///     whatever third the miss went to.
     public static func targetSide(_ target: GoalTarget) -> ShotSide {
         switch target {
         case .inside(let zone):
@@ -82,7 +83,7 @@ extension ShotClassification {
             case .crossbarCenter: return .center
             case .crossbarRight, .rightPostTop, .rightPostMiddle, .rightPostBottom: return .right
             }
-        case .out(let direction):
+        case .out(let direction, _):
             switch direction {
             case .wideLeft: return .left
             case .wideRight: return .right

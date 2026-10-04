@@ -224,6 +224,29 @@ extension GoalGeometry {
         }
     }
 
+    /// The third of a wide miss at height `y`: the mouth's own row thirds,
+    /// extended sideways. Everything above `firstThird` — including the
+    /// corner strip and every point above the crossbar beside the goal —
+    /// is `.top`, so the "high and wide is wide" rule in `target(at:)`
+    /// keeps that whole area in one zone.
+    fileprivate func wideMissPart(forY y: Double) -> MissPart {
+        switch rowFor(y) {
+        case .top: return .top
+        case .middle: return .middle
+        case .bottom: return .bottom
+        }
+    }
+
+    /// The third of an over miss at `x`: the mouth's own column thirds,
+    /// extended upwards.
+    fileprivate func overMissPart(forX x: Double) -> MissPart {
+        switch columnFor(x) {
+        case .left: return .left
+        case .center: return .center
+        case .right: return .right
+        }
+    }
+
     /// The target a tap resolves to: total for every `(x, y)`, including
     /// out-of-range and NaN-resolved input.
     ///
@@ -316,16 +339,20 @@ extension GoalGeometry {
         // AND wide, so this precedence rule is exactly what must classify
         // it — and it does, with no extra branch, because "wide" is
         // defined by the mouth's `x` extent, not the narrower band.
+        //
+        // Each miss then takes a third of its own (see `MissPart`): a wide
+        // miss by the mouth's height thirds, an over miss by its width
+        // thirds, both reusing the inside grid's own boundaries.
         if x < -tolerance {
-            return .out(.wideLeft)
+            return .out(.wideLeft, wideMissPart(forY: y))
         }
         if x > 1 + tolerance {
-            return .out(.wideRight)
+            return .out(.wideRight, wideMissPart(forY: y))
         }
         // The only way to reach here is `x` inside the mouth's horizontal
         // extent (already excluded by the two checks above) and `y` above
         // the crossbar band (already excluded by `inCrossbarBand` above).
-        return .out(.over)
+        return .out(.over, overMissPart(forX: x))
     }
 
     /// The normalized rect of one 3x3 inside-the-frame cell, in the SAME
@@ -449,12 +476,39 @@ extension GoalGeometry {
         }
     }
 
+    /// The normalized rects one third of a miss highlights, clipped to
+    /// `bounds`: the direction's own rects (see `regions(for:within:)`
+    /// above) cut by the same thirds `target(at:)` uses — the mouth's
+    /// height thirds for a wide miss, its width thirds for an over miss.
+    /// The `.top` third of a wide side therefore keeps the corner strip
+    /// and everything above the crossbar beside the goal.
+    ///
+    /// A `nil` part (a legacy miss whose third is unknown) returns the
+    /// whole direction. A part that does not belong to `direction` (e.g.
+    /// over + top) is not a real zone and returns no rects.
+    public func regions(for direction: MissDirection, part: MissPart?, within bounds: GoalRegion) -> [GoalRegion] {
+        let directionRegions = regions(for: direction, within: bounds)
+        guard let part else { return directionRegions }
+        guard direction.parts.contains(part) else { return [] }
+
+        return directionRegions.compactMap { region in
+            switch part {
+            case .top: return Self.clip(maxY: Self.firstThird, to: region)
+            case .middle: return Self.clip(minY: Self.firstThird, maxY: Self.secondThird, to: region)
+            case .bottom: return Self.clip(minY: Self.secondThird, to: region)
+            case .left: return Self.clip(maxX: Self.firstThird, to: region)
+            case .center: return Self.clip(minX: Self.firstThird, maxX: Self.secondThird, to: region)
+            case .right: return Self.clip(minX: Self.secondThird, to: region)
+            }
+        }
+    }
+
     /// One call site for every `GoalTarget` case, so a caller (the view)
     /// never needs its own `switch` over `.inside`/`.post`/`.out` just to
     /// find the region(s) to highlight. `.inside`/`.post` regions are
     /// already finite — `bounds` plays no part and the list always has
     /// exactly one element; `.out` defers to `regions(for: MissDirection,
-    /// within:)`, which can legitimately return fewer rects, or none, for
+    /// part:, within:)`, which can legitimately return fewer rects, or none, for
     /// a degenerate `bounds` (see that function's doc comment).
     public func regions(for target: GoalTarget, within bounds: GoalRegion) -> [GoalRegion] {
         switch target {
@@ -462,8 +516,8 @@ extension GoalGeometry {
             return [region(for: zone)]
         case .post(let segment):
             return [region(for: segment)]
-        case .out(let direction):
-            return regions(for: direction, within: bounds)
+        case .out(let direction, let part):
+            return regions(for: direction, part: part, within: bounds)
         }
     }
 

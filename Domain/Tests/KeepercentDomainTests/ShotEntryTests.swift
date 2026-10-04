@@ -83,7 +83,7 @@ struct ShotRecordOriginTests {
 
     @Test("A 7m shot needs no origin point")
     func sevenMetersNeedsNoOrigin() throws {
-        let shot = try record(originPoint: nil, isSevenMeters: true, target: .out(.over), outcome: nil)
+        let shot = try record(originPoint: nil, isSevenMeters: true, target: .out(.over, .center), outcome: nil)
         #expect(shot.isSevenMeters)
         #expect(shot.originPoint == nil)
     }
@@ -100,7 +100,7 @@ struct ShotRecordOutcomeTests {
 
     @Test("An out target with no outcome auto-resolves to .out")
     func outTargetImpliesOutcome() throws {
-        let shot = try record(target: .out(.wideLeft), outcome: nil)
+        let shot = try record(target: .out(.wideLeft, .middle), outcome: nil)
         #expect(shot.outcome == .out)
     }
 
