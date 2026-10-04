@@ -20,7 +20,7 @@ invented-number rejection does not establish factual attribution.
 
 ## Checklist
 
-- [ ] IF-1: Replace generated-note display with the localized deterministic
+- [x] IF-1: Replace generated-note display with the localized deterministic
   template and remove the unused model adapter and numeric guard with its tests.
   Acceptance: both cards still show their locale's template; no model request or
   guard remains reachable; reproduced count swaps cannot reach the UI via prose.
@@ -38,8 +38,12 @@ invented-number rejection does not establish factual attribution.
   including singular samples, and no generated prose appeared after waiting.
   Work-unit commit: `4e41ed0`.
   RDD committed-only assessment from `d0db49d`: medium, 5 paths / 262 lines,
-  `review_due: false` (`under_budget`); review outcome pending until the visual
-  handoff is resolved and the task closes.
+  `review_due: false` (`under_budget`). The final committed slice
+  `d0db49d..9ebf0ea` received user consent and an approved one-lens native
+  review (0 findings); lineage `review-988ab7c338b0cb5a` was acknowledged.
+  The feature branch was fast-forwarded locally into `main` at `9ebf0ea`.
+  Post-merge Domain tests passed (404 tests), the generic iOS Simulator build
+  succeeded, and the parent repeated LocalizationTests (6 passed). No push.
 
 ## Evidence and next step
 
@@ -56,6 +60,7 @@ invented-number rejection does not establish factual attribution.
   verifier's `defects` verdict; the insight-only acceptance is scoped, not a
   full UI pass. Number-confirmation entry and spoken VoiceOver were
   unverified due to simulator input/accessibility limitations.
-- Next: finish native review of IF-1's committed slice, then close this task
-  without erasing D1 or claiming a report-export pass. Triage D1 separately
-  before starting another implementation task.
+- IF-1 is closed for its insight-only scope. D1 remains a verifier-owned
+  `defects` finding in `.git/handoff/IF-1.md` and is tracked separately in
+  `odd/tasks/report-export-text-fidelity.md`; no full report-export pass is
+  claimed.
