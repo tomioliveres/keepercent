@@ -53,7 +53,7 @@ struct GoalkeeperCardContentView: View {
                 .font(.title2.bold())
             Text(headerStatsLine)
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(engine.saveRate.attempts == 0 ? Color.primary : Color.secondary)
         }
     }
 

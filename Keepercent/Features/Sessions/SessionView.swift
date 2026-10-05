@@ -167,7 +167,7 @@ struct SessionView: View {
                 .font(.title3.bold())
             Text(headerSubtitle)
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.primary)
         }
     }
 
@@ -256,11 +256,14 @@ struct SessionView: View {
     /// (docs/mvp.md §5.2) reading as one column instead of two
     /// differently-sized rectangles side by side in the middle.
     private func middleColumnHeights(for totalHeight: CGFloat) -> (goal: CGFloat, court: CGFloat) {
-        let available = max(totalHeight - middleColumnSpacing, 0)
+        // Reserve the real supplementary post control outside the canvas.
+        // Solve equal drawing widths using only the remaining drawing space.
+        let controlHeight = GoalView.entryControlMinimumHeight + GoalView.entryControlSpacing
+        let available = max(totalHeight - middleColumnSpacing - controlHeight, 0)
         let courtAspect = CourtGeometry.standard.aspectRatio
         let ratio = goalOverallAspectRatio / courtAspect
         let goalHeight = available / (1 + ratio)
-        return (goal: goalHeight, court: available - goalHeight)
+        return (goal: goalHeight + controlHeight, court: available - goalHeight)
     }
 
     private func middleColumn(availableHeight: CGFloat) -> some View {

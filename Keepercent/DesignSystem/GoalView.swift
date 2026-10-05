@@ -105,7 +105,37 @@ struct GoalView: View {
     /// `GoalGeometry`.
     private let netCellsAcross = 12
 
+    /// Separate entry-control space; never borrowed from adjacent canvas targets.
+    static let entryControlSpacing: CGFloat = 8
+    static let entryControlMinimumHeight: CGFloat = 44
+
     var body: some View {
+        VStack(spacing: Self.entryControlSpacing) {
+            drawing
+            if isAccessibleAction {
+                leftPostTopControl
+            }
+        }
+    }
+
+    /// A real alternative to the narrow drawn strip. The existing strip and
+    /// its geometry-based taps remain intact; this button has its own layout
+    /// space and is not one of the synthetic drawn-region elements.
+    private var leftPostTopControl: some View {
+        let target = GoalTarget.post(.leftPostTop)
+        return Button { onTargetTapped(target) } label: {
+            Text(accessibilityName(for: target))
+                .font(.subheadline)
+                .foregroundStyle(.primary)
+                .padding(.horizontal, 12)
+                .frame(minWidth: 44, maxWidth: .infinity, minHeight: Self.entryControlMinimumHeight)
+                .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 8))
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("goalSupplementary.\(accessibilityScope).leftPostTop")
+    }
+
+    private var drawing: some View {
         Canvas { context, size in
             draw(in: &context, size: size)
         }
