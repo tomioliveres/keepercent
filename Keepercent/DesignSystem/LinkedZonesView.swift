@@ -83,6 +83,7 @@ struct LinkedZonesView: View {
                 accessibilityTallies: engine.originTallies(reading),
                 accessibilityReading: reading,
                 accessibilityNotes: courtMode == .zones ? [:] : directionNotes,
+                accessibilityScope: "court.linked",
                 onOriginTapped: { origin, _ in
                     // Tapping the already-selected zone clears it: a
                     // second tap toggles back to "nothing selected"
@@ -281,6 +282,7 @@ struct LinkedZonesView: View {
                 accessibilityTallies: goalEngine.goalZoneTallies(reading),
                 accessibilityReading: reading,
                 isAccessibleAction: false,
+                accessibilityScope: "goal.linked",
                 onTargetTapped: { _ in }
             )
         }
@@ -298,6 +300,7 @@ struct LinkedZonesView: View {
     /// showing right now.
     private var captionView: some View {
         Text("\(filterDescription) · \(goalEngine.shots.count) shots")
+            .accessibilityIdentifier("linked.filter")
             .font(.caption)
             .foregroundStyle(.secondary)
     }

@@ -45,6 +45,7 @@ struct GoalView: View {
     let accessibilityTallies: [GoalZone: Tally]?
     let accessibilityReading: StatsReading
     let isAccessibleAction: Bool
+    let accessibilityScope: String
     let onTargetTapped: (GoalTarget) -> Void
 
     init(
@@ -56,6 +57,7 @@ struct GoalView: View {
         accessibilityTallies: [GoalZone: Tally]? = nil,
         accessibilityReading: StatsReading = .effectiveness,
         isAccessibleAction: Bool = true,
+        accessibilityScope: String = "goal.entry",
         onTargetTapped: @escaping (GoalTarget) -> Void
     ) {
         self.geometry = geometry
@@ -66,6 +68,7 @@ struct GoalView: View {
         self.accessibilityTallies = accessibilityTallies
         self.accessibilityReading = accessibilityReading
         self.isAccessibleAction = isAccessibleAction
+        self.accessibilityScope = accessibilityScope
         self.onTargetTapped = onTargetTapped
     }
 
@@ -148,11 +151,13 @@ struct GoalView: View {
     private func accessibleRegion(_ target: GoalTarget, rect: CGRect) -> some View {
         if isAccessibleAction {
             Button(accessibilityName(for: target)) { onTargetTapped(target) }
+                .accessibilityIdentifier("\(accessibilityScope).\(target.code)")
                 .accessibilityValue(accessibilitySample(for: target))
                 .frame(width: rect.width, height: rect.height)
                 .position(x: rect.midX, y: rect.midY)
         } else {
             Text(accessibilityName(for: target))
+                .accessibilityIdentifier("\(accessibilityScope).\(target.code)")
                 .accessibilityValue(accessibilitySample(for: target))
                 .frame(width: rect.width, height: rect.height)
                 .position(x: rect.midX, y: rect.midY)

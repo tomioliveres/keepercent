@@ -86,6 +86,7 @@ struct CourtView: View {
     let arrows: [CourtArrow]
     let accessibilityTallies: [ShotOrigin: Tally]?
     let accessibilityReading: StatsReading
+    let accessibilityScope: String
     /// Extra text appended to an origin's accessibility value, so VoiceOver
     /// hears what the arrows show ("Most shots aimed right: 4 of 6").
     let accessibilityNotes: [ShotOrigin: String]
@@ -112,6 +113,7 @@ struct CourtView: View {
         accessibilityTallies: [ShotOrigin: Tally]? = nil,
         accessibilityReading: StatsReading = .effectiveness,
         accessibilityNotes: [ShotOrigin: String] = [:],
+        accessibilityScope: String = "court.entry",
         onOriginTapped: @escaping (ShotOrigin, CourtPoint?) -> Void
     ) {
         self.geometry = geometry
@@ -122,6 +124,7 @@ struct CourtView: View {
         self.accessibilityTallies = accessibilityTallies
         self.accessibilityReading = accessibilityReading
         self.accessibilityNotes = accessibilityNotes
+        self.accessibilityScope = accessibilityScope
         self.onOriginTapped = onOriginTapped
     }
 
@@ -152,6 +155,7 @@ struct CourtView: View {
                     }
                     let rect = pixelRect(for: geometry.sevenMeterMarkRegion, in: proxy.size)
                     Button("7 m mark") { onOriginTapped(.sevenMeters, nil) }
+                        .accessibilityIdentifier("\(accessibilityScope).sevenMeters")
                         .accessibilityValue(accessibilitySample(for: .sevenMeters))
                         .frame(width: rect.width, height: rect.height)
                         .position(x: rect.midX, y: rect.midY)
@@ -179,6 +183,7 @@ struct CourtView: View {
                 .frame(width: bounds.width, height: bounds.height)
         }
         .accessibilityLabel("Court, \(zone.sector.displayName()), \(zone.depth.displayName())")
+        .accessibilityIdentifier("\(accessibilityScope).zone.\(zone.code)")
         .accessibilityValue(accessibilitySample(for: .zone(zone)))
         .position(x: bounds.midX, y: bounds.midY)
     }

@@ -67,6 +67,7 @@ struct SevenMeterSection: View {
             accessibilityTallies: tallies,
             accessibilityReading: reading,
             isAccessibleAction: false,
+            accessibilityScope: "goal.penalty",
             onTargetTapped: { _ in }
         )
     }

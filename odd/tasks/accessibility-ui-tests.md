@@ -18,8 +18,8 @@ The user authorized T6.1-A on 2026-10-05 and explicitly approved one coherent un
 ## Work units and routing
 
 - [x] AX-0 Verify prior closure and map existing accessibility/test infrastructure.
-- [x] AX-1 Implement and locally verify T6.10 closure bookkeeping and supported advisories; first new-task commit pending the parent.
-- [ ] AX-2 Add native UI-test target, tests and minimal instrumentation; compile and prepare an exact-SHA external handoff.
+- [x] AX-1 Implement and locally verify T6.10 closure bookkeeping and supported advisories; committed at `cd7b18f713796c9e0dba30d9233477d2754bc890`.
+- [x] AX-2 Add native UI-test target, tests and minimal instrumentation; verify local compilation.
 - [ ] AX-3 Execute the UI tests and inspect the UI externally, then perform task-close native review. Delivery remains separate.
 
 AX-1: delegated direct; preparatory reading plus a meaningful Domain regression and bookkeeping. AX-2: delegated direct; project/scheme wiring, UI tests and multiple accessibility instrumentation files. One writer at a time. AX-3: external simulator verifier, then parent-owned native review.
@@ -54,7 +54,7 @@ Rollback: only the new test target/scheme registration, test file, minimal ident
 
 ## Progress and next step
 
-AX-0 and AX-1 implementation complete on `task/T6.1-A` from reviewed `d85afa581f854439b711d54bdb97c0c3eb009f4c`. AX-1 is not yet committed; no commit identity is claimed. T6.10 is checked off in the main ledger and PC-2, using the parent-provided approved/acknowledged review evidence. Historical assessment/preflight proof remains, with stale current review-pending instructions resolved. Local task closure does not imply merge, push or delivery.
+AX-0 and AX-1 are complete on `task/T6.1-A` from reviewed `d85afa581f854439b711d54bdb97c0c3eb009f4c`. The parent committed AX-1 at `cd7b18f713796c9e0dba30d9233477d2754bc890` (`refactor(scouting): apply verified penalty review advisories`): five paths / 120 authored changed lines, native assessment medium, `under_budget`. This supersedes the historical pending-commit wording. T6.10 is checked off in the main ledger and PC-2 with approved/acknowledged review evidence; its frozen boundary remains unchanged. Local task closure does not imply merge, push or delivery.
 
 ### AX-1 advisory assessment and observed proof
 
@@ -69,4 +69,20 @@ Only the five AX-1 allowed files were edited. No XCTest target, schema, stable i
 
 AX-1 rollback boundary: the alias cleanup and new regression plus closure/progress entries in these task documents; unrelated accessibility geometry and historical proof remain intact. Runtime harness: N/A for this local regression/alias unit; no visible behavior is intended to change, and existing exact-SHA visual proof is historical only.
 
-Next: the parent mirrors the full feature documents and creates the first new-task commit. Only after that commit exists may AX-2 add UI-test infrastructure and minimal instrumentation. Parent archives the T6.10 handoff after the closure commit, not before. Mirror this full document at `odd/accessibility-ui-tests/tasks`; the oversized main ledger keeps its locator-only mirror.
+### AX-2 implementation and verification boundary
+
+- Native `KeepercentUITests` uses a synchronized source folder, Debug/Release configurations, an app target dependency and the shared scheme's test-only build entry and testable. XCTest links only into the runner bundle; the app retains its native Domain dependency and iOS 26 floor.
+- Eleven tests cover session button roles/names, scaffold callback codes, linked static-text roles, rendered goal-before-court query grouping, shooter effectiveness, goalkeeper on-target samples, filter select/clear, separate linked/dedicated penalties, actual zero-shot no-data readings and five unsuppressed screen audits.
+- Minimal identifiers derive from existing target/origin codes with `goal.entry`, `court.entry`, `goal.linked`, `court.linked` and `goal.penalty` scopes; `linked.filter` identifies the existing caption. Labels, values, geometry, gestures and accessibility ordering are unchanged. No Domain, fixture or route changes.
+- Existing isolated routes: sessions/demo, scouting/demo, shooterCard/demo (#3), goalkeeperCard/demo (#1), goalkeeperCard/emptyGoalkeeper, and teams/empty → Drawing Scaffold. Empty penalties intentionally render text, not an unreachable empty heatmap. English expectations follow the existing catalog's singular/plural substitutions.
+- Test-first exception: no Domain behavior changes; view instrumentation is externally verified. UI tests are compile-only here because simulator launch/execution is prohibited. No observed UI RED/GREEN, audit pass, spoken VoiceOver pass or visual pass is claimed.
+- The supplied Apple documentation URL returned HTTP 404. Installed SDK `XCUIAutomation.swiftinterface` confirms the throwing `performAccessibilityAudit(for: = .all, _ issueHandler: = nil)` API; compilation validates the no-handler calls. Audits run after identifier-based waits and scrolling, without issue suppression or automatic geometry/color/semantic fixes.
+- Local proof: `swift test --package-path Domain` passed 409 tests / 102 suites. Generic simulator app build reported BUILD SUCCEEDED; Debug `build-for-testing` reported TEST BUILD SUCCEEDED for arm64/x86_64, compiling all eleven tests with Swift 6 and an iOS 26 target. The existing no-AppIntents-dependency metadata warning is non-fatal. `xcodebuild -list -json` lists both app and UI-test targets in the project and the shared Keepercent scheme.
+- Artifacts: `build/DerivedData/Build/Products/Debug-iphonesimulator/Keepercent.app`, `KeepercentUITests-Runner.app/PlugIns/KeepercentUITests.xctest`, and `build/DerivedData/Build/Products/Keepercent_iphonesimulator27.0-arm64-x86_64.xctestrun`. The manifest identifies a UI-test runner and the existing target app, not an app-embedded test bundle.
+- Delivery count: AX-2 is nine paths / 406 authored changed lines, including the new 250-line test file. AX-1 + AX-2 total 526 authored lines; the net diff from reviewed `d85afa5` is 520 lines including the untracked test file. This is the explicitly authorized coherent `exception-ok` unit, not a reason to compress tests or wiring.
+
+AX-2 source and local compilation are complete; AX-3 starts with the parent's exact-SHA external handoff. The main-ledger follow-up remains open. UI runtime, audit findings, tree flattening/order, scrolling and scaffold toolbar visibility must be observed externally on iPhone/iPad; source expectations are not runtime evidence. No simulator, staging, commit, review, remote or handoff mutation was performed by the implementation writer. Preserve historical VoiceOver records and IF-1/T6.1 handoffs; archive the closed T6.10 handoff without losing its limitations.
+
+Independent technical verification repeated the exact Debug generic-simulator `build-for-testing` command and `git diff --check`: TEST BUILD SUCCEEDED and no whitespace errors. It inspected all eleven tests, target/scheme participation, runner separation, actual demo/catalog expectations and scope identifiers, finding no concrete structural/compiler defect. This was an incremental build, not proof of a fresh dual-architecture compilation, runtime test pass or accessibility pass. Parent structural readback and repeated diff check also passed.
+
+Next: parent commits this coherent `exception-ok` unit and writes the exact-SHA external handoff, then external AX-3 execution and independent task-close review. Mirror this full document at `odd/accessibility-ui-tests/tasks`; the oversized main ledger keeps its locator-only mirror.
