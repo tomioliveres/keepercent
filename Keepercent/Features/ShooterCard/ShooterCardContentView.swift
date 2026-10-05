@@ -42,6 +42,7 @@ struct ShooterCardContentView: View {
             ))
             PatternsSection(patterns: patterns, shotCount: engine.shots.count)
             LinkedZonesView(engine: engine, reading: .effectiveness, selection: $selection)
+            SevenMeterSection(engine: engine, reading: .effectiveness)
             whereTheyScoreSection
             shotShapeSection
         }

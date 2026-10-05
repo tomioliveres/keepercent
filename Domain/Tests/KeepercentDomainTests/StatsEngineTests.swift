@@ -216,6 +216,95 @@ struct FilterTests {
     }
 }
 
+@Suite("StatsEngine composed penalty records")
+struct PenaltyRecordTests {
+    private let zone = GoalZone(row: .top, column: .left)
+
+    @Test("player and team penalty records isolate sides, numbers and field shots")
+    func isolatesPenaltyRecords() {
+        let shared = Player(number: 5)
+        let other = Player(number: 14)
+        let engine = StatsEngine(shots: [
+            shot(shooter: shared, isSevenMeters: true, outcome: .goal),
+            shot(shooter: shared, isSevenMeters: true, outcome: .saved),
+            shot(shooter: shared, isSevenMeters: true, target: .post(.crossbarCenter), outcome: .post),
+            shot(shooter: shared, isSevenMeters: true, target: .out(.over, .center), outcome: .out),
+            shot(shooter: shared, outcome: .goal),
+            shot(shooter: other, isSevenMeters: true, outcome: .goal),
+            shot(attackingSide: .own, shooter: shared, facingGoalkeeper: shared, isSevenMeters: true, outcome: .saved),
+            shot(attackingSide: .own, facingGoalkeeper: shared, isSevenMeters: true, outcome: .goal),
+            shot(attackingSide: .own, facingGoalkeeper: shared, outcome: .saved),
+            shot(attackingSide: .rival, facingGoalkeeper: shared, isSevenMeters: true, outcome: .goal),
+            shot(attackingSide: .own, facingGoalkeeper: other, isSevenMeters: true, outcome: .goal)
+        ])
+        let shooter = engine.shots(by: shared.number).sevenMeterShots
+        #expect(shooter.shots.count == 4)
+        #expect(shooter.outcomeCounts == [.goal: 1, .saved: 1, .post: 1, .out: 1])
+        #expect(shooter.effectiveness == Tally(successes: 1, attempts: 4))
+        #expect(shooter.effectiveness.rate == 0.25)
+        let keeper = engine.shots(facing: shared.number).sevenMeterShots
+        #expect(keeper.shots.count == 2)
+        #expect(keeper.saveRate == Tally(successes: 1, attempts: 2))
+        #expect(keeper.saveRate.rate == 0.5)
+        #expect(engine.rivalShots.sevenMeterShots.effectiveness == Tally(successes: 3, attempts: 6))
+        #expect(engine.ownShots.sevenMeterShots.saveRate == Tally(successes: 1, attempts: 3))
+    }
+
+    @Test("a field-only record has no penalty sample or measured zero rate")
+    func emptyPenalties() {
+        let penalties = StatsEngine(shots: [shot(outcome: .goal)]).sevenMeterShots
+        #expect(penalties.shots.isEmpty)
+        #expect(penalties.outcomeCounts.values.allSatisfy { $0 == 0 })
+        #expect(penalties.effectiveness.rate == nil)
+        #expect(penalties.saveRate.rate == nil)
+        #expect(penalties.goalZoneTallies(.effectiveness).isEmpty)
+        #expect(penalties.goalZoneTallies(.saveRate).isEmpty)
+        #expect(penalties.missCounts.values.allSatisfy { $0 == 0 })
+    }
+
+    @Test("posts and misses give zero effectiveness but no on-target save rate")
+    func postAndMissOnly() {
+        let penalties = StatsEngine(shots: [
+            shot(isSevenMeters: true, target: .post(.crossbarCenter), outcome: .post),
+            shot(isSevenMeters: true, target: .out(.wideLeft, .middle), outcome: .out),
+            shot(isSevenMeters: true, target: .out(.wideRight, nil), outcome: .out)
+        ]).sevenMeterShots
+        #expect(penalties.effectiveness == Tally(successes: 0, attempts: 3))
+        #expect(penalties.effectiveness.rate == 0)
+        #expect(penalties.saveRate == Tally(successes: 0, attempts: 0))
+        #expect(penalties.saveRate.rate == nil)
+        #expect(penalties.outcomeCounts[.post] == 1)
+        #expect(penalties.outcomeCounts[.out] == 2)
+        #expect(penalties.goalZoneTallies(.saveRate).isEmpty)
+        #expect(penalties.missCounts[.out(.wideLeft, .middle)] == 1)
+        #expect(penalties.missCounts.values.reduce(0, +) == 1)
+        #expect(penalties.missCounts[.out(.wideRight, nil)] == nil)
+    }
+
+    @Test("penalty heatmap samples exclude posts, misses and field targets without losing legacy totals")
+    func insideSamplesDifferFromTotalAttempts() {
+        let penalties = StatsEngine(shots: [
+            shot(isSevenMeters: true, target: .inside(zone), outcome: .goal),
+            shot(isSevenMeters: true, target: .inside(zone), outcome: .saved),
+            shot(isSevenMeters: true, target: .post(.crossbarCenter), outcome: .post),
+            shot(isSevenMeters: true, target: .out(.over, .left), outcome: .out),
+            shot(isSevenMeters: true, target: .out(.over, nil), outcome: .out),
+            shot(target: .inside(zone), outcome: .goal),
+            shot(target: .out(.over, .left), outcome: .out)
+        ]).sevenMeterShots
+        #expect(penalties.shots.count == 5)
+        #expect(penalties.effectiveness == Tally(successes: 1, attempts: 5))
+        #expect(penalties.saveRate == Tally(successes: 1, attempts: 2))
+        for reading in StatsReading.allCases {
+            #expect(penalties.goalZoneTallies(reading) == [zone: Tally(successes: 1, attempts: 2)])
+        }
+        #expect(penalties.outcomeCounts[.out] == 2)
+        #expect(penalties.outcomeCounts.values.reduce(0, +) == 5)
+        #expect(penalties.missCounts[.out(.over, .left)] == 1)
+        #expect(penalties.missCounts.values.reduce(0, +) == 1)
+    }
+}
+
 @Suite("StatsEngine.effectiveness")
 struct EffectivenessTests {
 

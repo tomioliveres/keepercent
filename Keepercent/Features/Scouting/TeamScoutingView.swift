@@ -12,7 +12,7 @@
 // The reading picker decides which side of the engine feeds the view:
 // Effectiveness reads `rivalShots` (the shooter card's data — goals scored
 // BY the rival), Save rate reads `ownShots` (the goalkeeper card's data —
-// shots faced BY the own team's keeper), matching `StatsEngine`'s own
+// own-team shots faced BY the rival keeper), matching `StatsEngine`'s own
 // `attackingSide` filters.
 
 import SwiftUI
@@ -69,6 +69,7 @@ struct TeamScoutingView: View {
                 PatternsSection(patterns: patterns, shotCount: readingEngine.shots.count)
 
                 LinkedZonesView(engine: readingEngine, reading: reading, selection: $selection)
+                SevenMeterSection(engine: readingEngine, reading: reading)
             }
             .padding()
         }

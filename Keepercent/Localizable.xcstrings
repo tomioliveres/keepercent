@@ -1,6 +1,116 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Attempts: %lld · Goals: %lld · Saves: %lld · Posts: %lld · Out: %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Attempts: %1$lld · Goals: %2$lld · Saves: %3$lld · Posts: %4$lld · Out: %5$lld"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Intentos: %1$lld · Goles: %2$lld · Paradas: %3$lld · Postes: %4$lld · Fuera: %5$lld"
+          }
+        },
+        "es-419" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Intentos: %1$lld · Goles: %2$lld · Atajadas: %3$lld · Postes: %4$lld · Fuera: %5$lld"
+          }
+        }
+      }
+    },
+    "Cells: goals / inside attempts · Outside: located misses" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cells: goals / inside attempts · Outside: located misses"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Casillas: goles / intentos dentro · Exterior: fallos con ubicación"
+          }
+        },
+        "es-419" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Casillas: goles / intentos dentro · Exterior: fallos con ubicación"
+          }
+        }
+      }
+    },
+    "Cells: saves / on target inside · Outside: located misses" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cells: saves / on target inside · Outside: located misses"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Casillas: paradas / lanzamientos a portería dentro · Exterior: fallos con ubicación"
+          }
+        },
+        "es-419" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Casillas: atajadas / tiros al arco dentro · Exterior: fallos con ubicación"
+          }
+        }
+      }
+    },
+    "Effectiveness: %@ goals / attempts · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effectiveness: %1$@ goals / attempts · %2$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eficacia: %1$@ goles / intentos · %2$@"
+          }
+        },
+        "es-419" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Efectividad: %1$@ goles / intentos · %2$@"
+          }
+        }
+      }
+    },
+    "Save rate: %@ saves / on target · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save rate: %1$@ saves / on target · %2$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Porcentaje de paradas: %1$@ paradas / a portería · %2$@"
+          }
+        },
+        "es-419" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Porcentaje de atajadas: %1$@ atajadas / al arco · %2$@"
+          }
+        }
+      }
+    },
     "#%lld has %lld recorded shots and can't be removed." : {
       "localizations" : {
         "en" : {
