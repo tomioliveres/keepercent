@@ -8,10 +8,8 @@ struct SevenMeterSection: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.locale) private var locale
 
-    private var penalties: StatsEngine { engine.sevenMeterShots }
-
     var body: some View {
-        let sample = penalties
+        let sample = engine.sevenMeterShots
         VStack(alignment: .leading, spacing: 8) {
             Text("7 m throws").font(.headline)
             if sample.shots.isEmpty {
