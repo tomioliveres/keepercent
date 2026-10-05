@@ -21,7 +21,7 @@ the report in the exported image on iPhone and iPad across supported locales.
 
 ## Checklist
 
-- [ ] RE-1: Make the exported image render secondary report captions in full
+- [x] RE-1: Make the exported image render secondary report captions in full
   without ellipsis, preserving the on-screen report and report facts.
   Evidence: `.git/handoff/IF-1.md` D1, exported `Goal zones` caption in en
   and es-ES plus the es-ES perspective caption; es-419 export and dark mode
@@ -37,7 +37,24 @@ the report in the exported image on iPhone and iPad across supported locales.
   `.lineLimit(1)` applies to goal-cell labels, not these captions. No app
   test target exists, so no RED test was claimed. Domain tests passed
   (404 tests); generic iOS Simulator build succeeded; `git diff --check`
-  passed. Export fidelity is pending exact-SHA simulator verification.
+  passed. Work-unit commit: `773807e`.
+  Claude Code verified the exported PNG (Save to Files, compared word for
+  word with the on-screen report) at exact SHA `773807e`: pass on iPhone 17
+  and iPad (A16) in en/es-ES/es-419, light and dark, for goalkeeper #12 and
+  the empty goalkeeper report. No ellipsis or missing words; numbers, zone
+  labels, 7 m line and footer unchanged. Not run: iPad empty-report exports
+  in es-ES/es-419 dark mode; spoken VoiceOver output is out of simulator scope.
+  RDD: the committed slice `9ebf0ea..773807e` (medium, 3 paths / 72 lines;
+  untracked `.claude/` and `tmp/` excluded through STATUS
+  `--untracked-scope exclude`) received user consent and an approved one-lens
+  review; lineage `review-a04fa5ceda87d199` was acknowledged. Advisory
+  findings, triaged with no code change: R3-001 (no automated export-layout
+  test) is the documented no-test-target exception, covered by the exact-SHA
+  exported-PNG verification above; R3-002 (`.fixedSize` on the 7 m `Group`)
+  is behavior-equivalent, because `Group` applies modifiers to each child and
+  its only children are `Text` views. Fast-forwarded locally into `main` at
+  `773807e`; post-merge Domain tests passed (404 tests) and the generic iOS
+  Simulator build succeeded. `main` pushed to `origin` at `773807e`.
 
 ## Evidence and next step
 
@@ -46,5 +63,7 @@ the report in the exported image on iPhone and iPad across supported locales.
   independently replayed at the base; the report renderer did not change
   in IF-1. Treat the suspect `.lineLimit(1)` and fixed width as hypotheses,
   not established root cause.
-- Next: inspect the report rendering implementation, make the narrow fix,
-  and request exact-SHA simulator export verification before review/closure.
+- RE-1 is closed. The fix was vertical fixed sizing on the captions; the
+  `.lineLimit(1)` hypothesis did not apply (it belongs to goal-cell labels).
+  The IF-1 handoff keeps its historical verifier-owned `status: defects`;
+  D1 is resolved here, not by rewriting that verdict.
