@@ -173,6 +173,14 @@ struct CourtView: View {
                 }
             }
         }
+        #if DEBUG
+        .overlay {
+            if ProcessInfo.processInfo.arguments.contains("-KPUITestCanvasProbe") {
+                CourtCanvasProbe(scope: accessibilityScope)
+                    .allowsHitTesting(false)
+            }
+        }
+        #endif
     }
 
     private func accessibleZone(_ zone: CourtZone, size: CGSize) -> some View {
@@ -627,6 +635,36 @@ struct CourtView: View {
         }
     }
 }
+
+#if DEBUG
+/// Test-only telemetry outside the court.* semantic namespace. Measurement
+/// updates only metadata, never a layout proposal, drawing or touch handler.
+private struct CourtCanvasProbe: View {
+    let scope: String
+    @State private var measuredFrame: CGRect?
+
+    var body: some View {
+        Color.clear
+            .onGeometryChange(for: CGRect.self) { proxy in
+                proxy.frame(in: .global)
+            } action: { frame in
+                measuredFrame = frame
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("UI test canvas geometry")
+            .accessibilityIdentifier("testCanvas.\(scope)")
+            .accessibilityValue(telemetry)
+    }
+
+    private var telemetry: String {
+        guard let frame = measuredFrame else { return "pending" }
+        // Swift's numeric descriptions use a locale-independent decimal point.
+        // Do not use the rounded accessibility frame of this metadata element.
+        return [frame.minX, frame.minY, frame.width, frame.height]
+            .map { String(Double($0)) }.joined(separator: ",")
+    }
+}
+#endif
 
 #Preview("CourtView") {
     CourtView { origin, _ in

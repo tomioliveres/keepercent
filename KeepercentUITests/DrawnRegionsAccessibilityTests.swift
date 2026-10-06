@@ -16,7 +16,7 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
         assertCourt(in: app, scope: "court.entry")
     }
 
-    func testDrawingScaffoldActivationsReachExistingCallbacks() {
+    func testDrawingScaffoldActivationsReachExistingCallbacks() throws {
         let app = openDrawingScaffold()
         assertEntryGoal(in: app)
         for (code, name) in goalContract {
@@ -28,7 +28,7 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
             XCTAssertTrue(app.staticTexts["Last tap: \(code)"].waitForExistence(timeout: 5))
         }
         assertCourt(in: app, scope: "court.entry")
-        let canvas = assertCourtFrames(in: app, scope: "court.entry")
+        let canvas = try assertCourtFrames(in: app, scope: "court.entry")
         let postControl = app.buttons[entryIdentifier(for: "post.leftPostTop")]
         XCTAssertEqual(canvas.minX, postControl.frame.minX, accuracy: 1)
         XCTAssertEqual(canvas.width, postControl.frame.width, accuracy: 1)
@@ -90,11 +90,11 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
         }
     }
 
-    func testRelocatedLeftPostTopIsSingleSizedSeparatedActionAndPreservesDrawingTap() {
+    func testRelocatedLeftPostTopIsSingleSizedSeparatedActionAndPreservesDrawingTap() throws {
         let app = openDrawingScaffold()
         assertEntryGoal(in: app)
         let control = app.buttons[entryIdentifier(for: "post.leftPostTop")]
-        _ = assertCourtFrames(in: app, scope: "court.entry")
+        _ = try assertCourtFrames(in: app, scope: "court.entry")
         let neighbours = regions(in: app, prefix: "goal.entry.")
             + regions(in: app, prefix: "court.entry.") + [app.buttons["Close"]]
         retainEvidence("Relocated post before size and overlap checks", in: app, elements: [control] + neighbours)
@@ -147,8 +147,8 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
         XCTAssertLessThan(courtHeading.frame.maxY, mark.frame.minY)
     }
 
-    func testShooterSamplesAndLinkedFilterSelectClear() {
-        let app = launch(screen: "shooterCard") // Existing router selects Jordi Ferrer (#3).
+    func testShooterSamplesAndLinkedFilterSelectClear() throws {
+        let app = launch(screen: "shooterCard", canvasProbe: true) // Existing router selects Jordi Ferrer (#3).
         XCTAssertTrue(app.staticTexts["#3 · Jordi Ferrer"].waitForExistence(timeout: 10))
         let goal = app.staticTexts["goal.linked.inside.top.right"]
         reveal(goal, in: app)
@@ -158,12 +158,12 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
         let origin = app.buttons["court.linked.zone.rightBack.far"]
         reveal(origin, in: app)
         assertValue("0 goals in 1 shot", of: origin) // The located miss still counts for effectiveness.
-        tapRightBackFar(in: app)
+        try tapRightBackFar(in: app)
         assertFilter("From right back · far · 1 shot", in: app)
         reveal(goal, in: app, upwards: true)
         assertValue("No data", of: goal)
         reveal(origin, in: app)
-        tapRightBackFar(in: app)
+        try tapRightBackFar(in: app)
         assertFilter("All field shots · 2 shots", in: app)
         reveal(goal, in: app, upwards: true)
         assertValue("0 goals in 1 shot", of: goal)
@@ -254,12 +254,13 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
         try app.performAccessibilityAudit()
     }
 
-    private func launch(screen: String, data: String = "demo") -> XCUIApplication {
+    private func launch(screen: String, data: String = "demo", canvasProbe: Bool = false) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = [
             "-KPScreen", screen, "-KPData", data,
             "-AppleLanguages", "(en)", "-AppleLocale", "en_US"
         ]
+        if canvasProbe { app.launchArguments.append("-KPUITestCanvasProbe") }
         app.launch()
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
         return app
@@ -272,7 +273,7 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
     }
 
     private func openDrawingScaffold() -> XCUIApplication {
-        let app = launch(screen: "teams", data: "empty")
+        let app = launch(screen: "teams", data: "empty", canvasProbe: true)
         let scaffold = app.buttons["Drawing Scaffold (T2.x)"]
         // Exact native label from the retained 42f66bb iPad Teams hierarchy.
         let sidebar = app.buttons["Show Sidebar"]
@@ -357,29 +358,39 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
         XCTAssertEqual(app.buttons.matching(NSPredicate(format: "label == %@", "Left post, top")).count, 1)
     }
 
-    private func tapRightBackFar(in app: XCUIApplication) {
+    private func tapRightBackFar(in app: XCUIApplication) throws {
         let mark = app.buttons["court.linked.sevenMeters"]
         reveal(mark, in: app)
-        // CourtGeometry.standard: 20 x 15 m, mark at (0.5, 7/15).
-        // Anchor the physical canvas with the separate precise mark, whose
-        // width is 1.4 m. A correctly bounded center-near zone is NOT as
-        // wide as the canvas; never use its former inflated width as a scale.
-        // (0.8, 0.8) is 6 m right and 12 m deep: unambiguously right-back far.
-        let width = mark.frame.width * 20 / 1.4
-        XCTAssertGreaterThan(width, 0)
-        let height = width * 15 / 20
-        func point() -> CGPoint {
-            CGPoint(x: mark.frame.midX + width * 0.3, y: mark.frame.midY + height * (0.8 - 7.0 / 15))
+        var canvas = try measuredCanvas(in: app, scope: "court.linked")
+        func point(in canvas: CGRect) -> CGPoint {
+            CGPoint(x: canvas.minX + canvas.width * 0.8, y: canvas.minY + canvas.height * 0.8)
         }
         let scroll = app.scrollViews.firstMatch
         for _ in 0..<12 {
-            if scroll.frame.insetBy(dx: 0, dy: 44).contains(point()) { break }
+            if scroll.frame.insetBy(dx: 0, dy: 44).contains(point(in: canvas)) { break }
             scroll.swipeUp()
+            // Requery current telemetry after every settled scroll; no cached
+            // mark position, small-region scale, fallback or recovery retry.
+            canvas = try measuredCanvas(in: app, scope: "court.linked")
         }
-        retainEvidence("Right-back far physical targeting", in: app,
-                       elements: [mark, app.buttons["court.linked.zone.rightBack.far"]])
-        XCTAssertTrue(scroll.frame.insetBy(dx: 0, dy: 44).contains(point()))
-        tap(point(), in: app)
+        let target = point(in: canvas)
+        let far = app.buttons["court.linked.zone.rightBack.far"]
+        retainEvidence("Right-back far raw canvas=\(canvas), target=\(target)", in: app,
+                       elements: [mark, far, app.descendants(matching: .any)["testCanvas.court.linked"]])
+        let xMeters = ((target.x - canvas.minX) / canvas.width - 0.5) * 20
+        let yMeters = (target.y - canvas.minY) / canvas.height * 15
+        let angle = atan2(xMeters, yMeters) * 180 / .pi
+        XCTAssertGreaterThan(angle, 18)
+        XCTAssertLessThan(angle, 54)
+        XCTAssertGreaterThan(hypot(xMeters - 1.5, yMeters), 9)
+        XCTAssertTrue(canvas.contains(target))
+        XCTAssertTrue(far.frame.contains(target))
+        XCTAssertGreaterThan(target.x, far.frame.minX)
+        XCTAssertLessThan(target.x, far.frame.maxX)
+        XCTAssertGreaterThan(target.y, far.frame.minY)
+        XCTAssertLessThan(target.y, far.frame.maxY)
+        XCTAssertTrue(scroll.frame.insetBy(dx: 0, dy: 44).contains(target))
+        tap(target, in: app)
     }
 
     private func tap(_ point: CGPoint, in app: XCUIApplication) {
@@ -418,28 +429,19 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
     }
 
     /// Independent metric expectations for CourtGeometry.standard's polygon
-    /// extrema. The mark anchors the canvas; no zone frame supplies its scale.
+    /// extrema. Raw canvas telemetry supplies scale, never a rounded AX region.
     /// One point of tolerance covers XCTest's screen-coordinate rounding.
     @discardableResult
-    private func assertCourtFrames(in app: XCUIApplication, scope: String) -> CGRect {
+    private func assertCourtFrames(in app: XCUIApplication, scope: String) throws -> CGRect {
         let mark = app.buttons["\(scope).sevenMeters"]
         let origins = regions(in: app, prefix: "\(scope).")
         // Capture every frame BEFORE the mark-size assertion can abort.
         // Its semantic bounds represent the 1.4 x 1 m drawing/hit region,
         // not the intrinsic height of an unrendered Text button label.
         retainEvidence("Court frames before metric assertions", in: app, elements: origins)
-        XCTAssertTrue(mark.exists)
-        XCTAssertEqual(app.buttons.matching(identifier: "\(scope).sevenMeters").count, 1)
-        XCTAssertEqual(mark.label, "7 m mark")
-        XCTAssertGreaterThan(mark.frame.width, 0)
-        let width = mark.frame.width * 20 / 1.4
-        let height = width * 15 / 20
-        let canvas = CGRect(x: mark.frame.midX - width / 2,
-                            y: mark.frame.midY - height * 7 / 15,
-                            width: width, height: height)
-        retainEvidence("Court inferred canvas=\(canvas); expected 7 m depth=\(height / 15)",
-                       in: app, elements: [mark])
-        XCTAssertEqual(mark.frame.height, height / 15, accuracy: 1)
+        let canvas = try measuredCanvas(in: app, scope: scope)
+        let width = canvas.width
+        let height = canvas.height
         func arcPoint(distance: CGFloat, degrees: CGFloat) -> CGPoint {
             let angle = degrees * .pi / 180
             // Intersection of the sector ray with the post-centered arc.
@@ -451,12 +453,12 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
         let inner54 = arcPoint(distance: 6, degrees: 54)
         let outer18 = arcPoint(distance: 9, degrees: 18)
         let outer54 = arcPoint(distance: 9, degrees: 54)
-        let wing = CGRect(x: 0, y: 0, width: 0.125, height: outer54.y / 15)
+        let wing = CGRect(x: 0, y: 0, width: 0.5 - inner54.x / 20, height: outer54.y / 15)
         let back = CGRect(x: 0.5 - outer54.x / 20, y: inner54.y / 15,
                           width: (outer54.x - inner18.x) / 20,
                           height: (outer18.y - inner54.y) / 15)
-        let center = CGRect(x: 0.5 - outer18.x / 20, y: 6.0 / 15,
-                            width: outer18.x / 10, height: 3.0 / 15)
+        let center = CGRect(x: 0.5 - outer18.x / 20, y: inner18.y / 15,
+                            width: outer18.x / 10, height: (9 - inner18.y) / 15)
         let farBack = CGRect(x: 0, y: 0, width: 0.5 - outer18.x / 20, height: 1)
         let farHalfWidth = 15 * tan(CGFloat.pi / 10) / 20
         let farCenter = CGRect(x: 0.5 - farHalfWidth, y: outer18.y / 15,
@@ -464,13 +466,25 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
         func mirrored(_ rect: CGRect) -> CGRect {
             CGRect(x: 1 - rect.maxX, y: rect.minY, width: rect.width, height: rect.height)
         }
-        let expected = [
-            "zone.leftWing.near": wing, "zone.leftBack.near": back,
-            "zone.center.near": center, "zone.rightBack.near": mirrored(back),
-            "zone.rightWing.near": mirrored(wing), "zone.leftBack.far": farBack,
-            "zone.center.far": farCenter, "zone.rightBack.far": mirrored(farBack),
-            "sevenMeters": CGRect(x: 0.465, y: 6.5 / 15, width: 1.4 / 20, height: 1.0 / 15)
+        let expected: [(String, CGRect)] = [
+            ("zone.leftWing.near", wing), ("zone.leftBack.near", back),
+            ("zone.center.near", center), ("zone.rightBack.near", mirrored(back)),
+            ("zone.rightWing.near", mirrored(wing)), ("zone.leftBack.far", farBack),
+            ("zone.center.far", farCenter), ("zone.rightBack.far", mirrored(farBack)),
+            ("sevenMeters", CGRect(x: 0.465, y: 6.5 / 15, width: 1.4 / 20, height: 1.0 / 15))
         ]
+        let comparisons = expected.map { code, rect in
+            let raw = CGRect(x: canvas.minX + rect.minX * width, y: canvas.minY + rect.minY * height,
+                             width: rect.width * width, height: rect.height * height)
+            return "\(code): expected=\(raw), actual=\(app.buttons["\(scope).\(code)"].frame)"
+        }.joined(separator: "; ")
+        retainEvidence("Court raw canvas=\(canvas); \(comparisons)", in: app,
+                       elements: origins + [app.descendants(matching: .any)["testCanvas.\(scope)"]])
+        XCTAssertTrue(mark.exists)
+        XCTAssertEqual(app.buttons.matching(identifier: "\(scope).sevenMeters").count, 1)
+        XCTAssertEqual(mark.label, "7 m mark")
+        XCTAssertGreaterThan(mark.frame.width, 0)
+        XCTAssertEqual(mark.frame.height, height / 15, accuracy: 1)
         XCTAssertEqual(origins.count, expected.count)
         for (code, normalized) in expected {
             let frame = app.buttons["\(scope).\(code)"].frame
@@ -486,6 +500,32 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
             XCTAssertEqual(frame.height, normalized.height * height, accuracy: 1, code)
         }
         return canvas
+    }
+
+    private enum CanvasMeasurementError: Error { case unavailable(String) }
+
+    /// Fail closed before any coordinate can be synthesized. No AX-frame or
+    /// small-mark fallback; the value is native raw global-frame telemetry.
+    private func measuredCanvas(in app: XCUIApplication, scope: String) throws -> CGRect {
+        let id = "testCanvas.\(scope)"
+        let probes = app.descendants(matching: .any).matching(identifier: id).allElementsBoundByIndex
+        retainEvidence("Canvas telemetry before qualification: \(id), count=\(probes.count)",
+                       in: app, elements: probes)
+        guard probes.count == 1, let probe = probes.first,
+              probe.elementType != .button,
+              let value = probe.value as? String else {
+            XCTFail("Expected one nonactionable canvas probe with numeric value: \(id)")
+            throw CanvasMeasurementError.unavailable(id)
+        }
+        let fields = value.split(separator: ",", omittingEmptySubsequences: false)
+        let numbers = fields.compactMap { Double($0) }
+        guard fields.count == 4, numbers.count == 4, numbers.allSatisfy(\.isFinite),
+              numbers[2] > 0, numbers[3] > 0,
+              abs(numbers[2] / numbers[3] - 20.0 / 15) < 1e-6 else {
+            XCTFail("Invalid/pending canvas telemetry for \(id): \(value)")
+            throw CanvasMeasurementError.unavailable(id)
+        }
+        return CGRect(x: numbers[0], y: numbers[1], width: numbers[2], height: numbers[3])
     }
 
     private func assertInertGoal(in app: XCUIApplication, scope: String) {
