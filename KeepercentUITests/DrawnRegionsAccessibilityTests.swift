@@ -27,11 +27,65 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
             region.tap()
             XCTAssertTrue(app.staticTexts["Last tap: \(code)"].waitForExistence(timeout: 5))
         }
-        for code in ["zone.leftWing.near", "zone.rightBack.far", "sevenMeters"] {
+        assertCourt(in: app, scope: "court.entry")
+        let canvas = assertCourtFrames(in: app, scope: "court.entry")
+        let postControl = app.buttons[entryIdentifier(for: "post.leftPostTop")]
+        XCTAssertEqual(canvas.minX, postControl.frame.minX, accuracy: 1)
+        XCTAssertEqual(canvas.width, postControl.frame.width, accuracy: 1)
+        XCTAssertGreaterThan(canvas.minY, postControl.frame.maxY)
+        // XCUIElement.tap synthesizes a touch; it is not VoiceOver activation.
+        // These two frames have safe centers. Far-back rectangular bounds
+        // include other zones, so its physical tap must use an interior point.
+        for code in ["zone.leftWing.near", "sevenMeters"] {
             let region = app.buttons["court.entry.\(code)"]
             XCTAssertTrue(region.waitForExistence(timeout: 5))
             XCTAssertTrue(region.isHittable)
+            retainEvidence("Court automatic tap: \(code)", in: app, elements: [region, postControl])
             region.tap()
+            XCTAssertTrue(app.staticTexts["Last tap: \(code)"].waitForExistence(timeout: 5))
+        }
+        let far = app.buttons["court.entry.zone.rightBack.far"]
+        XCTAssertTrue(far.waitForExistence(timeout: 5))
+        XCTAssertTrue(far.isHittable)
+        XCTAssertGreaterThan(far.frame.width, 0)
+        XCTAssertGreaterThan(far.frame.height, 0)
+        let farPoint = CGPoint(x: canvas.minX + canvas.width * 0.8,
+                               y: canvas.minY + canvas.height * 0.8)
+        // Independently validate this physical point against the standard
+        // court's sector and nearest-post distance, not just its AX rectangle.
+        let xMeters = ((farPoint.x - canvas.minX) / canvas.width - 0.5) * 20
+        let yMeters = (farPoint.y - canvas.minY) / canvas.height * 15
+        let angle = atan2(xMeters, yMeters) * 180 / .pi
+        XCTAssertGreaterThan(angle, 18)
+        XCTAssertLessThan(angle, 54)
+        XCTAssertGreaterThan(hypot(xMeters - 1.5, yMeters), 9)
+        XCTAssertTrue(canvas.contains(farPoint))
+        XCTAssertTrue(far.frame.contains(farPoint))
+        let farOffset = CGVector(dx: (farPoint.x - far.frame.minX) / far.frame.width,
+                                 dy: (farPoint.y - far.frame.minY) / far.frame.height)
+        XCTAssertGreaterThan(farOffset.dx, 0)
+        XCTAssertLessThan(farOffset.dx, 1)
+        XCTAssertGreaterThan(farOffset.dy, 0)
+        XCTAssertLessThan(farOffset.dy, 1)
+        retainEvidence("Court targeted physical far tap: point=\(farPoint), offset=\(farOffset)",
+                       in: app, elements: [far, postControl])
+        far.coordinate(withNormalizedOffset: farOffset).tap()
+        XCTAssertTrue(app.staticTexts["Last tap: zone.rightBack.far"].waitForExistence(timeout: 5))
+        // Separately prove physical classification; these never substitute
+        // for the automatic near/7 m or queried-target far taps above.
+        for (code, point) in [
+            ("zone.leftWing.near", CGPoint(x: 0.075, y: 0.15)),
+            ("zone.leftBack.near", CGPoint(x: 0.25, y: 0.4)),
+            ("zone.center.near", CGPoint(x: 0.5, y: 0.55)),
+            ("zone.rightBack.near", CGPoint(x: 0.75, y: 0.4)),
+            ("zone.rightWing.near", CGPoint(x: 0.925, y: 0.15)),
+            ("zone.leftBack.far", CGPoint(x: 0.2, y: 0.8)),
+            ("zone.center.far", CGPoint(x: 0.5, y: 0.8)),
+            ("zone.rightBack.far", CGPoint(x: 0.8, y: 0.8)),
+            ("sevenMeters", CGPoint(x: 0.5, y: 7.0 / 15))
+        ] {
+            tap(CGPoint(x: canvas.minX + point.x * canvas.width,
+                        y: canvas.minY + point.y * canvas.height), in: app)
             XCTAssertTrue(app.staticTexts["Last tap: \(code)"].waitForExistence(timeout: 5))
         }
     }
@@ -40,6 +94,7 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
         let app = openDrawingScaffold()
         assertEntryGoal(in: app)
         let control = app.buttons[entryIdentifier(for: "post.leftPostTop")]
+        _ = assertCourtFrames(in: app, scope: "court.entry")
         let neighbours = regions(in: app, prefix: "goal.entry.")
             + regions(in: app, prefix: "court.entry.") + [app.buttons["Close"]]
         retainEvidence("Relocated post before size and overlap checks", in: app, elements: [control] + neighbours)
@@ -285,11 +340,11 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
         let mark = app.buttons["court.linked.sevenMeters"]
         reveal(mark, in: app)
         // CourtGeometry.standard: 20 x 15 m, mark at (0.5, 7/15).
-        // Retained court zone bounds are oversized/shifted; their tap() center
-        // is not a reliable point in the named polygon. Width remains the
-        // canvas width. Anchor its position with the separate precise mark.
+        // Anchor the physical canvas with the separate precise mark, whose
+        // width is 1.4 m. A correctly bounded center-near zone is NOT as
+        // wide as the canvas; never use its former inflated width as a scale.
         // (0.8, 0.8) is 6 m right and 12 m deep: unambiguously right-back far.
-        let width = app.buttons["court.linked.zone.center.near"].frame.width
+        let width = mark.frame.width * 20 / 1.4
         XCTAssertGreaterThan(width, 0)
         let height = width * 15 / 20
         func point() -> CGPoint {
@@ -339,6 +394,70 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
         XCTAssertFalse(origins.contains { $0.label.contains("6 m") })
         XCTAssertFalse(app.buttons["\(scope).zone.leftWing.far"].exists)
         XCTAssertFalse(app.buttons["\(scope).zone.rightWing.far"].exists)
+    }
+
+    /// Independent metric expectations for CourtGeometry.standard's polygon
+    /// extrema. The mark anchors the canvas; no zone frame supplies its scale.
+    /// One point of tolerance covers XCTest's screen-coordinate rounding.
+    @discardableResult
+    private func assertCourtFrames(in app: XCUIApplication, scope: String) -> CGRect {
+        let mark = app.buttons["\(scope).sevenMeters"]
+        XCTAssertTrue(mark.exists)
+        XCTAssertGreaterThan(mark.frame.width, 0)
+        let width = mark.frame.width * 20 / 1.4
+        let height = width * 15 / 20
+        let canvas = CGRect(x: mark.frame.midX - width / 2,
+                            y: mark.frame.midY - height * 7 / 15,
+                            width: width, height: height)
+        XCTAssertEqual(mark.frame.height, height / 15, accuracy: 1)
+        func arcPoint(distance: CGFloat, degrees: CGFloat) -> CGPoint {
+            let angle = degrees * .pi / 180
+            // Intersection of the sector ray with the post-centered arc.
+            let radius = 1.5 * sin(angle)
+                + sqrt(distance * distance - 2.25 * cos(angle) * cos(angle))
+            return CGPoint(x: radius * sin(angle), y: radius * cos(angle))
+        }
+        let inner18 = arcPoint(distance: 6, degrees: 18)
+        let inner54 = arcPoint(distance: 6, degrees: 54)
+        let outer18 = arcPoint(distance: 9, degrees: 18)
+        let outer54 = arcPoint(distance: 9, degrees: 54)
+        let wing = CGRect(x: 0, y: 0, width: 0.125, height: outer54.y / 15)
+        let back = CGRect(x: 0.5 - outer54.x / 20, y: inner54.y / 15,
+                          width: (outer54.x - inner18.x) / 20,
+                          height: (outer18.y - inner54.y) / 15)
+        let center = CGRect(x: 0.5 - outer18.x / 20, y: 6.0 / 15,
+                            width: outer18.x / 10, height: 3.0 / 15)
+        let farBack = CGRect(x: 0, y: 0, width: 0.5 - outer18.x / 20, height: 1)
+        let farHalfWidth = 15 * tan(CGFloat.pi / 10) / 20
+        let farCenter = CGRect(x: 0.5 - farHalfWidth, y: outer18.y / 15,
+                               width: 2 * farHalfWidth, height: 1 - outer18.y / 15)
+        func mirrored(_ rect: CGRect) -> CGRect {
+            CGRect(x: 1 - rect.maxX, y: rect.minY, width: rect.width, height: rect.height)
+        }
+        let expected = [
+            "zone.leftWing.near": wing, "zone.leftBack.near": back,
+            "zone.center.near": center, "zone.rightBack.near": mirrored(back),
+            "zone.rightWing.near": mirrored(wing), "zone.leftBack.far": farBack,
+            "zone.center.far": farCenter, "zone.rightBack.far": mirrored(farBack),
+            "sevenMeters": CGRect(x: 0.465, y: 6.5 / 15, width: 1.4 / 20, height: 1.0 / 15)
+        ]
+        let origins = regions(in: app, prefix: "\(scope).")
+        retainEvidence("Court exact in-canvas frames", in: app, elements: origins)
+        XCTAssertEqual(origins.count, expected.count)
+        for (code, normalized) in expected {
+            let frame = app.buttons["\(scope).\(code)"].frame
+            XCTAssertGreaterThan(frame.width, 0, code)
+            XCTAssertGreaterThan(frame.height, 0, code)
+            XCTAssertGreaterThanOrEqual(frame.minX, canvas.minX - 1, code)
+            XCTAssertGreaterThanOrEqual(frame.minY, canvas.minY - 1, code)
+            XCTAssertLessThanOrEqual(frame.maxX, canvas.maxX + 1, code)
+            XCTAssertLessThanOrEqual(frame.maxY, canvas.maxY + 1, code)
+            XCTAssertEqual(frame.minX, canvas.minX + normalized.minX * width, accuracy: 1, code)
+            XCTAssertEqual(frame.minY, canvas.minY + normalized.minY * height, accuracy: 1, code)
+            XCTAssertEqual(frame.width, normalized.width * width, accuracy: 1, code)
+            XCTAssertEqual(frame.height, normalized.height * height, accuracy: 1, code)
+        }
+        return canvas
     }
 
     private func assertInertGoal(in app: XCUIApplication, scope: String) {

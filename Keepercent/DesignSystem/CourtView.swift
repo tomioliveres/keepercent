@@ -185,6 +185,11 @@ struct CourtView: View {
         .accessibilityLabel("Court, \(zone.sector.displayName()), \(zone.depth.displayName())")
         .accessibilityIdentifier("\(accessibilityScope).zone.\(zone.code)")
         .accessibilityValue(accessibilitySample(for: .zone(zone)))
+        // Constrain the semantic Button itself, not only its Path label.
+        // Otherwise position receives a canvas-sized button and centers that
+        // oversized accessibility frame at the polygon's local midpoint.
+        // The separate 7 m button already uses this frame-before-position order.
+        .frame(width: bounds.width, height: bounds.height)
         .position(x: bounds.midX, y: bounds.midY)
     }
 
