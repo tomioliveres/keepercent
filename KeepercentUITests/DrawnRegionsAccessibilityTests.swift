@@ -276,16 +276,37 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
         let scaffold = app.buttons["Drawing Scaffold (T2.x)"]
         // Exact native label from the retained 42f66bb iPad Teams hierarchy.
         let sidebar = app.buttons["Show Sidebar"]
+        retainScaffoldNavigationEvidence("Before sidebar navigation", in: app)
         if sidebar.exists && sidebar.isHittable { sidebar.tap() }
         if !scaffold.waitForExistence(timeout: 3) || !scaffold.isHittable {
             let more = app.buttons["More"].firstMatch
+            retainScaffoldNavigationEvidence("Before More navigation", in: app)
             XCTAssertTrue(more.waitForExistence(timeout: 5))
             more.tap()
         }
+        retainScaffoldNavigationEvidence("Before scaffold selection", in: app)
         XCTAssertTrue(scaffold.waitForExistence(timeout: 5))
         scaffold.tap()
-        XCTAssertTrue(app.buttons["Close"].waitForExistence(timeout: 5))
+        let closeExists = app.buttons["Close"].waitForExistence(timeout: 5)
+        // Retain the failed presentation state before continueAfterFailure
+        // aborts. The retained iPad-dark run does not establish a bad query,
+        // wrong toolbar target or slow sheet; do not guess a navigation fix.
+        retainScaffoldNavigationEvidence("After scaffold selection: Close exists=\(closeExists)", in: app)
+        XCTAssertTrue(closeExists)
         return app
+    }
+
+    private func retainScaffoldNavigationEvidence(_ stage: String, in app: XCUIApplication) {
+        let labels = ["Show Sidebar", "More", "Drawing Scaffold (T2.x)", "Close"]
+        let candidates = labels.flatMap { label in
+            app.buttons.matching(NSPredicate(format: "label == %@", label)).allElementsBoundByIndex
+        }
+        let counts = labels.map { label in
+            "\(label)=\(app.buttons.matching(NSPredicate(format: "label == %@", label)).count)"
+        }
+        let readiness = candidates.map { "\($0.label): hittable=\($0.isHittable)" }
+        retainEvidence("Scaffold navigation: \(stage); \(counts.joined(separator: ", ")); \(readiness.joined(separator: ", "))",
+                       in: app, elements: candidates)
     }
 
     private var goalContract: [(code: String, name: String)] {
@@ -402,13 +423,22 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
     @discardableResult
     private func assertCourtFrames(in app: XCUIApplication, scope: String) -> CGRect {
         let mark = app.buttons["\(scope).sevenMeters"]
+        let origins = regions(in: app, prefix: "\(scope).")
+        // Capture every frame BEFORE the mark-size assertion can abort.
+        // Its semantic bounds represent the 1.4 x 1 m drawing/hit region,
+        // not the intrinsic height of an unrendered Text button label.
+        retainEvidence("Court frames before metric assertions", in: app, elements: origins)
         XCTAssertTrue(mark.exists)
+        XCTAssertEqual(app.buttons.matching(identifier: "\(scope).sevenMeters").count, 1)
+        XCTAssertEqual(mark.label, "7 m mark")
         XCTAssertGreaterThan(mark.frame.width, 0)
         let width = mark.frame.width * 20 / 1.4
         let height = width * 15 / 20
         let canvas = CGRect(x: mark.frame.midX - width / 2,
                             y: mark.frame.midY - height * 7 / 15,
                             width: width, height: height)
+        retainEvidence("Court inferred canvas=\(canvas); expected 7 m depth=\(height / 15)",
+                       in: app, elements: [mark])
         XCTAssertEqual(mark.frame.height, height / 15, accuracy: 1)
         func arcPoint(distance: CGFloat, degrees: CGFloat) -> CGPoint {
             let angle = degrees * .pi / 180
@@ -441,8 +471,6 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
             "zone.center.far": farCenter, "zone.rightBack.far": mirrored(farBack),
             "sevenMeters": CGRect(x: 0.465, y: 6.5 / 15, width: 1.4 / 20, height: 1.0 / 15)
         ]
-        let origins = regions(in: app, prefix: "\(scope).")
-        retainEvidence("Court exact in-canvas frames", in: app, elements: origins)
         XCTAssertEqual(origins.count, expected.count)
         for (code, normalized) in expected {
             let frame = app.buttons["\(scope).\(code)"].frame

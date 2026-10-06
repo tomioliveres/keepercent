@@ -154,7 +154,18 @@ struct CourtView: View {
                         accessibleZone(zone, size: proxy.size)
                     }
                     let rect = pixelRect(for: geometry.sevenMeterMarkRegion, in: proxy.size)
-                    Button("7 m mark") { onOriginTapped(.sevenMeters, nil) }
+                    Button {
+                        onOriginTapped(.sevenMeters, nil)
+                    } label: {
+                        // This label is synthetic, not rendered court text.
+                        // A Text label can retain its intrinsic line height
+                        // beyond the outer frame's proposal. Match the exact
+                        // drawing/hit rectangle, as the zone Path labels do;
+                        // the metric mark intentionally has no touch-size floor.
+                        Rectangle().fill(.clear)
+                            .frame(width: rect.width, height: rect.height)
+                    }
+                        .accessibilityLabel("7 m mark")
                         .accessibilityIdentifier("\(accessibilityScope).sevenMeters")
                         .accessibilityValue(accessibilitySample(for: .sevenMeters))
                         .frame(width: rect.width, height: rect.height)
