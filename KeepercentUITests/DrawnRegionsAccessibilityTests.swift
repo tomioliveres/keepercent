@@ -34,13 +34,19 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
         XCTAssertEqual(canvas.width, postControl.frame.width, accuracy: 1)
         XCTAssertGreaterThan(canvas.minY, postControl.frame.maxY)
         // XCUIElement.tap synthesizes a touch; it is not VoiceOver activation.
-        // These two frames have safe centers. Far-back rectangular bounds
-        // include other zones, so its physical tap must use an interior point.
+        // A geometrically valid wing center does not guarantee XCUI discovery
+        // or hit-point selection. Preserve automatic targeting as its own proof.
+        // Far-back bounds include other zones; retain its interior physical tap.
         for code in ["zone.leftWing.near", "sevenMeters"] {
             let region = app.buttons["court.entry.\(code)"]
+            let siblings = regions(in: app, prefix: "court.entry.")
+            let hittability = siblings.map { "\($0.identifier): exists=\($0.exists), hittable=\($0.isHittable)" }
+                .joined(separator: "; ")
+            retainEvidence("Court before automatic existence/hittability: \(code); \(hittability)", in: app,
+                           elements: [region, postControl, app.otherElements["testCanvas.court.entry"]]
+                               + siblings)
             XCTAssertTrue(region.waitForExistence(timeout: 5))
             XCTAssertTrue(region.isHittable)
-            retainEvidence("Court automatic tap: \(code)", in: app, elements: [region, postControl])
             region.tap()
             XCTAssertTrue(app.staticTexts["Last tap: \(code)"].waitForExistence(timeout: 5))
         }

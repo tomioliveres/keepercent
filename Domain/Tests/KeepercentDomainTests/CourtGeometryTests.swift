@@ -202,6 +202,93 @@ struct CourtGeometryTestsCanvasOracle {
     }
 }
 
+@Suite("CourtGeometryTests native activation point contract")
+struct CourtGeometryTestsActivationContract {
+    private let geometry = CourtGeometry.standard
+
+    // Mirrors CourtView's existing private search, not an invocation of it.
+    // Keep the accepted point unchanged; assertions independently check it.
+    private func representative(for zone: CourtZone) -> CourtPoint? {
+        let vertices = geometry.shape(for: zone)
+        guard !vertices.isEmpty else { return nil }
+        let center = CourtPoint(
+            x: vertices.map(\.x).reduce(0, +) / Double(vertices.count),
+            y: vertices.map(\.y).reduce(0, +) / Double(vertices.count)
+        )
+        for vertex in vertices {
+            for step in 0...20 {
+                let fraction = Double(step) / 21
+                let candidate = CourtPoint(
+                    x: center.x * (1 - fraction) + vertex.x * fraction,
+                    y: center.y * (1 - fraction) + vertex.y * fraction
+                )
+                if geometry.origin(at: candidate) == .zone(zone) { return candidate }
+            }
+        }
+        return nil
+    }
+
+    private func strictlyInside(_ point: CourtPoint, polygon: [CourtPoint]) -> Bool {
+        guard isPointInPolygon(point, polygon) else { return false }
+        for index in polygon.indices {
+            let a = polygon[index], b = polygon[(index + 1) % polygon.count]
+            let dx = b.x - a.x, dy = b.y - a.y
+            let lengthSquared = dx * dx + dy * dy
+            let t = lengthSquared > 0
+                ? min(1, max(0, ((point.x - a.x) * dx + (point.y - a.y) * dy) / lengthSquared)) : 0
+            // Reject edges and repeated/collapsed vertices independently of
+            // ray casting and the analytic origin classifier.
+            if hypot(point.x - (a.x + t * dx), point.y - (a.y + t * dy)) <= 1e-9 { return false }
+        }
+        return true
+    }
+
+    @Test("All eight accepted callback points are strict polygon interiors with stable local activation coordinates",
+          arguments: CourtZone.allCases)
+    func acceptedActivationPoint(zone: CourtZone) throws {
+        let polygon = geometry.shape(for: zone)
+        let point = try #require(representative(for: zone))
+        #expect(point.x.isFinite && point.y.isFinite)
+        #expect(geometry.origin(at: point) == .zone(zone)) // Excludes the 7 m override.
+        #expect(strictlyInside(point, polygon: polygon))
+        let minX = try #require(polygon.map(\.x).min()), maxX = try #require(polygon.map(\.x).max())
+        let minY = try #require(polygon.map(\.y).min()), maxY = try #require(polygon.map(\.y).max())
+        try #require(maxX > minX && maxY > minY)
+        let localX = (point.x - minX) / (maxX - minX)
+        let localY = (point.y - minY) / (maxY - minY)
+        #expect(localX.isFinite && localY.isFinite)
+        #expect(localX > 0 && localX < 1 && localY > 0 && localY < 1)
+        // Normalized extrema avoid division by transient zero layout sizes.
+        // Reconstruct through actual screen bounds at multiple canvas scales.
+        for width in [250.5, 338.0, 516.0] {
+            let height = width / geometry.aspectRatio
+            let screenX = 32 + minX * width + localX * (maxX - minX) * width
+            let screenY = 535 + minY * height + localY * (maxY - minY) * height
+            #expect(tolerant(screenX, 32 + point.x * width))
+            #expect(tolerant(screenY, 535 + point.y * height))
+        }
+    }
+
+    @Test("Overlapping far bounds do not make wing points far; center activation avoids the seven-meter action")
+    func overlappingBoundsAndMark() throws {
+        for (wing, back) in [(CourtSector.leftWing, CourtSector.leftBack), (.rightWing, .rightBack)] {
+            let point = try #require(representative(for: CourtZone(sector: wing, depth: .near)))
+            let farPolygon = geometry.shape(for: CourtZone(sector: back, depth: .far))
+            let minX = try #require(farPolygon.map(\.x).min()), maxX = try #require(farPolygon.map(\.x).max())
+            let minY = try #require(farPolygon.map(\.y).min()), maxY = try #require(farPolygon.map(\.y).max())
+            #expect(point.x > minX && point.x < maxX)
+            #expect(point.y > minY && point.y < maxY)
+            #expect(!isPointInPolygon(point, farPolygon))
+        }
+        let center = CourtZone(sector: .center, depth: .near)
+        let point = try #require(representative(for: center))
+        #expect(geometry.origin(at: point) == .zone(center))
+        #expect(geometry.origin(at: geometry.sevenMeterPoint) == .sevenMeters)
+        #expect(isPointInPolygon(geometry.sevenMeterPoint, geometry.shape(for: center)))
+        #expect(!strictlyInside(geometry.shape(for: center)[0], polygon: geometry.shape(for: center)))
+    }
+}
+
 @Suite("CourtPoint clamping")
 struct CourtPointClampingTests {
 

@@ -183,23 +183,28 @@ struct CourtView: View {
         #endif
     }
 
+    @ViewBuilder
     private func accessibleZone(_ zone: CourtZone, size: CGSize) -> some View {
-        let points = geometry.shape(for: zone).map { pixelPoint(for: $0, in: size) }
+        let vertices = geometry.shape(for: zone)
+        let point = representativePoint(for: zone)
+        let points = vertices.map { pixelPoint(for: $0, in: size) }
         let bounds = points.reduce(CGRect.null) { $0.union(CGRect(origin: $1, size: .zero)) }
-        var outline = Path()
-        if let first = points.first {
-            outline.move(to: CGPoint(x: first.x - bounds.minX, y: first.y - bounds.minY))
-            for point in points.dropFirst() {
-                outline.addLine(to: CGPoint(x: point.x - bounds.minX, y: point.y - bounds.minY))
+        let outline = Path { path in
+            if let first = points.first {
+                path.move(to: CGPoint(x: first.x - bounds.minX, y: first.y - bounds.minY))
+                for point in points.dropFirst() {
+                    path.addLine(to: CGPoint(x: point.x - bounds.minX, y: point.y - bounds.minY))
+                }
+                path.closeSubpath()
             }
-            outline.closeSubpath()
         }
-        return Button {
-            guard let point = representativePoint(for: zone) else { return }
+        let button = Button {
+            guard let point else { return }
             onOriginTapped(.zone(zone), point)
         } label: {
             outline.fill(.clear)
                 .frame(width: bounds.width, height: bounds.height)
+                .contentShape(.interaction, outline)
         }
         .accessibilityLabel("Court, \(zone.sector.displayName()), \(zone.depth.displayName())")
         .accessibilityIdentifier("\(accessibilityScope).zone.\(zone.code)")
@@ -209,7 +214,26 @@ struct CourtView: View {
         // oversized accessibility frame at the polygon's local midpoint.
         // The separate 7 m button already uses this frame-before-position order.
         .frame(width: bounds.width, height: bounds.height)
-        .position(x: bounds.midX, y: bounds.midY)
+
+        if let point,
+           let minX = vertices.map(\.x).min(), let maxX = vertices.map(\.x).max(),
+           let minY = vertices.map(\.y).min(), let maxY = vertices.map(\.y).max(),
+           maxX > minX, maxY > minY {
+            // UnitPoint is relative to this Button's polygon-bounds frame,
+            // not the full canvas. Domain extrema cancel the pixel scale and
+            // avoid dividing by a transient zero-size layout. Use exactly the
+            // accepted native callback point, not a bounding-box center.
+            button
+                .accessibilityActivationPoint(UnitPoint(
+                    x: (point.x - minX) / (maxX - minX),
+                    y: (point.y - minY) / (maxY - minY)
+                ))
+                .position(x: bounds.midX, y: bounds.midY)
+        } else {
+            // Preserve the existing inert action for an unreachable/degenerate
+            // zone; never invent a substitute activation or callback point.
+            button.position(x: bounds.midX, y: bounds.midY)
+        }
     }
 
     /// Accessibility activation must supply a real, valid raw point, just
