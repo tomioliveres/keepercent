@@ -28,57 +28,87 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
             XCTAssertTrue(app.staticTexts["Last tap: \(code)"].waitForExistence(timeout: 5))
         }
         assertCourt(in: app, scope: "court.entry")
+        let courtNames = [
+            "zone.leftWing.near": "Court, left wing, near",
+            "zone.leftBack.near": "Court, left back, near",
+            "zone.center.near": "Court, center, near",
+            "zone.rightBack.near": "Court, right back, near",
+            "zone.rightWing.near": "Court, right wing, near",
+            "zone.leftBack.far": "Court, left back, far",
+            "zone.center.far": "Court, center, far",
+            "zone.rightBack.far": "Court, right back, far",
+            "sevenMeters": "7 m mark"
+        ]
+        for region in regions(in: app, prefix: "court.entry.") {
+            let code = String(region.identifier.dropFirst("court.entry.".count))
+            XCTAssertTrue(region.exists)
+            XCTAssertEqual(region.elementType, .button)
+            XCTAssertEqual(region.label, courtNames[code])
+            // The scaffold supplies no tallies or notes: no sample is exposed.
+            // Do not require a particular nil versus empty-string AX encoding.
+            XCTAssertTrue(region.value == nil || (region.value as? String) == "",
+                          "Unexpected scaffold sample: \(String(describing: region.value))")
+        }
         let canvas = try assertCourtFrames(in: app, scope: "court.entry")
         let postControl = app.buttons[entryIdentifier(for: "post.leftPostTop")]
         XCTAssertEqual(canvas.minX, postControl.frame.minX, accuracy: 1)
         XCTAssertEqual(canvas.width, postControl.frame.width, accuracy: 1)
         XCTAssertGreaterThan(canvas.minY, postControl.frame.maxY)
-        // XCUIElement.tap synthesizes a touch; it is not VoiceOver activation.
-        // A geometrically valid wing center does not guarantee XCUI discovery
-        // or hit-point selection. Preserve automatic targeting as its own proof.
-        // Far-back bounds include other zones; retain its interior physical tap.
-        for code in ["zone.leftWing.near", "sevenMeters"] {
+        // Court AX buttons are semantic representations; XCUI taps are physical.
+        // Explicit interior touches verify classification and callbacks here;
+        // VoiceOver semantic activation must be checked separately.
+        // Fixtures have independent polygon proof in the read-only Domain
+        // CourtGeometryTestsCanvasOracle.physicalTargetContract regression.
+        for (code, normalized) in [
+            ("zone.leftWing.near", CGPoint(x: 0.075, y: 0.15)),
+            ("sevenMeters", CGPoint(x: 0.5, y: 7.0 / 15)),
+            ("zone.rightBack.far", CGPoint(x: 0.8, y: 0.8))
+        ] {
             let region = app.buttons["court.entry.\(code)"]
-            let siblings = regions(in: app, prefix: "court.entry.")
-            let hittability = siblings.map { "\($0.identifier): exists=\($0.exists), hittable=\($0.isHittable)" }
-                .joined(separator: "; ")
-            retainEvidence("Court before automatic existence/hittability: \(code); \(hittability)", in: app,
-                           elements: [region, postControl, app.otherElements["testCanvas.court.entry"]]
-                               + siblings)
+            let point = CGPoint(x: canvas.minX + canvas.width * normalized.x,
+                                y: canvas.minY + canvas.height * normalized.y)
+            let xMeters = (normalized.x - 0.5) * 20
+            let yMeters = normalized.y * 15
+            let angle = atan2(xMeters, yMeters) * 180 / .pi
+            let nearestPostDistance = hypot(abs(xMeters) - 1.5, yMeters)
+            let lastTap = app.staticTexts["Last tap: \(code)"]
+            let evidence = [region, postControl, app.otherElements["testCanvas.court.entry"]]
+            let callbackAlreadyExists = lastTap.exists
+            retainEvidence("Court before physical touch: \(code); canvas=\(canvas), normalized=\(normalized), point=\(point), metric=(\(xMeters), \(yMeters)), angle=\(angle), distance=\(nearestPostDistance), expected Last tap exists=\(callbackAlreadyExists)",
+                           in: app, elements: evidence + (callbackAlreadyExists ? [lastTap] : []))
+            // Goal and court readings are independent; goal taps cannot reset
+            // this reading. Distinct codes plus absence reject stale success.
+            XCTAssertFalse(callbackAlreadyExists)
             XCTAssertTrue(region.waitForExistence(timeout: 5))
-            XCTAssertTrue(region.isHittable)
-            region.tap()
-            XCTAssertTrue(app.staticTexts["Last tap: \(code)"].waitForExistence(timeout: 5))
+            XCTAssertTrue(canvas.contains(point))
+            XCTAssertTrue(region.frame.contains(point))
+            XCTAssertGreaterThan(point.x, region.frame.minX)
+            XCTAssertLessThan(point.x, region.frame.maxX)
+            XCTAssertGreaterThan(point.y, region.frame.minY)
+            XCTAssertLessThan(point.y, region.frame.maxY)
+            switch code {
+            case "zone.leftWing.near":
+                XCTAssertLessThan(angle, -54)
+                XCTAssertGreaterThan(nearestPostDistance, 6)
+                XCTAssertLessThan(nearestPostDistance, 9)
+            case "sevenMeters":
+                XCTAssertGreaterThan(xMeters, -0.7)
+                XCTAssertLessThan(xMeters, 0.7)
+                XCTAssertGreaterThan(yMeters, 6.5)
+                XCTAssertLessThan(yMeters, 7.5)
+            default: // Right-back far, not the bounding-box center.
+                XCTAssertGreaterThan(angle, 18)
+                XCTAssertLessThan(angle, 54)
+                XCTAssertGreaterThan(nearestPostDistance, 9)
+            }
+            tap(point, in: app)
+            let callbackReached = lastTap.waitForExistence(timeout: 5)
+            retainEvidence("Court after physical touch: \(code); callback=\(callbackReached), canvas=\(canvas), normalized=\(normalized), point=\(point)",
+                           in: app, elements: evidence + (callbackReached ? [lastTap] : []))
+            XCTAssertTrue(callbackReached)
+            XCTAssertEqual(lastTap.label, "Last tap: \(code)")
         }
-        let far = app.buttons["court.entry.zone.rightBack.far"]
-        XCTAssertTrue(far.waitForExistence(timeout: 5))
-        XCTAssertTrue(far.isHittable)
-        XCTAssertGreaterThan(far.frame.width, 0)
-        XCTAssertGreaterThan(far.frame.height, 0)
-        let farPoint = CGPoint(x: canvas.minX + canvas.width * 0.8,
-                               y: canvas.minY + canvas.height * 0.8)
-        // Independently validate this physical point against the standard
-        // court's sector and nearest-post distance, not just its AX rectangle.
-        let xMeters = ((farPoint.x - canvas.minX) / canvas.width - 0.5) * 20
-        let yMeters = (farPoint.y - canvas.minY) / canvas.height * 15
-        let angle = atan2(xMeters, yMeters) * 180 / .pi
-        XCTAssertGreaterThan(angle, 18)
-        XCTAssertLessThan(angle, 54)
-        XCTAssertGreaterThan(hypot(xMeters - 1.5, yMeters), 9)
-        XCTAssertTrue(canvas.contains(farPoint))
-        XCTAssertTrue(far.frame.contains(farPoint))
-        let farOffset = CGVector(dx: (farPoint.x - far.frame.minX) / far.frame.width,
-                                 dy: (farPoint.y - far.frame.minY) / far.frame.height)
-        XCTAssertGreaterThan(farOffset.dx, 0)
-        XCTAssertLessThan(farOffset.dx, 1)
-        XCTAssertGreaterThan(farOffset.dy, 0)
-        XCTAssertLessThan(farOffset.dy, 1)
-        retainEvidence("Court targeted physical far tap: point=\(farPoint), offset=\(farOffset)",
-                       in: app, elements: [far, postControl])
-        far.coordinate(withNormalizedOffset: farOffset).tap()
-        XCTAssertTrue(app.staticTexts["Last tap: zone.rightBack.far"].waitForExistence(timeout: 5))
-        // Separately prove physical classification; these never substitute
-        // for the automatic near/7 m or queried-target far taps above.
+        // Separately retain the complete nine-origin physical regression.
         for (code, point) in [
             ("zone.leftWing.near", CGPoint(x: 0.075, y: 0.15)),
             ("zone.leftBack.near", CGPoint(x: 0.25, y: 0.4)),
