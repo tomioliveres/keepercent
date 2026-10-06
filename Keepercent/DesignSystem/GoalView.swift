@@ -118,9 +118,9 @@ struct GoalView: View {
         }
     }
 
-    /// A real alternative to the narrow drawn strip. The existing strip and
-    /// its geometry-based taps remain intact; this button has its own layout
-    /// space and is not one of the synthetic drawn-region elements.
+    /// The single accessible action for the narrow top-left post. Physical
+    /// drawing taps remain intact; this button owns separate layout space
+    /// instead of duplicating the strip's synthetic accessibility action.
     private var leftPostTopControl: some View {
         let target = GoalTarget.post(.leftPostTop)
         return Button { onTargetTapped(target) } label: {
@@ -166,10 +166,14 @@ struct GoalView: View {
                 ZStack(alignment: .topLeading) {
                     // One element per target, on its main rect: a wide top
                     // miss also owns a thin corner strip, which would
-                    // otherwise announce the same zone twice.
+                    // otherwise announce the same zone twice. Entry relocates
+                    // only leftPostTop to the real control below the canvas;
+                    // linked inert readings still expose all 27 here.
                     ForEach(GoalTarget.allCases, id: \.code) { target in
-                        if let region = mainRegion(for: target, within: normalizedBounds(for: proxy.size)) {
-                            accessibleRegion(target, rect: pixelRect(for: region, in: proxy.size))
+                        if !isAccessibleAction || target != .post(.leftPostTop) {
+                            if let region = mainRegion(for: target, within: normalizedBounds(for: proxy.size)) {
+                                accessibleRegion(target, rect: pixelRect(for: region, in: proxy.size))
+                            }
                         }
                     }
                 }

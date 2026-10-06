@@ -10,35 +10,19 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
     func testSessionGoalAndCourtExposeNamedButtons() {
         let app = launch(screen: "sessions")
         reveal(app.buttons["goal.entry.inside.top.left"], in: app)
-        let goals = regions(in: app, prefix: "goal.entry.")
-        XCTAssertEqual(goals.count, 27)
-        XCTAssertTrue(goals.allSatisfy { $0.elementType == .button })
-        assertLabel("Goal, top left", of: app.buttons["goal.entry.inside.top.left"])
-        assertLabel("Left post, top", of: app.buttons["goal.entry.post.leftPostTop"])
-        assertLabel("Crossbar, center", of: app.buttons["goal.entry.post.crossbarCenter"])
-        assertLabel("Miss, wide right, middle", of: app.buttons["goal.entry.out.wideRight.middle"])
-        assertLabel("Miss, over, center", of: app.buttons["goal.entry.out.over.center"])
+        assertEntryGoal(in: app)
 
         reveal(app.buttons["court.entry.sevenMeters"], in: app)
         assertCourt(in: app, scope: "court.entry")
     }
 
     func testDrawingScaffoldActivationsReachExistingCallbacks() {
-        let app = launch(screen: "teams", data: "empty")
-        let scaffold = app.buttons["Drawing Scaffold (T2.x)"]
-        // Secondary toolbar actions can live in the native overflow menu on iPhone.
-        if !scaffold.waitForExistence(timeout: 3) || !scaffold.isHittable {
-            let more = app.buttons["More"].firstMatch
-            XCTAssertTrue(more.waitForExistence(timeout: 5))
-            more.tap()
-        }
-        XCTAssertTrue(scaffold.waitForExistence(timeout: 5))
-        scaffold.tap()
-        XCTAssertTrue(app.buttons["Close"].waitForExistence(timeout: 5))
-
-        for code in ["inside.top.left", "post.crossbarCenter", "out.wideRight.middle"] {
-            let region = app.buttons["goal.entry.\(code)"]
+        let app = openDrawingScaffold()
+        assertEntryGoal(in: app)
+        for (code, name) in goalContract {
+            let region = app.buttons[entryIdentifier(for: code)]
             XCTAssertTrue(region.waitForExistence(timeout: 5))
+            XCTAssertEqual(region.label, name)
             XCTAssertTrue(region.isHittable)
             region.tap()
             XCTAssertTrue(app.staticTexts["Last tap: \(code)"].waitForExistence(timeout: 5))
@@ -52,24 +36,60 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
         }
     }
 
+    func testRelocatedLeftPostTopIsSingleSizedSeparatedActionAndPreservesDrawingTap() {
+        let app = openDrawingScaffold()
+        assertEntryGoal(in: app)
+        let control = app.buttons[entryIdentifier(for: "post.leftPostTop")]
+        let neighbours = regions(in: app, prefix: "goal.entry.")
+            + regions(in: app, prefix: "court.entry.") + [app.buttons["Close"]]
+        retainEvidence("Relocated post before size and overlap checks", in: app, elements: [control] + neighbours)
+        XCTAssertTrue(control.isHittable)
+        XCTAssertGreaterThanOrEqual(control.frame.width, 44)
+        XCTAssertGreaterThanOrEqual(control.frame.height, 44)
+        for neighbour in neighbours {
+            let intersection = control.frame.intersection(neighbour.frame)
+            XCTAssertFalse(intersection.width > 0 && intersection.height > 0,
+                           "Relocated control overlaps \(neighbour.identifier): \(neighbour.frame)")
+        }
+        app.buttons["goal.entry.inside.top.right"].tap()
+        XCTAssertTrue(app.staticTexts["Last tap: inside.top.right"].waitForExistence(timeout: 5))
+        control.tap()
+        XCTAssertTrue(app.staticTexts["Last tap: post.leftPostTop"].waitForExistence(timeout: 5))
+
+        // Use the surviving post's x and the top inside cell's y. This is
+        // the original physical strip, not the relocated accessible button.
+        app.buttons["goal.entry.inside.top.right"].tap()
+        XCTAssertTrue(app.staticTexts["Last tap: inside.top.right"].waitForExistence(timeout: 5))
+        let post = app.buttons["goal.entry.post.leftPostMiddle"].frame
+        let top = app.buttons["goal.entry.inside.top.left"].frame
+        tap(CGPoint(x: post.midX, y: top.midY), in: app)
+        XCTAssertTrue(app.staticTexts["Last tap: post.leftPostTop"].waitForExistence(timeout: 5))
+        retainEvidence("Relocated post and physical-strip callback", in: app, elements: [control] + neighbours)
+    }
+
     func testScoutingRenderedQueryGroupsGoalBeforeCourt() {
         let app = launch(screen: "scouting")
         reveal(app.staticTexts["goal.linked.inside.top.left"], in: app)
         reveal(app.buttons["court.linked.sevenMeters"], in: app)
-        let elements = app.descendants(matching: .any).allElementsBoundByIndex
-        let goalIndices = elements.indices.filter { elements[$0].identifier.hasPrefix("goal.linked.") }
-        let courtIndices = elements.indices.filter { elements[$0].identifier.hasPrefix("court.linked.") }
-        XCTAssertEqual(goalIndices.count, 27)
-        XCTAssertEqual(courtIndices.count, 9)
-        guard let lastGoal = goalIndices.max(), let firstCourt = courtIndices.min() else {
-            XCTFail("Both rendered groups must exist")
-            return
-        }
-        // This is the explicit goal-column-before-court-column tree contract.
-        // It says nothing about VoiceOver's spatial sorting or spoken order.
-        XCTAssertLessThan(lastGoal, firstCourt)
         assertInertGoal(in: app, scope: "goal.linked")
         assertCourt(in: app, scope: "court.linked")
+        let goals = regions(in: app, prefix: "goal.linked.")
+        let goalHeading = app.staticTexts["Effectiveness"]
+        let courtHeading = app.staticTexts["Origin"]
+        let mark = app.buttons["court.linked.sevenMeters"]
+        XCTAssertTrue(goalHeading.exists)
+        XCTAssertTrue(courtHeading.exists)
+        retainEvidence("Field grouping geometry", in: app, elements: [goalHeading, courtHeading, mark] + goals)
+        // Retained iPad hierarchies interleave inflated court button frames.
+        // Verify the field goal sits between its heading and the court's
+        // heading, followed by the precisely framed mark; not flat query order
+        // and not spoken VoiceOver traversal or a court-frame repair.
+        XCTAssertLessThan(goalHeading.frame.maxY, courtHeading.frame.minY)
+        for goal in goals {
+            XCTAssertGreaterThanOrEqual(goal.frame.minY, goalHeading.frame.maxY)
+            XCTAssertLessThanOrEqual(goal.frame.maxY, courtHeading.frame.minY)
+        }
+        XCTAssertLessThan(courtHeading.frame.maxY, mark.frame.minY)
     }
 
     func testShooterSamplesAndLinkedFilterSelectClear() {
@@ -83,12 +103,12 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
         let origin = app.buttons["court.linked.zone.rightBack.far"]
         reveal(origin, in: app)
         assertValue("0 goals in 1 shot", of: origin) // The located miss still counts for effectiveness.
-        origin.tap()
+        tapRightBackFar(in: app)
         assertFilter("From right back · far · 1 shot", in: app)
         reveal(goal, in: app, upwards: true)
         assertValue("No data", of: goal)
         reveal(origin, in: app)
-        origin.tap()
+        tapRightBackFar(in: app)
         assertFilter("All field shots · 2 shots", in: app)
         reveal(goal, in: app, upwards: true)
         assertValue("0 goals in 1 shot", of: goal)
@@ -137,6 +157,8 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
         let origins = regions(in: app, prefix: "court.linked.")
         XCTAssertEqual(origins.count, 9)
         for origin in origins { assertValue("No data", of: origin) }
+        retainEvidence("Zero-shot keeper before original 7 m tap", in: app,
+                       elements: origins + [app.staticTexts["linked.filter"]])
         app.buttons["court.linked.sevenMeters"].tap()
         assertFilter("7 m throws · 0 shots", in: app)
         reveal(app.staticTexts["7 m: no shots"].firstMatch, in: app)
@@ -146,6 +168,8 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
     func testAccessibilityAuditOnSettledSessions() throws {
         let app = launch(screen: "sessions")
         reveal(app.buttons["goal.entry.inside.top.left"], in: app)
+        retainEvidence("Sessions pre-audit top-left drawing", in: app,
+                       elements: [app.buttons["goal.entry.inside.top.left"]])
         try app.performAccessibilityAudit()
     }
 
@@ -164,6 +188,8 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
     func testAccessibilityAuditOnSettledGoalkeeperCard() throws {
         let app = launch(screen: "goalkeeperCard")
         reveal(app.staticTexts["goal.linked.inside.bottom.left"], in: app)
+        retainEvidence("Keeper pre-audit field and 7 m viewport", in: app,
+                       elements: [app.staticTexts["goal.linked.inside.bottom.left"], app.buttons["court.linked.sevenMeters"]])
         try app.performAccessibilityAudit()
     }
 
@@ -190,6 +216,113 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
             .allElementsBoundByIndex
     }
 
+    private func openDrawingScaffold() -> XCUIApplication {
+        let app = launch(screen: "teams", data: "empty")
+        let scaffold = app.buttons["Drawing Scaffold (T2.x)"]
+        // Exact native label from the retained 42f66bb iPad Teams hierarchy.
+        let sidebar = app.buttons["Show Sidebar"]
+        if sidebar.exists && sidebar.isHittable { sidebar.tap() }
+        if !scaffold.waitForExistence(timeout: 3) || !scaffold.isHittable {
+            let more = app.buttons["More"].firstMatch
+            XCTAssertTrue(more.waitForExistence(timeout: 5))
+            more.tap()
+        }
+        XCTAssertTrue(scaffold.waitForExistence(timeout: 5))
+        scaffold.tap()
+        XCTAssertTrue(app.buttons["Close"].waitForExistence(timeout: 5))
+        return app
+    }
+
+    private var goalContract: [(code: String, name: String)] {
+        var result: [(String, String)] = []
+        for row in ["top", "middle", "bottom"] {
+            for column in ["left", "center", "right"] {
+                result.append(("inside.\(row).\(column)", "Goal, \(row) \(column)"))
+            }
+        }
+        result += [
+            ("post.leftPostTop", "Left post, top"),
+            ("post.leftPostMiddle", "Left post, middle"),
+            ("post.leftPostBottom", "Left post, bottom"),
+            ("post.crossbarLeft", "Crossbar, left"),
+            ("post.crossbarCenter", "Crossbar, center"),
+            ("post.crossbarRight", "Crossbar, right"),
+            ("post.rightPostTop", "Right post, top"),
+            ("post.rightPostMiddle", "Right post, middle"),
+            ("post.rightPostBottom", "Right post, bottom")
+        ]
+        for (direction, name) in [("wideLeft", "wide left"), ("wideRight", "wide right"), ("over", "over")] {
+            for part in direction == "over" ? ["left", "center", "right"] : ["top", "middle", "bottom"] {
+                result.append(("out.\(direction).\(part)", "Miss, \(name), \(part)"))
+            }
+        }
+        return result
+    }
+
+    private func entryIdentifier(for code: String) -> String {
+        code == "post.leftPostTop" ? "goalSupplementary.goal.entry.leftPostTop" : "goal.entry.\(code)"
+    }
+
+    private func assertEntryGoal(in app: XCUIApplication) {
+        let actions = regions(in: app, prefix: "goal.entry.")
+            + regions(in: app, prefix: "goalSupplementary.goal.entry.")
+        XCTAssertEqual(goalContract.count, 27)
+        XCTAssertEqual(actions.count, 27)
+        XCTAssertTrue(actions.allSatisfy { $0.elementType == .button })
+        XCTAssertEqual(Set(actions.map(\.identifier)), Set(goalContract.map { entryIdentifier(for: $0.code) }))
+        XCTAssertEqual(Set(actions.map(\.label)), Set(goalContract.map(\.name)))
+        XCTAssertEqual(Set(actions.map(\.label)).count, 27)
+        XCTAssertFalse(app.descendants(matching: .any)["goal.entry.post.leftPostTop"].exists)
+        for (code, name) in goalContract {
+            let matches = app.buttons.matching(identifier: entryIdentifier(for: code))
+            XCTAssertEqual(matches.count, 1)
+            assertLabel(name, of: matches.element(boundBy: 0))
+        }
+        XCTAssertEqual(app.buttons.matching(NSPredicate(format: "label == %@", "Left post, top")).count, 1)
+    }
+
+    private func tapRightBackFar(in app: XCUIApplication) {
+        let mark = app.buttons["court.linked.sevenMeters"]
+        reveal(mark, in: app)
+        // CourtGeometry.standard: 20 x 15 m, mark at (0.5, 7/15).
+        // Retained court zone bounds are oversized/shifted; their tap() center
+        // is not a reliable point in the named polygon. Width remains the
+        // canvas width. Anchor its position with the separate precise mark.
+        // (0.8, 0.8) is 6 m right and 12 m deep: unambiguously right-back far.
+        let width = app.buttons["court.linked.zone.center.near"].frame.width
+        XCTAssertGreaterThan(width, 0)
+        let height = width * 15 / 20
+        func point() -> CGPoint {
+            CGPoint(x: mark.frame.midX + width * 0.3, y: mark.frame.midY + height * (0.8 - 7.0 / 15))
+        }
+        let scroll = app.scrollViews.firstMatch
+        for _ in 0..<12 {
+            if scroll.frame.insetBy(dx: 0, dy: 44).contains(point()) { break }
+            scroll.swipeUp()
+        }
+        retainEvidence("Right-back far physical targeting", in: app,
+                       elements: [mark, app.buttons["court.linked.zone.rightBack.far"]])
+        XCTAssertTrue(scroll.frame.insetBy(dx: 0, dy: 44).contains(point()))
+        tap(point(), in: app)
+    }
+
+    private func tap(_ point: CGPoint, in app: XCUIApplication) {
+        XCTAssertTrue(app.frame.contains(point))
+        app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: point.x, dy: point.y)).tap()
+    }
+
+    private func retainEvidence(_ name: String, in app: XCUIApplication, elements: [XCUIElement]) {
+        let screenshot = XCTAttachment(screenshot: app.screenshot())
+        screenshot.name = "\(name) — viewport"
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
+        let details = elements.map { "\($0.identifier) | \($0.label) | frame=\($0.frame) | value=\(String(describing: $0.value))" }
+        let hierarchy = XCTAttachment(string: details.joined(separator: "\n") + "\n" + app.debugDescription)
+        hierarchy.name = "\(name) — frames and hierarchy"
+        hierarchy.lifetime = .keepAlways
+        add(hierarchy)
+    }
+
     private func assertCourt(in app: XCUIApplication, scope: String) {
         let origins = regions(in: app, prefix: "\(scope).")
         XCTAssertEqual(origins.count, 9) // Five near, three far, one separate penalty mark.
@@ -212,7 +345,9 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
         let goals = regions(in: app, prefix: "\(scope).")
         XCTAssertEqual(goals.count, 27)
         XCTAssertTrue(goals.allSatisfy { $0.elementType == .staticText })
-        assertLabel("Goal, top left", of: app.staticTexts["\(scope).inside.top.left"])
+        XCTAssertEqual(Set(goals.map(\.identifier)), Set(goalContract.map { "\(scope).\($0.code)" }))
+        XCTAssertEqual(Set(goals.map(\.label)), Set(goalContract.map(\.name)))
+        for (code, name) in goalContract { assertLabel(name, of: app.staticTexts["\(scope).\(code)"]) }
         XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "\(scope).")).count, 0)
     }
 
@@ -232,8 +367,11 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
     private func assertFilter(_ expected: String, in app: XCUIApplication) {
         let caption = app.staticTexts["linked.filter"]
         reveal(caption, in: app)
+        retainEvidence("Filter expectation: \(expected)", in: app,
+                       elements: [caption, app.buttons["court.linked.sevenMeters"]])
         let expectation = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", expected), object: caption)
         XCTAssertEqual(XCTWaiter.wait(for: [expectation], timeout: 5), .completed)
+        XCTAssertEqual(caption.label, expected)
     }
 
     private func reveal(_ element: XCUIElement, in app: XCUIApplication, upwards: Bool = false) {
