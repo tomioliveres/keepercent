@@ -51,8 +51,9 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
         }
         let canvas = try assertCourtFrames(in: app, scope: "court.entry")
         let postControl = app.buttons[entryIdentifier(for: "post.leftPostTop")]
-        XCTAssertEqual(canvas.minX, postControl.frame.minX, accuracy: 1)
-        XCTAssertEqual(canvas.width, postControl.frame.width, accuracy: 1)
+        // The aspect-fitted court can be height-limited on iPad, so compare centers rather than edges.
+        XCTAssertEqual(canvas.midX, postControl.frame.midX, accuracy: 1)
+        XCTAssertLessThanOrEqual(canvas.width, postControl.frame.width + 1)
         XCTAssertGreaterThan(canvas.minY, postControl.frame.maxY)
         // Court AX buttons are semantic representations; XCUI taps are physical.
         // Explicit interior touches verify classification and callbacks here;
