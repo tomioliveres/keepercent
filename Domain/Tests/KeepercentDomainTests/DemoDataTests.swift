@@ -11,6 +11,62 @@ private func utcDay(_ date: Date) -> DateComponents {
     return calendar.dateComponents([.year, .month, .day], from: date)
 }
 
+struct DemoDataTests {
+    @Test func populatedMatchesIncludeBothSidesAndBothGoalkeepers() {
+        #expect(DemoData.matchShotIndices.count == 3)
+        for indices in DemoData.matchShotIndices.prefix(2) {
+            let engine = StatsEngine(shots: indices.map { DemoData.shots[$0] })
+            #expect(engine.shots.count == 20)
+            #expect(engine.rivalShots.shots.count == 10)
+            #expect(engine.ownShots.shots.count == 10)
+            #expect(engine.shots(facing: 1).shots.count == 7)
+            #expect(engine.shots(facing: 12).shots.count == 3)
+            #expect(engine.shots(by: 4).shots.count == 4)
+        }
+    }
+
+    @Test func originalFixtureIdentitiesAreUniqueCompleteAndOrdered() {
+        let identities = DemoData.matchShotIndices.flatMap { $0 }
+        #expect(identities.count == 40)
+        #expect(Set(identities).count == identities.count)
+        #expect(identities.sorted() == Array(DemoData.shots.indices))
+        for indices in DemoData.matchShotIndices {
+            #expect(indices == indices.sorted())
+        }
+        // Reassemble by original fixture identity to prove every original value
+        // and the original aggregate order survive the distribution untouched.
+        #expect(identities.sorted().map { DemoData.shots[$0] } == DemoData.shots)
+    }
+
+    @Test func perMatchSideAndPersonTotalsSumToAll() {
+        let all = StatsEngine(shots: DemoData.shots)
+        let engines = DemoData.matchShotIndices.map { indices in
+            StatsEngine(shots: indices.map { DemoData.shots[$0] })
+        }
+        #expect(engines.reduce(0) { $0 + $1.rivalShots.shots.count } == all.rivalShots.shots.count)
+        #expect(engines.reduce(0) { $0 + $1.ownShots.shots.count } == all.ownShots.shots.count)
+        for player in DemoData.roster {
+            #expect(engines.reduce(0) { $0 + $1.shots(by: player.number).shots.count } == all.shots(by: player.number).shots.count)
+            #expect(engines.reduce(0) { $0 + $1.shots(facing: player.number).shots.count } == all.shots(facing: player.number).shots.count)
+        }
+        #expect(engines.reduce(0) { $0 + $1.fieldShots.shots.count } == all.fieldShots.shots.count)
+        #expect(engines.reduce(0) { $0 + $1.sevenMeterShots.shots.count } == all.sevenMeterShots.shots.count)
+        #expect(engines.reduce(0) { $0 + $1.effectiveness.successes } == all.effectiveness.successes)
+        #expect(engines.reduce(0) { $0 + $1.saveRate.successes } == all.saveRate.successes)
+        #expect(engines.reduce(0) { $0 + $1.saveRate.attempts } == all.saveRate.attempts)
+    }
+
+    @Test func thirdMatchStaysEmptyWithoutZeroRateOrAggregateFallback() throws {
+        let indices = try #require(DemoData.matchShotIndices.last)
+        #expect(indices.isEmpty)
+        let engine = StatsEngine(shots: indices.map { DemoData.shots[$0] })
+        #expect(engine.shots.isEmpty)
+        #expect(engine.effectiveness.rate == nil)
+        #expect(engine.saveRate.rate == nil)
+        #expect(engine.sevenMeterShots.shots.isEmpty)
+    }
+}
+
 @Suite("DemoData roster is internally consistent")
 struct DemoDataRosterTests {
 

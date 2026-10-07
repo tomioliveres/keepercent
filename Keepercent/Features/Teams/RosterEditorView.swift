@@ -306,18 +306,18 @@ struct RosterEditorView: View {
 
     private var archivedPlayersSection: some View {
         VStack(alignment: .leading) {
-            let archived = team.players.filter { $0.archivedAt != nil }.sorted { $0.number < $1.number }
+            let archived = team.players.filter { $0.archivedAt != nil }.sorted(by: historyOrder)
             if !archived.isEmpty {
                 Text("Archived players").font(.headline)
                 ForEach(archived, id: \.persistentModelID) { player in
                     if let id = player.personID {
-                        Button {
+                        historyRow(player: player, destination: "Shooter") {
                             path.append(ShooterCardRoute(playerID: id))
-                        } label: {
-                            Text(verbatim: "#\(player.number) · \(player.name ?? "")")
                         }
                         if player.isGoalkeeper || !player.shotsFaced.isEmpty {
-                            Button("Goalkeeper") { path.append(GoalkeeperCardRoute(playerID: id)) }
+                            historyRow(player: player, destination: "Goalkeeper") {
+                                path.append(GoalkeeperCardRoute(playerID: id))
+                            }
                         }
                     }
                 }
@@ -328,18 +328,21 @@ struct RosterEditorView: View {
 
     private var facingHistorySection: some View {
         VStack(alignment: .leading) {
-            let historical = team.players.filter { $0.archivedAt == nil && (!$0.shotsTaken.isEmpty || !$0.shotsFaced.isEmpty) }
+            let historical = team.players.filter {
+                $0.archivedAt == nil && (!$0.shotsTaken.isEmpty || !$0.shotsFaced.isEmpty)
+            }.sorted(by: historyOrder)
             if !historical.isEmpty {
                 Text("Player history").font(.headline)
                 ForEach(historical, id: \.persistentModelID) { player in
                     if let id = player.personID {
-                        Text(verbatim: "#\(player.number) · \(player.name ?? "")")
-                        HStack {
-                            if !player.shotsTaken.isEmpty {
-                                Button("Shooter") { path.append(ShooterCardRoute(playerID: id)) }
+                        if !player.shotsTaken.isEmpty {
+                            historyRow(player: player, destination: "Shooter") {
+                                path.append(ShooterCardRoute(playerID: id))
                             }
-                            if !player.shotsFaced.isEmpty {
-                                Button("Goalkeeper") { path.append(GoalkeeperCardRoute(playerID: id)) }
+                        }
+                        if !player.shotsFaced.isEmpty {
+                            historyRow(player: player, destination: "Goalkeeper") {
+                                path.append(GoalkeeperCardRoute(playerID: id))
                             }
                         }
                     }
@@ -350,6 +353,41 @@ struct RosterEditorView: View {
     }
 
     // MARK: - Actions
+
+    /// Relationships have no display order. Both lists share a total ordering,
+    /// including archived identities that reused the same shirt number.
+    private func historyOrder(_ first: StoredPlayer, _ second: StoredPlayer) -> Bool {
+        if first.number != second.number { return first.number < second.number }
+        func normalizedName(_ player: StoredPlayer) -> String {
+            (player.name ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Locale(identifier: "en_US_POSIX"))
+        }
+        let firstName = normalizedName(first)
+        let secondName = normalizedName(second)
+        if firstName != secondName { return firstName < secondName }
+        return (first.personID?.uuidString ?? "") < (second.personID?.uuidString ?? "")
+    }
+
+    /// Match the session list's plain full-row button, spacing and disclosure
+    /// affordance. Independent rows keep shooter/facing history unambiguous.
+    private func historyRow(player: StoredPlayer, destination: LocalizedStringKey, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(verbatim: "#\(player.number) · \(player.name ?? "")")
+                        .font(.headline)
+                    Text(destination).font(.subheadline).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right").foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 8)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
 
     /// The "+" tile: validates through `Roster.addUnknown`, then inserts
     /// exactly one new `StoredPlayer` built from `Player(number:)`'s own

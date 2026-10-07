@@ -48,16 +48,20 @@ enum DemoDataSeeder {
         for match in [session, second, empty] {
             match.participants = storedPlayers.map { StoredMatchParticipant($0.domainPlayer) }
         }
-        for (index, shot) in DemoData.shots.enumerated() {
-            let match = index < DemoData.shots.count / 2 ? session : second
-            let stored = StoredShot(
-                shot,
-                shooter: shot.shooter.flatMap { storedPlayersByNumber[$0.number] },
-                facingGoalkeeper: shot.facingGoalkeeper.flatMap { storedPlayersByNumber[$0.number] }
-            )
-            stored.shooterSnapshot = match.participants.first { $0.personID == stored.shooter?.personID }
-            stored.goalkeeperSnapshot = match.participants.first { $0.personID == stored.facingGoalkeeper?.personID }
-            match.shots.append(stored)
+        // Match membership is a tested Domain fixture contract, not a second
+        // partition implementation hidden in the persistence shell.
+        for (match, indices) in zip([session, second, empty], DemoData.matchShotIndices) {
+            for index in indices {
+                let shot = DemoData.shots[index]
+                let stored = StoredShot(
+                    shot,
+                    shooter: shot.shooter.flatMap { storedPlayersByNumber[$0.number] },
+                    facingGoalkeeper: shot.facingGoalkeeper.flatMap { storedPlayersByNumber[$0.number] }
+                )
+                stored.shooterSnapshot = match.participants.first { $0.personID == stored.shooter?.personID }
+                stored.goalkeeperSnapshot = match.participants.first { $0.personID == stored.facingGoalkeeper?.personID }
+                match.shots.append(stored)
+            }
         }
         team.sessions = [session, second, empty]
 

@@ -14,6 +14,20 @@ import Foundation
 
 public enum DemoData {}
 
+// MARK: - Match fixture membership
+
+extension DemoData {
+    /// Original shot indices act as deterministic fixture identities. The seeder
+    /// consumes these groups directly; individual shot values remain unchanged.
+    /// Alternating indices mixes the side-ordered source into both matches.
+    /// The third group is the deliberately empty match used by no-data checks.
+    public static let matchShotIndices: [[Int]] = [
+        shots.indices.filter { $0.isMultiple(of: 2) },
+        shots.indices.filter { !$0.isMultiple(of: 2) },
+        []
+    ]
+}
+
 // MARK: - Roster
 
 extension DemoData {

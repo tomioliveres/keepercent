@@ -4,16 +4,25 @@ import KeepercentDomain
 /// Match selection edits value drafts only. Existing match facts are locked;
 /// continuing an old match can deliberately add people, never rewrite them.
 struct MatchRosterSelection: View {
-    let available: [Player]
     @Binding var players: [Player]
     var lockedIDs: Set<UUID> = []
+    @State private var choices: [Player]
 
-    private var choices: [Player] {
-        let ids = Set(players.compactMap(\.id))
-        return (players + available.filter { player in
+    init(available: [Player], players: Binding<[Player]>, lockedIDs: Set<UUID> = []) {
+        _players = players
+        self.lockedIDs = lockedIDs
+        let initial = players.wrappedValue
+        let ids = Set(initial.compactMap(\.id))
+        // Capture suggested order once per presentation, with existing snapshots
+        // taking precedence. Selection and editable numbers never reorder rows.
+        let choices = initial + available.filter { player in
             guard let id = player.id else { return false }
             return !ids.contains(id)
-        }).sorted { $0.number < $1.number }
+        }
+        _choices = State(initialValue: choices.sorted {
+            if $0.number != $1.number { return $0.number < $1.number }
+            return ($0.id?.uuidString ?? "") < ($1.id?.uuidString ?? "")
+        })
     }
 
     var body: some View {
@@ -30,24 +39,26 @@ struct MatchRosterSelection: View {
                         }
                     }
                     .disabled(lockedIDs.contains(id))
-                    if selected, let index = players.firstIndex(where: { $0.id == id }) {
-                        HStack {
-                            Text("Shirt Number")
-                            Spacer()
-                            TextField("Number", value: Binding(
-                                get: { players[index].number },
-                                set: { number in
-                                    let old = players[index]
-                                    players[index] = Player(id: id, number: number, name: old.name,
-                                                            isGoalkeeper: old.isGoalkeeper, handedness: old.handedness)
-                                }), format: .number)
-                            .keyboardType(.numberPad)
-                            .multilineTextAlignment(.trailing)
-                            .frame(width: 80)
-                            .accessibilityLabel("Shirt Number")
-                        }
-                        .disabled(lockedIDs.contains(id))
+                    // Keep this row present when deselected so later tap targets
+                    // do not shift vertically. Resolve the draft by identity, not
+                    // a captured array index that removal could invalidate.
+                    HStack {
+                        Text("Shirt Number")
+                        Spacer()
+                        TextField("Number", value: Binding(
+                            get: { players.first { $0.id == id }?.number ?? player.number },
+                            set: { number in
+                                guard let index = players.firstIndex(where: { $0.id == id }) else { return }
+                                let old = players[index]
+                                players[index] = Player(id: id, number: number, name: old.name,
+                                                        isGoalkeeper: old.isGoalkeeper, handedness: old.handedness)
+                            }), format: .number)
+                        .keyboardType(.numberPad)
+                        .multilineTextAlignment(.trailing)
+                        .frame(width: 80)
+                        .accessibilityLabel("Shirt Number")
                     }
+                    .disabled(!selected || lockedIDs.contains(id))
                 }
             }
         } header: {
