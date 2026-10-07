@@ -186,7 +186,7 @@ struct CourtView: View {
     @ViewBuilder
     private func accessibleZone(_ zone: CourtZone, size: CGSize) -> some View {
         let vertices = geometry.shape(for: zone)
-        let point = representativePoint(for: zone)
+        let point = geometry.representativePoint(for: zone)
         let points = vertices.map { pixelPoint(for: $0, in: size) }
         let bounds = points.reduce(CGRect.null) { $0.union(CGRect(origin: $1, size: .zero)) }
         let outline = Path { path in
@@ -234,28 +234,6 @@ struct CourtView: View {
             // zone; never invent a substitute activation or callback point.
             button.position(x: bounds.midX, y: bounds.midY)
         }
-    }
-
-    /// Accessibility activation must supply a real, valid raw point, just
-    /// like a touch. Never create an origin in the forbidden 6 m area.
-    private func representativePoint(for zone: CourtZone) -> CourtPoint? {
-        let vertices = geometry.shape(for: zone)
-        guard !vertices.isEmpty else { return nil }
-        let center = CourtPoint(
-            x: vertices.map(\.x).reduce(0, +) / Double(vertices.count),
-            y: vertices.map(\.y).reduce(0, +) / Double(vertices.count)
-        )
-        for vertex in vertices {
-            for step in 0...20 {
-                let fraction = Double(step) / 21
-                let point = CourtPoint(
-                    x: center.x * (1 - fraction) + vertex.x * fraction,
-                    y: center.y * (1 - fraction) + vertex.y * fraction
-                )
-                if geometry.origin(at: point) == .zone(zone) { return point }
-            }
-        }
-        return nil
     }
 
     private func accessibilitySample(for origin: ShotOrigin) -> String {
