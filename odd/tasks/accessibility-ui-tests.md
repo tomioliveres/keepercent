@@ -1,5 +1,45 @@
 # T6.1-A — Repeatable drawn-region accessibility checks
 
+## Current closure — 2026-10-06
+
+- [x] T6.1-A closed by explicit user acceptance: **functional matrix verified (AX-R9 8/8, five cases carried forward from 6258eb1), task-wide verification incomplete**.
+
+The two scaffold tests passed all four iPhone 17/iPad A16 light/dark combinations at `8cb5920b075756f4a96c23b8019cbcd80890b2e2`, exits 0, no reruns. Five unchanged Session/Scouting/Shooter/Keeper/ZeroShot cases passed 4/4 at `6258eb1` and are carried forward, not freshly executed. Evidence: `.git/handoff/T6.1-A.md#verdict--ax-r9-scaffold-matrix-claude-code-2026-10-06`; bundles/logs under `../keepercent-verify/build/TestResults/`. Test outcomes suffice for their scoped functional contract; no assertion-by-assertion evidence round is requested.
+
+**Accepted debt, not closure blockers; no new rounds:** the full twelve-test run, five unsuppressed audits, contrast/clipping, landscape, larger Dynamic Type, Spanish wrapping, shared-card scope beyond the five carried-forward cases, the unrepaired More-menu flake, and the intermittent-unexplained base :153 reset (current :154). The second reset passed in AX-R9; `R9-scaffold-iPadA16-light.log:2206,2213–2215` confirms the corrected handoff references, not a diagnosed repair. **Manual VoiceOver activation of all nine court Buttons is PENDING for the user by hand.** Physical XCUI touches do not establish semantic VoiceOver activation. AX-D2's unknown/incomparable causality and Shape-versus-Text hypothesis remain unproven where recorded.
+
+Historical instructions below, including task-wide-pass prerequisites, all-unexecuted wording and calls for further rounds/review, are **superseded as current instructions** by this bounded closure. Their snapshot-specific records remain intact; unperformed audits/verifications are not checked off. Parent T6.1 remains open. No merge, push or delivery is claimed.
+
+### Acknowledged review evidence — user/Claude supplied
+
+All four slices are supplied as **medium, consent granted, APPROVED, acknowledged, authority burned**, single reliability lens. This records supplied evidence, not fresh worker lifecycle execution.
+
+| Slice | Files / authored lines | Review lineage |
+| --- | --- | --- |
+| `d85afa5..8ab7f19` | 11 / 525 | `review-443e4e5f37ec712f` |
+| `8ab7f19..155bd42` | 6 / 540 | `review-45775696ba7f80b5` |
+| `155bd42..748abba` | 4 / 609 | `review-ae3f0b6d60cc1ba2` |
+| `748abba..8cb5920` | 5 / 361 | `review-c3cfb426a060caf5` |
+
+Raw captures: `../keepercent-verify/build/rdd-T6.1-A-tramo{1..4}-capture.json`. Full-slice START returned `lens_context_budget_exceeded` with **no authority**; these four acknowledged reviews resolved it. No lifecycle work now. Frozen prior branch: `task/T6.1-A`. Current next reviewed boundary: **`8cb5920b075756f4a96c23b8019cbcd80890b2e2`**. Closure/advisory bookkeeping belongs to new `task/T6.11`, locator `odd/tasks/match-club-scopes.md`.
+
+### Ten advisory dispositions — final-source and retained-evidence readback
+
+No fresh UI execution. Paths below are repository-relative; `UI` means `KeepercentUITests/DrawnRegionsAccessibilityTests.swift`, `Court` means `Keepercent/DesignSystem/CourtView.swift`, `GeoTests` means `Domain/Tests/KeepercentDomainTests/CourtGeometryTests.swift`, and `handoff` means `.git/handoff/T6.1-A.md`.
+
+| Advisory | Disposition | Evidence and limit |
+| --- | --- | --- |
+| R3-domain-regression-green-only | ACCEPT documented exception; no code | `Domain/Tests/KeepercentDomainTests/StatsEngineTests.swift:284–295` tests existing legacy/located totals. Historical AX-1 acceptance and proof at this document :81,108–110 document GREEN-immediate before cleanup; no behavioral RED was fabricated. |
+| R3-scaffold-toolbar-fragility | ACCEPT risk; defer repair | UI :319–333 uses 3/5-second More/scaffold waits; handoff :237,252 retains the More-menu flake. Timeout cause is unproven. |
+| R3-unexecuted-ui-tests | ACCEPT debt; REJECT obsolete all-unexecuted claim | AX-R9 is fresh 8/8 plus five unchanged cases carried forward; full twelve-test run and five audits remain incomplete. |
+| R3-layout-reserve-unconditional | REJECT current defect | `Keepercent/Features/Sessions/SessionView.swift:258–275` always constructs entry GoalView; `Keepercent/DesignSystem/GoalView.swift:59,112–117` defaults action mode true and renders the control. A non-entry consumer here is hypothetical. |
+| R3-physical-tap-fragility | ACCEPT risk; defer | UI :151–158 synthesizes the strip point from two sibling frames. No observed failure is established at that physical-strip stage. |
+| R3-tapRightBackFar-viewport-edge | ACCEPT limitation; defer | UI :398–429 allows twelve swipes and a 44-point viewport inset. Smaller/landscape viewports are untested; no observed defect is established. |
+| R3-probe-readiness | ACCEPT gap; defer | UI :546–565 reads once and rejects pending telemetry; Court :646–666 starts with nil measured geometry. No proven readiness flake. |
+| R3-scroll-telemetry-staleness | ACCEPT gap; defer | UI :408–411 reads after a swipe without freshness qualification; Court :650–658 updates state asynchronously through geometry change. A stale read is hypothetical. |
+| R3-activation-unit-algebra | REJECT current defect | Court :188–231,262–263 uses the same canvas/bounds coordinate frame. Independent axis scales cancel in the affine reconstruction; no inconsistent inset. Manual semantic VoiceOver remains pending. |
+| R3-representative-search-mirror | ACCEPT; APPLY on T6.11 | Reviewed GeoTests :209–229 copied reviewed Court :241–259; callers :250,275,284 did not invoke production. Extract unchanged search to `Domain/Sources/KeepercentDomain/CourtGeometry.swift:494–514`; Court :189 and GeoTests :228,253,262 now call the actual API. Independent interior/raycast/reconstruction oracles remain. |
+
 ## Objective and authorization
 
 Add native XCTest UI coverage for the existing drawn goal/court accessibility contract, including labels, element roles, activation, no-data readings, query order and accessibility audits. Automated inspection does not prove spoken VoiceOver traversal.
@@ -20,7 +60,7 @@ The user authorized T6.1-A on 2026-10-05 and explicitly approved one coherent un
 - [x] AX-0 Verify prior closure and map existing accessibility/test infrastructure.
 - [x] AX-1 Implement and locally verify T6.10 closure bookkeeping and supported advisories; committed at `cd7b18f713796c9e0dba30d9233477d2754bc890`.
 - [x] AX-2 Add native UI-test target, tests and minimal instrumentation; verify local compilation.
-- [ ] AX-3 Execute the UI tests and inspect the UI externally, then perform task-close native review. Delivery remains separate.
+- [x] AX-3 Closure accepted 2026-10-06: functional matrix verified (AX-R9 8/8, five cases carried forward from 6258eb1), task-wide verification incomplete; four supplied reviews acknowledged. This is bounded closure, not completion of all historical UI/audit/visual scope. Delivery remains separate.
 - [x] AX-D1 Prepare an identical diagnostic audit driver for isolated baseline/candidate app snapshots; compile without simulator execution.
 - [ ] AX-D2 Run the paired external audit comparison and establish causality before authorizing inherited app repairs.
 
@@ -58,7 +98,7 @@ Rollback: only the new test target/scheme registration, test file, minimal ident
 
 ## Progress and next step
 
-Historical progress is retained below with its original snapshot-specific instructions and pending/unexecuted wording. Those records are not current verification requests. AX-R6 defines the current bounded local work; the authoritative handoff records defects at `f01c2365be5bf4ca39f5331bd6c8775b10c22d20` until parent-owned bookkeeping. Strategy B and the twelve-test contract remain in force; no historical SHA or strategy A instruction overrides them.
+Historical progress is retained below with its original snapshot-specific instructions and pending/unexecuted wording. Those records are not current verification requests. The current closure above supersedes AX-R6 and later pending-round instructions; the authoritative handoff is `unverifiable` at `8cb5920b075756f4a96c23b8019cbcd80890b2e2`. Strategy B is preserved; full twelve-test verification remains accepted debt, not an automatic new round.
 
 AX-0 and AX-1 are complete on `task/T6.1-A` from reviewed `d85afa581f854439b711d54bdb97c0c3eb009f4c`. The parent committed AX-1 at `cd7b18f713796c9e0dba30d9233477d2754bc890` (`refactor(scouting): apply verified penalty review advisories`): five paths / 120 authored changed lines, native assessment medium, `under_budget`. This supersedes the historical pending-commit wording. T6.10 is checked off in the main ledger and PC-2 with approved/acknowledged review evidence; its frozen boundary remains unchanged. Local task closure does not imply merge, push or delivery.
 

@@ -489,6 +489,28 @@ extension CourtGeometry {
 }
 
 extension CourtGeometry {
+    /// Supplies a valid raw point for zone activation, excluding the 7 m
+    /// override and forbidden 6 m area. Returns nil if the search finds none.
+    public func representativePoint(for zone: CourtZone) -> CourtPoint? {
+        let vertices = shape(for: zone)
+        guard !vertices.isEmpty else { return nil }
+        let center = CourtPoint(
+            x: vertices.map(\.x).reduce(0, +) / Double(vertices.count),
+            y: vertices.map(\.y).reduce(0, +) / Double(vertices.count)
+        )
+        for vertex in vertices {
+            for step in 0...20 {
+                let fraction = Double(step) / 21
+                let point = CourtPoint(
+                    x: center.x * (1 - fraction) + vertex.x * fraction,
+                    y: center.y * (1 - fraction) + vertex.y * fraction
+                )
+                if origin(at: point) == .zone(zone) { return point }
+            }
+        }
+        return nil
+    }
+
     /// The two angle bounds (degrees, `angleDegrees(for:)`'s own
     /// convention) a selectable zone occupies, from the SAME
     /// `centerBoundaryDegrees`/`backBoundaryDegrees` constants

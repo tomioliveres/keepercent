@@ -1,19 +1,19 @@
 # Keepercent — project context
 
-Handball goalkeeper scouting app built for the **ACoding Hackathon 2026** (Apple Coding Academy).
+Handball goalkeeper scouting app. Started for the **ACoding Hackathon 2026** (Apple Coding Academy); the hackathon ended on Sep 27, 2026 and was delivered. Since then it is a **personal project** with no deadlines.
 Product definition and plan: [docs/mvp.md](docs/mvp.md) · Task tracking: [odd/tasks/keepercent.md](odd/tasks/keepercent.md)
 
-## Hard rules (from the hackathon, non-negotiable)
+## Hard rules (inherited from the hackathon, kept by choice)
 
 - **100% native**: Swift and SwiftUI only. **Zero third-party code inside the app binary** — no SPM packages, no frameworks, no vendored sources. UIKit/AppKit is allowed when a case truly needs it.
 - Anything inside Apple's SDK counts as native: SwiftData, Swift Charts, Foundation Models, Vision, PDFKit, Core ML, AVFoundation…
 - **Development tools are not bound by that rule** (a linter or formatter is fine); the restriction covers what ships in the binary.
 - `URLSession` may call any API, but this app is offline by design.
 - **Minimum OS version 26** (iOS / iPadOS). Confirmed by the organizers: 26 is the floor, a newer SDK is allowed. Built with Xcode 27, deployment target iOS 26.
-- Built **from scratch** during the event (Sep 18–27, 2026). No prior code.
+- Built **from scratch** starting at the event (Sep 18–27, 2026). No prior code.
 - **Free Apple account**: no CloudKit, no Push Notifications, no Siri capability. HealthKit, MapKit, Background Modes and App Groups are available.
 - Generative AI may be used to write code, but **every line must be explainable by the author**. Do not introduce code the author cannot defend.
-- Delivery is a public GitHub repository. No App Store submission.
+- The code lives in a public GitHub repository. No App Store submission.
 
 ## Where things are
 
@@ -22,17 +22,15 @@ Product definition and plan: [docs/mvp.md](docs/mvp.md) · Task tracking: [odd/t
 - `odd/tasks/keepercent.md` — task checklist.
 - `reference/` — **gitignored, local only**: hackathon rules PDF, Discord briefings and screenshots of the reference app (third-party material that must never be published).
 
-## Judging criteria
+## Quality bar
 
-Functionality · code quality and cleanliness · creativity · correct use of native Apple APIs.
+Functionality · code quality and cleanliness · creativity · correct use of native Apple APIs (the former judging criteria, kept as the project's own standard).
 
-There is **one winner per language category**, so Keepercent competes inside the Spanish track.
+## Pace
 
-## Deadlines
-
-- Personal deadline: **Friday Sep 25, 2026** (no availability on the weekend).
-- Official deadline: Sep 27, 2026, 23:00 CET.
-- A daily progress update must be posted in the hackathon's `#daily-updates` channel before 23:00 CET.
+- No deadlines and no daily progress posts. Prioritize what the author will use or enjoy.
+- Keep process proportional: weigh the cost of verification rounds and review ceremony against the value of the task.
+- One review per task slice unless native assessment is high; accept scoped functional test outcomes without demanding assertion-by-assertion evidence. Record incomplete verification and accepted debt explicitly.
 
 ## Engineering conventions
 

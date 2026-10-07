@@ -206,28 +206,6 @@ struct CourtGeometryTestsCanvasOracle {
 struct CourtGeometryTestsActivationContract {
     private let geometry = CourtGeometry.standard
 
-    // Mirrors CourtView's existing private search, not an invocation of it.
-    // Keep the accepted point unchanged; assertions independently check it.
-    private func representative(for zone: CourtZone) -> CourtPoint? {
-        let vertices = geometry.shape(for: zone)
-        guard !vertices.isEmpty else { return nil }
-        let center = CourtPoint(
-            x: vertices.map(\.x).reduce(0, +) / Double(vertices.count),
-            y: vertices.map(\.y).reduce(0, +) / Double(vertices.count)
-        )
-        for vertex in vertices {
-            for step in 0...20 {
-                let fraction = Double(step) / 21
-                let candidate = CourtPoint(
-                    x: center.x * (1 - fraction) + vertex.x * fraction,
-                    y: center.y * (1 - fraction) + vertex.y * fraction
-                )
-                if geometry.origin(at: candidate) == .zone(zone) { return candidate }
-            }
-        }
-        return nil
-    }
-
     private func strictlyInside(_ point: CourtPoint, polygon: [CourtPoint]) -> Bool {
         guard isPointInPolygon(point, polygon) else { return false }
         for index in polygon.indices {
@@ -247,7 +225,7 @@ struct CourtGeometryTestsActivationContract {
           arguments: CourtZone.allCases)
     func acceptedActivationPoint(zone: CourtZone) throws {
         let polygon = geometry.shape(for: zone)
-        let point = try #require(representative(for: zone))
+        let point = try #require(geometry.representativePoint(for: zone))
         #expect(point.x.isFinite && point.y.isFinite)
         #expect(geometry.origin(at: point) == .zone(zone)) // Excludes the 7 m override.
         #expect(strictlyInside(point, polygon: polygon))
@@ -272,7 +250,7 @@ struct CourtGeometryTestsActivationContract {
     @Test("Overlapping far bounds do not make wing points far; center activation avoids the seven-meter action")
     func overlappingBoundsAndMark() throws {
         for (wing, back) in [(CourtSector.leftWing, CourtSector.leftBack), (.rightWing, .rightBack)] {
-            let point = try #require(representative(for: CourtZone(sector: wing, depth: .near)))
+            let point = try #require(geometry.representativePoint(for: CourtZone(sector: wing, depth: .near)))
             let farPolygon = geometry.shape(for: CourtZone(sector: back, depth: .far))
             let minX = try #require(farPolygon.map(\.x).min()), maxX = try #require(farPolygon.map(\.x).max())
             let minY = try #require(farPolygon.map(\.y).min()), maxY = try #require(farPolygon.map(\.y).max())
@@ -281,7 +259,7 @@ struct CourtGeometryTestsActivationContract {
             #expect(!isPointInPolygon(point, farPolygon))
         }
         let center = CourtZone(sector: .center, depth: .near)
-        let point = try #require(representative(for: center))
+        let point = try #require(geometry.representativePoint(for: center))
         #expect(geometry.origin(at: point) == .zone(center))
         #expect(geometry.origin(at: geometry.sevenMeterPoint) == .sevenMeters)
         #expect(isPointInPolygon(geometry.sevenMeterPoint, geometry.shape(for: center)))
