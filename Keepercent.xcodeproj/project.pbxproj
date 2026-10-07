@@ -10,11 +10,27 @@
 		4B0000000000000000000018 /* KeepercentDomain in Frameworks */ = {isa = PBXBuildFile; productRef = 4B0000000000000000000017 /* KeepercentDomain */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		4B0000000000000000000028 = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4B0000000000000000000001;
+			proxyType = 1;
+			remoteGlobalIDString = 4B0000000000000000000006;
+			remoteInfo = Keepercent;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		4B0000000000000000000020 /* KeepercentUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = KeepercentUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4B0000000000000000000005 /* Keepercent.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Keepercent.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		4B0000000000000000000021 /* KeepercentUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = KeepercentUITests;
+			sourceTree = "<group>";
+		};
 		4B0000000000000000000004 /* Keepercent */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Keepercent;
@@ -23,6 +39,10 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		4B0000000000000000000024 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = ();
+		};
 		4B0000000000000000000008 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
@@ -36,6 +56,7 @@
 			isa = PBXGroup;
 			children = (
 				4B0000000000000000000004 /* Keepercent */,
+				4B0000000000000000000021 /* KeepercentUITests */,
 				4B0000000000000000000003 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -44,6 +65,7 @@
 			isa = PBXGroup;
 			children = (
 				4B0000000000000000000005 /* Keepercent.app */,
+				4B0000000000000000000020 /* KeepercentUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -51,6 +73,23 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		4B0000000000000000000022 /* KeepercentUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4B0000000000000000000026;
+			buildPhases = (
+				4B0000000000000000000023 /* Sources */,
+				4B0000000000000000000024 /* Frameworks */,
+				4B0000000000000000000025 /* Resources */,
+			);
+			buildRules = ();
+			dependencies = (4B0000000000000000000029 /* Keepercent */);
+			fileSystemSynchronizedGroups = (4B0000000000000000000021 /* KeepercentUITests */);
+			name = KeepercentUITests;
+			packageProductDependencies = ();
+			productName = KeepercentUITests;
+			productReference = 4B0000000000000000000020;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		4B0000000000000000000006 /* Keepercent */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 4B0000000000000000000013 /* Build configuration list for PBXNativeTarget "Keepercent" */;
@@ -81,6 +120,10 @@
 				BuildIndependentTargetsInParallel = 1;
 				LastUpgradeCheck = 2700;
 				TargetAttributes = {
+					4B0000000000000000000022 = {
+						CreatedOnToolsVersion = 27.0;
+						TestTargetID = 4B0000000000000000000006;
+					};
 					4B0000000000000000000006 = {
 						CreatedOnToolsVersion = 27.0;
 					};
@@ -106,11 +149,16 @@
 			projectRoot = "";
 			targets = (
 				4B0000000000000000000006 /* Keepercent */,
+				4B0000000000000000000022 /* KeepercentUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		4B0000000000000000000025 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = ();
+		};
 		4B0000000000000000000009 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			files = (
@@ -119,6 +167,10 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		4B0000000000000000000023 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = ();
+		};
 		4B0000000000000000000007 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			files = (
@@ -126,7 +178,45 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		4B0000000000000000000029 /* Keepercent */ = {
+			isa = PBXTargetDependency;
+			target = 4B0000000000000000000006;
+			targetProxy = 4B0000000000000000000028;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		4B000000000000000000002A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.tomioliveres.keepercent.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Keepercent;
+			};
+			name = Debug;
+		};
+		4B000000000000000000002B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.tomioliveres.keepercent.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Keepercent;
+			};
+			name = Release;
+		};
 		4B0000000000000000000011 /* Debug configuration for PBXProject "Keepercent" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -315,6 +405,14 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		4B0000000000000000000026 = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4B000000000000000000002A /* Debug */,
+				4B000000000000000000002B /* Release */,
+			);
+			defaultConfigurationName = Release;
+		};
 		4B0000000000000000000010 /* Build configuration list for PBXProject "Keepercent" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

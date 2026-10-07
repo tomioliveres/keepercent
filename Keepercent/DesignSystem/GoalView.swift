@@ -45,6 +45,7 @@ struct GoalView: View {
     let accessibilityTallies: [GoalZone: Tally]?
     let accessibilityReading: StatsReading
     let isAccessibleAction: Bool
+    let accessibilityScope: String
     let onTargetTapped: (GoalTarget) -> Void
 
     init(
@@ -56,6 +57,7 @@ struct GoalView: View {
         accessibilityTallies: [GoalZone: Tally]? = nil,
         accessibilityReading: StatsReading = .effectiveness,
         isAccessibleAction: Bool = true,
+        accessibilityScope: String = "goal.entry",
         onTargetTapped: @escaping (GoalTarget) -> Void
     ) {
         self.geometry = geometry
@@ -66,6 +68,7 @@ struct GoalView: View {
         self.accessibilityTallies = accessibilityTallies
         self.accessibilityReading = accessibilityReading
         self.isAccessibleAction = isAccessibleAction
+        self.accessibilityScope = accessibilityScope
         self.onTargetTapped = onTargetTapped
     }
 
@@ -102,7 +105,37 @@ struct GoalView: View {
     /// `GoalGeometry`.
     private let netCellsAcross = 12
 
+    /// Separate entry-control space; never borrowed from adjacent canvas targets.
+    static let entryControlSpacing: CGFloat = 8
+    static let entryControlMinimumHeight: CGFloat = 44
+
     var body: some View {
+        VStack(spacing: Self.entryControlSpacing) {
+            drawing
+            if isAccessibleAction {
+                leftPostTopControl
+            }
+        }
+    }
+
+    /// The single accessible action for the narrow top-left post. Physical
+    /// drawing taps remain intact; this button owns separate layout space
+    /// instead of duplicating the strip's synthetic accessibility action.
+    private var leftPostTopControl: some View {
+        let target = GoalTarget.post(.leftPostTop)
+        return Button { onTargetTapped(target) } label: {
+            Text(accessibilityName(for: target))
+                .font(.subheadline)
+                .foregroundStyle(.primary)
+                .padding(.horizontal, 12)
+                .frame(minWidth: 44, maxWidth: .infinity, minHeight: Self.entryControlMinimumHeight)
+                .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 8))
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("goalSupplementary.\(accessibilityScope).leftPostTop")
+    }
+
+    private var drawing: some View {
         Canvas { context, size in
             draw(in: &context, size: size)
         }
@@ -133,10 +166,14 @@ struct GoalView: View {
                 ZStack(alignment: .topLeading) {
                     // One element per target, on its main rect: a wide top
                     // miss also owns a thin corner strip, which would
-                    // otherwise announce the same zone twice.
+                    // otherwise announce the same zone twice. Entry relocates
+                    // only leftPostTop to the real control below the canvas;
+                    // linked inert readings still expose all 27 here.
                     ForEach(GoalTarget.allCases, id: \.code) { target in
-                        if let region = mainRegion(for: target, within: normalizedBounds(for: proxy.size)) {
-                            accessibleRegion(target, rect: pixelRect(for: region, in: proxy.size))
+                        if !isAccessibleAction || target != .post(.leftPostTop) {
+                            if let region = mainRegion(for: target, within: normalizedBounds(for: proxy.size)) {
+                                accessibleRegion(target, rect: pixelRect(for: region, in: proxy.size))
+                            }
                         }
                     }
                 }
@@ -148,11 +185,13 @@ struct GoalView: View {
     private func accessibleRegion(_ target: GoalTarget, rect: CGRect) -> some View {
         if isAccessibleAction {
             Button(accessibilityName(for: target)) { onTargetTapped(target) }
+                .accessibilityIdentifier("\(accessibilityScope).\(target.code)")
                 .accessibilityValue(accessibilitySample(for: target))
                 .frame(width: rect.width, height: rect.height)
                 .position(x: rect.midX, y: rect.midY)
         } else {
             Text(accessibilityName(for: target))
+                .accessibilityIdentifier("\(accessibilityScope).\(target.code)")
                 .accessibilityValue(accessibilitySample(for: target))
                 .frame(width: rect.width, height: rect.height)
                 .position(x: rect.midX, y: rect.midY)

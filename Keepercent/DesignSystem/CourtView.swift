@@ -86,6 +86,7 @@ struct CourtView: View {
     let arrows: [CourtArrow]
     let accessibilityTallies: [ShotOrigin: Tally]?
     let accessibilityReading: StatsReading
+    let accessibilityScope: String
     /// Extra text appended to an origin's accessibility value, so VoiceOver
     /// hears what the arrows show ("Most shots aimed right: 4 of 6").
     let accessibilityNotes: [ShotOrigin: String]
@@ -112,6 +113,7 @@ struct CourtView: View {
         accessibilityTallies: [ShotOrigin: Tally]? = nil,
         accessibilityReading: StatsReading = .effectiveness,
         accessibilityNotes: [ShotOrigin: String] = [:],
+        accessibilityScope: String = "court.entry",
         onOriginTapped: @escaping (ShotOrigin, CourtPoint?) -> Void
     ) {
         self.geometry = geometry
@@ -122,6 +124,7 @@ struct CourtView: View {
         self.accessibilityTallies = accessibilityTallies
         self.accessibilityReading = accessibilityReading
         self.accessibilityNotes = accessibilityNotes
+        self.accessibilityScope = accessibilityScope
         self.onOriginTapped = onOriginTapped
     }
 
@@ -151,36 +154,86 @@ struct CourtView: View {
                         accessibleZone(zone, size: proxy.size)
                     }
                     let rect = pixelRect(for: geometry.sevenMeterMarkRegion, in: proxy.size)
-                    Button("7 m mark") { onOriginTapped(.sevenMeters, nil) }
+                    Button {
+                        onOriginTapped(.sevenMeters, nil)
+                    } label: {
+                        // This label is synthetic, not rendered court text.
+                        // A Text label can retain its intrinsic line height
+                        // beyond the outer frame's proposal. Match the exact
+                        // drawing/hit rectangle, as the zone Path labels do;
+                        // the metric mark intentionally has no touch-size floor.
+                        Rectangle().fill(.clear)
+                            .frame(width: rect.width, height: rect.height)
+                    }
+                        .accessibilityLabel("7 m mark")
+                        .accessibilityIdentifier("\(accessibilityScope).sevenMeters")
                         .accessibilityValue(accessibilitySample(for: .sevenMeters))
                         .frame(width: rect.width, height: rect.height)
                         .position(x: rect.midX, y: rect.midY)
                 }
             }
         }
+        #if DEBUG
+        .overlay {
+            if ProcessInfo.processInfo.arguments.contains("-KPUITestCanvasProbe") {
+                CourtCanvasProbe(scope: accessibilityScope)
+                    .allowsHitTesting(false)
+            }
+        }
+        #endif
     }
 
+    @ViewBuilder
     private func accessibleZone(_ zone: CourtZone, size: CGSize) -> some View {
-        let points = geometry.shape(for: zone).map { pixelPoint(for: $0, in: size) }
+        let vertices = geometry.shape(for: zone)
+        let point = representativePoint(for: zone)
+        let points = vertices.map { pixelPoint(for: $0, in: size) }
         let bounds = points.reduce(CGRect.null) { $0.union(CGRect(origin: $1, size: .zero)) }
-        var outline = Path()
-        if let first = points.first {
-            outline.move(to: CGPoint(x: first.x - bounds.minX, y: first.y - bounds.minY))
-            for point in points.dropFirst() {
-                outline.addLine(to: CGPoint(x: point.x - bounds.minX, y: point.y - bounds.minY))
+        let outline = Path { path in
+            if let first = points.first {
+                path.move(to: CGPoint(x: first.x - bounds.minX, y: first.y - bounds.minY))
+                for point in points.dropFirst() {
+                    path.addLine(to: CGPoint(x: point.x - bounds.minX, y: point.y - bounds.minY))
+                }
+                path.closeSubpath()
             }
-            outline.closeSubpath()
         }
-        return Button {
-            guard let point = representativePoint(for: zone) else { return }
+        let button = Button {
+            guard let point else { return }
             onOriginTapped(.zone(zone), point)
         } label: {
             outline.fill(.clear)
                 .frame(width: bounds.width, height: bounds.height)
+                .contentShape(.interaction, outline)
         }
         .accessibilityLabel("Court, \(zone.sector.displayName()), \(zone.depth.displayName())")
+        .accessibilityIdentifier("\(accessibilityScope).zone.\(zone.code)")
         .accessibilityValue(accessibilitySample(for: .zone(zone)))
-        .position(x: bounds.midX, y: bounds.midY)
+        // Constrain the semantic Button itself, not only its Path label.
+        // Otherwise position receives a canvas-sized button and centers that
+        // oversized accessibility frame at the polygon's local midpoint.
+        // The separate 7 m button already uses this frame-before-position order.
+        .frame(width: bounds.width, height: bounds.height)
+
+        if let point,
+           let minX = vertices.map(\.x).min(), let maxX = vertices.map(\.x).max(),
+           let minY = vertices.map(\.y).min(), let maxY = vertices.map(\.y).max(),
+           maxX > minX, maxY > minY {
+            // UnitPoint is relative to this Button's polygon-bounds frame,
+            // not the full canvas. Domain extrema cancel the pixel scale and
+            // avoid dividing by a transient zero-size layout. Use exactly the
+            // accepted native callback point, not a bounding-box center.
+            button
+                .accessibilityActivationPoint(UnitPoint(
+                    x: (point.x - minX) / (maxX - minX),
+                    y: (point.y - minY) / (maxY - minY)
+                ))
+                .position(x: bounds.midX, y: bounds.midY)
+        } else {
+            // Preserve the existing inert action for an unreachable/degenerate
+            // zone; never invent a substitute activation or callback point.
+            button.position(x: bounds.midX, y: bounds.midY)
+        }
     }
 
     /// Accessibility activation must supply a real, valid raw point, just
@@ -606,6 +659,36 @@ struct CourtView: View {
         }
     }
 }
+
+#if DEBUG
+/// Test-only telemetry outside the court.* semantic namespace. Measurement
+/// updates only metadata, never a layout proposal, drawing or touch handler.
+private struct CourtCanvasProbe: View {
+    let scope: String
+    @State private var measuredFrame: CGRect?
+
+    var body: some View {
+        Color.clear
+            .onGeometryChange(for: CGRect.self) { proxy in
+                proxy.frame(in: .global)
+            } action: { frame in
+                measuredFrame = frame
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("UI test canvas geometry")
+            .accessibilityIdentifier("testCanvas.\(scope)")
+            .accessibilityValue(telemetry)
+    }
+
+    private var telemetry: String {
+        guard let frame = measuredFrame else { return "pending" }
+        // Swift's numeric descriptions use a locale-independent decimal point.
+        // Do not use the rounded accessibility frame of this metadata element.
+        return [frame.minX, frame.minY, frame.width, frame.height]
+            .map { String(Double($0)) }.joined(separator: ",")
+    }
+}
+#endif
 
 #Preview("CourtView") {
     CourtView { origin, _ in

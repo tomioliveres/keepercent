@@ -281,6 +281,20 @@ struct PenaltyRecordTests {
         #expect(penalties.missCounts[.out(.wideRight, nil)] == nil)
     }
 
+    @Test("legacy and located wide-right penalties share totals without inventing a location")
+    func legacyAndLocatedMissesInSameDirection() {
+        let penalties = StatsEngine(shots: [
+            shot(isSevenMeters: true, target: .out(.wideRight, nil), outcome: .out),
+            shot(isSevenMeters: true, target: .out(.wideRight, .middle), outcome: .out)
+        ]).sevenMeterShots
+        #expect(penalties.shots.count == 2)
+        #expect(penalties.effectiveness == Tally(successes: 0, attempts: 2))
+        #expect(penalties.outcomeCounts[.out] == 2)
+        #expect(penalties.missCounts[.out(.wideRight, .middle)] == 1)
+        #expect(penalties.missCounts[.out(.wideRight, nil)] == nil)
+        #expect(penalties.missCounts.values.reduce(0, +) == 1)
+    }
+
     @Test("penalty heatmap samples exclude posts, misses and field targets without losing legacy totals")
     func insideSamplesDifferFromTotalAttempts() {
         let penalties = StatsEngine(shots: [

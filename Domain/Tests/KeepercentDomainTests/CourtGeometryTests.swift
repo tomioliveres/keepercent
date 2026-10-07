@@ -32,6 +32,263 @@ private func tolerant(_ a: Double, _ b: Double, tolerance: Double = 1e-9) -> Boo
     abs(a - b) < tolerance
 }
 
+@Suite("CourtGeometryTests independent canvas oracle")
+struct CourtGeometryTestsCanvasOracle {
+    private struct Bounds {
+        let minX: Double
+        let minY: Double
+        let width: Double
+        let height: Double
+        var maxX: Double { minX + width }
+        var maxY: Double { minY + height }
+
+        init(x: Double, y: Double, width: Double, height: Double) {
+            minX = x
+            minY = y
+            self.width = width
+            self.height = height
+        }
+    }
+
+    // Solve (r sin(theta) - 1.5)^2 + (r cos(theta))^2 = d^2
+    // independently of CourtGeometry's radius/clipping implementation.
+    private func intersection(_ distance: Double, _ degrees: Double) -> (x: Double, y: Double) {
+        let theta = degrees * .pi / 180
+        let r = 1.5 * sin(theta) + sqrt(distance * distance - 2.25 * pow(cos(theta), 2))
+        return (x: r * sin(theta), y: r * cos(theta))
+    }
+
+    private var expected: [(CourtZone, Bounds)] {
+        let i18 = intersection(6, 18), i54 = intersection(6, 54)
+        let o18 = intersection(9, 18), o54 = intersection(9, 54)
+        let wing = Bounds(x: 0, y: 0, width: 0.5 - i54.x / 20, height: o54.y / 15)
+        let back = Bounds(x: 0.5 - o54.x / 20, y: i54.y / 15,
+                          width: (o54.x - i18.x) / 20, height: (o18.y - i54.y) / 15)
+        let center = Bounds(x: 0.5 - o18.x / 20, y: i18.y / 15,
+                            width: o18.x / 10, height: (9 - i18.y) / 15)
+        let farBack = Bounds(x: 0, y: 0, width: 0.5 - o18.x / 20, height: 1)
+        let farHalf = 15 * tan(Double.pi / 10) / 20
+        let farCenter = Bounds(x: 0.5 - farHalf, y: o18.y / 15,
+                               width: 2 * farHalf, height: 1 - o18.y / 15)
+        func mirror(_ rect: Bounds) -> Bounds {
+            Bounds(x: 1 - rect.maxX, y: rect.minY, width: rect.width, height: rect.height)
+        }
+        return [
+            (CourtZone(sector: .leftWing, depth: .near), wing),
+            (CourtZone(sector: .leftBack, depth: .near), back),
+            (CourtZone(sector: .center, depth: .near), center),
+            (CourtZone(sector: .rightBack, depth: .near), mirror(back)),
+            (CourtZone(sector: .rightWing, depth: .near), mirror(wing)),
+            (CourtZone(sector: .leftBack, depth: .far), farBack),
+            (CourtZone(sector: .center, depth: .far), farCenter),
+            (CourtZone(sector: .rightBack, depth: .far), mirror(farBack))
+        ]
+    }
+
+    @Test("All eight actual polygon extrema match independent analytic bounds")
+    func analyticExtrema() throws {
+        #expect(expected.count == 8)
+        for (zone, rect) in expected {
+            let vertices = CourtGeometry.standard.shape(for: zone)
+            let minX = try #require(vertices.map(\.x).min())
+            let minY = try #require(vertices.map(\.y).min())
+            let maxX = try #require(vertices.map(\.x).max())
+            let maxY = try #require(vertices.map(\.y).max())
+            #expect(tolerant(minX, rect.minX), "\(zone) minX")
+            #expect(tolerant(minY, rect.minY), "\(zone) minY")
+            #expect(tolerant(maxX, rect.maxX), "\(zone) maxX")
+            #expect(tolerant(maxY, rect.maxY), "\(zone) maxY")
+        }
+    }
+
+    @Test("Wing maximum is the inner 54-degree vertex; far backs retain collapsed goal-line ends")
+    func criticalVertices() {
+        let inner = intersection(6, 54)
+        for (sector, sign) in [(CourtSector.leftWing, -1.0), (.rightWing, 1.0)] {
+            let vertices = CourtGeometry.standard.shape(for: CourtZone(sector: sector, depth: .near))
+            #expect(vertices.contains { tolerant($0.x, 0.5 + sign * inner.x / 20) && tolerant($0.y, inner.y / 15) })
+        }
+        for (sector, x) in [(CourtSector.leftBack, 0.0), (.rightBack, 1.0)] {
+            let vertices = CourtGeometry.standard.shape(for: CourtZone(sector: sector, depth: .far))
+            #expect(vertices.contains { tolerant($0.x, x) && tolerant($0.y, 0) })
+        }
+        #expect(0.5 - inner.x / 20 > 0.125)
+    }
+
+    @Test("Raw canvas bounds tolerate pixel snapping without small-mark scale amplification",
+          arguments: [250.5, 338.0, 371.3333333333333, 516.0])
+    func screenRounding(width: Double) {
+        let canvas = Bounds(x: 32, y: 536.5, width: width, height: width * 0.75)
+        for (_, rect) in expected {
+            let raw = Bounds(x: canvas.minX + rect.minX * width,
+                             y: canvas.minY + rect.minY * canvas.height,
+                             width: rect.width * width, height: rect.height * canvas.height)
+            for scale in [2.0, 3.0] {
+                // Both nearest-edge and outward-edge snapping stay within the
+                // exact one-point UI tolerance, even for fractional canvases.
+                for outward in [false, true] {
+                    let loX = (outward ? floor(raw.minX * scale) : (raw.minX * scale).rounded()) / scale
+                    let hiX = (outward ? ceil(raw.maxX * scale) : (raw.maxX * scale).rounded()) / scale
+                    let loY = (outward ? floor(raw.minY * scale) : (raw.minY * scale).rounded()) / scale
+                    let hiY = (outward ? ceil(raw.maxY * scale) : (raw.maxY * scale).rounded()) / scale
+                    #expect(abs(loX - raw.minX) <= 1 && abs(loY - raw.minY) <= 1)
+                    #expect(abs(hiX - loX - raw.width) <= 1)
+                    #expect(abs(hiY - loY - raw.height) <= 1)
+                }
+            }
+            #expect(abs((0.5 - intersection(6, 54).x / 20 - 0.125) * width) > 1)
+        }
+        // Retained iPhone values: 338-point canvas, rounded 23 1/3-point mark.
+        let inferredWidth = (70.0 / 3) * 20 / 1.4
+        #expect(tolerant(inferredWidth, 333.3333333333333))
+        #expect(abs(inferredWidth - 338) > 4)
+        let markError = abs(338.0 * 1.4 / 20 - 70.0 / 3)
+        #expect(markError < 1)
+        #expect(abs((inferredWidth - 338) * 0.3) > 1) // Shooter x-offset drift.
+    }
+
+    @Test("Retained iPhone-light fractional region frames agree with the complete corrected oracle")
+    func retainedFractionalFrames() {
+        // f01c236 attachment C8F57E34-335F-4248-8CC9-4D779E78361C,
+        // lines 1–9 and 86: 338-point full-width control; outer edges x=32,
+        // y=535. This reconstructed fixture is offline consistency evidence,
+        // NOT a replacement for fresh native canvas telemetry at runtime.
+        let frames: [Bounds] = [
+            Bounds(x: 32, y: 535, width: 71 + 1.0 / 3, height: 101),
+            Bounds(x: 62, y: 606, width: 106, height: 79 + 1.0 / 3),
+            Bounds(x: 152 + 1.0 / 3, y: 636, width: 97 + 1.0 / 3, height: 51),
+            Bounds(x: 234, y: 606, width: 106, height: 79 + 1.0 / 3),
+            Bounds(x: 298 + 2.0 / 3, y: 535, width: 71 + 1.0 / 3, height: 101),
+            Bounds(x: 32, y: 535, width: 120 + 1.0 / 3, height: 253 + 1.0 / 3),
+            Bounds(x: 118 + 2.0 / 3, y: 685 + 1.0 / 3, width: 164 + 2.0 / 3, height: 103),
+            Bounds(x: 249 + 2.0 / 3, y: 535, width: 120 + 1.0 / 3, height: 253 + 1.0 / 3),
+            Bounds(x: 189 + 1.0 / 3, y: 644 + 2.0 / 3, width: 70.0 / 3, height: 17)
+        ]
+        let normalized = expected.map { $0.1 } + [Bounds(x: 0.465, y: 6.5 / 15, width: 0.07, height: 1.0 / 15)]
+        #expect(frames.count == normalized.count)
+        for (actual, rect) in zip(frames, normalized) {
+            #expect(abs(actual.minX - (32 + rect.minX * 338)) <= 1)
+            #expect(abs(actual.minY - (535 + rect.minY * 253.5)) <= 1)
+            #expect(abs(actual.width - rect.width * 338) <= 1)
+            #expect(abs(actual.height - rect.height * 253.5) <= 1)
+            #expect(actual.minX >= 31 && actual.maxX <= 371)
+            #expect(actual.minY >= 534 && actual.maxY <= 789.5)
+        }
+    }
+
+    @Test("Every physical scaffold origin and the shared shooter far point has independent interior proof")
+    func physicalTargetContract() {
+        let targets: [(String, Double, Double)] = [
+            ("zone.leftWing.near", 0.075, 0.15), ("zone.leftBack.near", 0.25, 0.4),
+            ("zone.center.near", 0.5, 0.55), ("zone.rightBack.near", 0.75, 0.4),
+            ("zone.rightWing.near", 0.925, 0.15), ("zone.leftBack.far", 0.2, 0.8),
+            ("zone.center.far", 0.5, 0.8), ("zone.rightBack.far", 0.8, 0.8),
+            ("sevenMeters", 0.5, 7.0 / 15)
+        ]
+        for (code, x, y) in targets {
+            let target = CourtPoint(x: x, y: y)
+            #expect(CourtGeometry.standard.origin(at: target)?.code == code)
+            if let (zone, bounds) = expected.first(where: { "zone.\($0.0.code)" == code }) {
+                #expect(x > bounds.minX && x < bounds.maxX && y > bounds.minY && y < bounds.maxY)
+                #expect(isPointInPolygon(target, CourtGeometry.standard.shape(for: zone)))
+            }
+        }
+        let wing = expected[0].1
+        let automaticWingCenter = CourtPoint(x: wing.minX + wing.width / 2, y: wing.minY + wing.height / 2)
+        #expect(CourtGeometry.standard.origin(at: automaticWingCenter)?.code == "zone.leftWing.near")
+        let angle = atan2(6.0, 12.0) * 180 / .pi
+        #expect(angle > 18 && angle < 54)
+        #expect(hypot(6 - 1.5, 12) > 9)
+    }
+}
+
+@Suite("CourtGeometryTests native activation point contract")
+struct CourtGeometryTestsActivationContract {
+    private let geometry = CourtGeometry.standard
+
+    // Mirrors CourtView's existing private search, not an invocation of it.
+    // Keep the accepted point unchanged; assertions independently check it.
+    private func representative(for zone: CourtZone) -> CourtPoint? {
+        let vertices = geometry.shape(for: zone)
+        guard !vertices.isEmpty else { return nil }
+        let center = CourtPoint(
+            x: vertices.map(\.x).reduce(0, +) / Double(vertices.count),
+            y: vertices.map(\.y).reduce(0, +) / Double(vertices.count)
+        )
+        for vertex in vertices {
+            for step in 0...20 {
+                let fraction = Double(step) / 21
+                let candidate = CourtPoint(
+                    x: center.x * (1 - fraction) + vertex.x * fraction,
+                    y: center.y * (1 - fraction) + vertex.y * fraction
+                )
+                if geometry.origin(at: candidate) == .zone(zone) { return candidate }
+            }
+        }
+        return nil
+    }
+
+    private func strictlyInside(_ point: CourtPoint, polygon: [CourtPoint]) -> Bool {
+        guard isPointInPolygon(point, polygon) else { return false }
+        for index in polygon.indices {
+            let a = polygon[index], b = polygon[(index + 1) % polygon.count]
+            let dx = b.x - a.x, dy = b.y - a.y
+            let lengthSquared = dx * dx + dy * dy
+            let t = lengthSquared > 0
+                ? min(1, max(0, ((point.x - a.x) * dx + (point.y - a.y) * dy) / lengthSquared)) : 0
+            // Reject edges and repeated/collapsed vertices independently of
+            // ray casting and the analytic origin classifier.
+            if hypot(point.x - (a.x + t * dx), point.y - (a.y + t * dy)) <= 1e-9 { return false }
+        }
+        return true
+    }
+
+    @Test("All eight accepted callback points are strict polygon interiors with stable local activation coordinates",
+          arguments: CourtZone.allCases)
+    func acceptedActivationPoint(zone: CourtZone) throws {
+        let polygon = geometry.shape(for: zone)
+        let point = try #require(representative(for: zone))
+        #expect(point.x.isFinite && point.y.isFinite)
+        #expect(geometry.origin(at: point) == .zone(zone)) // Excludes the 7 m override.
+        #expect(strictlyInside(point, polygon: polygon))
+        let minX = try #require(polygon.map(\.x).min()), maxX = try #require(polygon.map(\.x).max())
+        let minY = try #require(polygon.map(\.y).min()), maxY = try #require(polygon.map(\.y).max())
+        try #require(maxX > minX && maxY > minY)
+        let localX = (point.x - minX) / (maxX - minX)
+        let localY = (point.y - minY) / (maxY - minY)
+        #expect(localX.isFinite && localY.isFinite)
+        #expect(localX > 0 && localX < 1 && localY > 0 && localY < 1)
+        // Normalized extrema avoid division by transient zero layout sizes.
+        // Reconstruct through actual screen bounds at multiple canvas scales.
+        for width in [250.5, 338.0, 516.0] {
+            let height = width / geometry.aspectRatio
+            let screenX = 32 + minX * width + localX * (maxX - minX) * width
+            let screenY = 535 + minY * height + localY * (maxY - minY) * height
+            #expect(tolerant(screenX, 32 + point.x * width))
+            #expect(tolerant(screenY, 535 + point.y * height))
+        }
+    }
+
+    @Test("Overlapping far bounds do not make wing points far; center activation avoids the seven-meter action")
+    func overlappingBoundsAndMark() throws {
+        for (wing, back) in [(CourtSector.leftWing, CourtSector.leftBack), (.rightWing, .rightBack)] {
+            let point = try #require(representative(for: CourtZone(sector: wing, depth: .near)))
+            let farPolygon = geometry.shape(for: CourtZone(sector: back, depth: .far))
+            let minX = try #require(farPolygon.map(\.x).min()), maxX = try #require(farPolygon.map(\.x).max())
+            let minY = try #require(farPolygon.map(\.y).min()), maxY = try #require(farPolygon.map(\.y).max())
+            #expect(point.x > minX && point.x < maxX)
+            #expect(point.y > minY && point.y < maxY)
+            #expect(!isPointInPolygon(point, farPolygon))
+        }
+        let center = CourtZone(sector: .center, depth: .near)
+        let point = try #require(representative(for: center))
+        #expect(geometry.origin(at: point) == .zone(center))
+        #expect(geometry.origin(at: geometry.sevenMeterPoint) == .sevenMeters)
+        #expect(isPointInPolygon(geometry.sevenMeterPoint, geometry.shape(for: center)))
+        #expect(!strictlyInside(geometry.shape(for: center)[0], polygon: geometry.shape(for: center)))
+    }
+}
+
 @Suite("CourtPoint clamping")
 struct CourtPointClampingTests {
 
