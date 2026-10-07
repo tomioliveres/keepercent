@@ -1,6 +1,111 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Historical roster uses the player details available when this store was upgraded." : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Historical roster uses the player details available when this store was upgraded." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "La plantilla histórica utiliza los datos de jugadores disponibles al actualizar esta base de datos." } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "El plantel histórico utiliza los datos de jugadores disponibles al actualizar esta base de datos." } }
+      }
+    },
+    "All matches" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "All matches" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Todos los partidos" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Todos los partidos" } }
+      }
+    },
+    "Match unavailable" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Match unavailable" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Partido no disponible" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Partido no disponible" } }
+      }
+    },
+    "Match scope" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Match scope" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Partidos incluidos" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Partidos incluidos" } }
+      }
+    },
+    "%@ · %@ · Match %lld" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ · %2$@ · Match %3$lld" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ · %2$@ · Partido %3$lld" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ · %2$@ · Partido %3$lld" } }
+      }
+    },
+    "Match roster" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Match roster" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Plantilla del partido" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Plantel del partido" } }
+      }
+    },
+    "Only selected players belong to this match. Later club roster edits do not change these snapshots." : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Only selected players belong to this match. Later club roster edits do not change these snapshots." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Solo los jugadores seleccionados pertenecen a este partido. Los cambios posteriores en la plantilla del club no modifican estos datos." } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Solo los jugadores seleccionados pertenecen a este partido. Los cambios posteriores en el plantel del club no modifican estos datos." } }
+      }
+    },
+    "Archived players" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Archived players" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Jugadores archivados" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Jugadores archivados" } }
+      }
+    },
+    "Player history" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Player history" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Historial de jugadores" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Historial de jugadores" } }
+      }
+    },
+    "Archive Player" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Archive Player" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Archivar jugador" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Archivar jugador" } }
+      }
+    },
+    "Archive this player?" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Archive this player?" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "¿Archivar este jugador?" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "¿Archivar este jugador?" } }
+      }
+    },
+    "Archiving preserves this player's match history and excludes them from future roster suggestions." : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Archiving preserves this player's match history and excludes them from future roster suggestions." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Archivar conserva el historial del jugador y lo excluye de las futuras sugerencias de plantilla." } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Archivar conserva el historial del jugador y lo excluye de las futuras sugerencias de plantel." } }
+      }
+    },
+    "Match history and recorded shots will be preserved." : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Match history and recorded shots will be preserved." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Se conservarán el historial de partidos y los lanzamientos registrados." } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Se conservarán el historial de partidos y los tiros registrados." } }
+      }
+    },
+    "Goalkeeper unavailable" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Goalkeeper unavailable" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Portero no disponible" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Arquero no disponible" } }
+      }
+    },
+    "Only shots faced by this goalkeeper are included. Frame hits and misses are not goal-zone samples." : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Only shots faced by this goalkeeper are included. Frame hits and misses are not goal-zone samples." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Solo se incluyen los lanzamientos recibidos por este portero. Los postes y los fallos no son muestras de zonas de portería." } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Solo se incluyen los tiros recibidos por este arquero. Los postes y los fallos no son muestras de zonas del arco." } }
+      }
+    },
     "Attempts: %lld · Goals: %lld · Saves: %lld · Posts: %lld · Out: %lld" : {
       "localizations" : {
         "en" : {

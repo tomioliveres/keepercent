@@ -4,38 +4,39 @@
 // split (CLAUDE.md) — its child `ShooterCardContentView` only ever sees a
 // `KeepercentDomain.Player` and a `StatsEngine`.
 //
-// The shooter is identified by shirt number, the same match
-// `StatsEngine.shots(by:)` already uses and `RosterEditorView` passes
-// around for the roster's own edit/delete actions.
+// Navigation and statistics use stable person identity. A single-match
+// selection reads that match's snapshot, not today's mutable roster.
 
 import SwiftUI
 import KeepercentDomain
 
 struct ShooterCardView: View {
     let team: StoredRivalTeam
-    let playerNumber: Int
+    let playerID: UUID
+    @State private var scope: MatchScope = .all
 
-    /// The roster row for this shooter, or a bare, unnamed `Player` built
-    /// from just the number if the row was somehow removed after this
-    /// screen was pushed (e.g. deleted from another window on iPad) — the
-    /// card still has shots to show even if the roster entry is gone.
-    private var player: Player {
-        team.players.first { $0.number == playerNumber }?.domainPlayer ?? Player(number: playerNumber)
+    /// Missing scoped participants remain absent; no number-based fallback.
+    private var player: Player? {
+        ScopedMatchData.player(playerID, team: team, scope: scope)
     }
 
-    /// Every shot recorded across this team's sessions, decoded from
-    /// SwiftData exactly as `TeamScoutingView` does, then narrowed to this
-    /// one shooter's own shots (`shots(by:)` already restricts to
-    /// `.rival` shots from this shirt number).
+    /// Scope first, then stable identity; shirt-number reuse cannot merge people.
     private var engine: StatsEngine {
-        let shots = team.sessions.flatMap { $0.shots.compactMap(\.domainShot) }
-        return StatsEngine(shots: shots).shots(by: playerNumber)
+        ScopedMatchData.engine(team, scope: scope).shots(by: playerID)
     }
 
     var body: some View {
         ScrollView {
-            ShooterCardContentView(player: player, engine: engine)
-                .padding()
+            VStack(alignment: .leading) {
+                MatchScopePicker(options: ScopedMatchData.options(team), scope: $scope)
+                if let player {
+                    ShooterCardContentView(player: player, engine: engine).id(scope)
+                } else {
+                    ContentUnavailableView("No Shooter Data", systemImage: "chart.bar.xaxis",
+                                           description: Text("No rival shooter has recorded shots."))
+                }
+            }
+            .padding()
         }
         // The card's own header already shows "#7 · Name", so the bar
         // stays a small generic title instead of repeating the number.

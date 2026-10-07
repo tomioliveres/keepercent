@@ -13,6 +13,8 @@ import KeepercentDomain
 
 @Model
 final class StoredShot {
+    var shooterSnapshot: StoredMatchParticipant?
+    var goalkeeperSnapshot: StoredMatchParticipant?
     var date: Date
     /// `AttackingSide.rawValue`.
     var attackingSideCode: String
@@ -92,8 +94,8 @@ final class StoredShot {
     var domainShot: Shot? {
         Shot(
             attackingSideCode: attackingSideCode,
-            shooter: shooter?.domainPlayer,
-            facingGoalkeeper: facingGoalkeeper?.domainPlayer,
+            shooter: shooterSnapshot?.domainPlayer,
+            facingGoalkeeper: goalkeeperSnapshot?.domainPlayer,
             originX: originX,
             originY: originY,
             isSevenMeters: isSevenMeters,

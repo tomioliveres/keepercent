@@ -3,8 +3,9 @@ import KeepercentDomain
 
 /// The same fixed-width SwiftUI drawing is used on screen and by ImageRenderer.
 struct TeamReportCardView: View {
-    let goalkeeperNumber: Int
+    let goalkeeperNumber: Int?
     let engine: StatsEngine
+    var scopeLabel: String = String(localized: "All matches")
     @Environment(\.colorScheme) private var colorScheme
 
     private var field: StatsEngine { engine.fieldShots }
@@ -18,8 +19,15 @@ struct TeamReportCardView: View {
                     .foregroundStyle(.secondary)
                 Text("Where to shoot / where not to")
                     .font(.title3.bold())
-                Text("Against goalkeeper #\(goalkeeperNumber)")
-                    .font(.subheadline)
+                if let goalkeeperNumber {
+                    Text("Against goalkeeper #\(goalkeeperNumber)")
+                        .font(.subheadline)
+                } else {
+                    Text("Goalkeeper unavailable").font(.subheadline)
+                }
+                Text(scopeLabel)
+                    .font(.caption.weight(.semibold))
+                    .fixedSize(horizontal: false, vertical: true)
                 Text("Shooter's view · left and right face the goal")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -70,7 +78,7 @@ struct TeamReportCardView: View {
             }
             .font(.caption)
             .fixedSize(horizontal: false, vertical: true)
-            Text("Only shots faced by #\(goalkeeperNumber) are included. Frame hits and misses are not goal-zone samples.")
+            Text("Only shots faced by this goalkeeper are included. Frame hits and misses are not goal-zone samples.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

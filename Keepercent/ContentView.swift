@@ -108,19 +108,19 @@ struct DebugLaunchView: View {
                 unavailable("No Scouting Data", description: "Add a rival team to view scouting data.")
             }
         case .shooterCard:
-            if let team, let number = team.sessions.flatMap(\.shots)
-                .compactMap({ $0.shooter?.number }).sorted().first {
-                ShooterCardView(team: team, playerNumber: number)
+            if let team, let id = team.sessions.flatMap(\.shots)
+                .compactMap({ $0.shooterSnapshot?.personID }).sorted(by: { $0.uuidString < $1.uuidString }).first {
+                ShooterCardView(team: team, playerID: id)
             } else {
                 unavailable("No Shooter Data", description: "No rival shooter has recorded shots.")
             }
         case .goalkeeperCard:
-            if let team, let number = (
+            if let team, let id = (
                 configuration.data == .emptyGoalkeeper
-                    ? team.players.filter(\.isGoalkeeper).map(\.number)
-                    : team.sessions.flatMap(\.shots).compactMap { $0.facingGoalkeeper?.number }
-            ).sorted().first {
-                GoalkeeperCardView(team: team, playerNumber: number)
+                    ? team.players.filter(\.isGoalkeeper).compactMap(\.personID)
+                    : team.sessions.flatMap(\.shots).compactMap { $0.goalkeeperSnapshot?.personID }
+            ).sorted(by: { $0.uuidString < $1.uuidString }).first {
+                GoalkeeperCardView(team: team, playerID: id)
             } else {
                 unavailable("No Goalkeeper Data", description: "No rival goalkeeper has faced shots.")
             }

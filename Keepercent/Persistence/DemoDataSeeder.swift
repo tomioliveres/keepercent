@@ -28,6 +28,10 @@ enum DemoDataSeeder {
         // shots below can look up the same row a shooter/goalkeeper maps to
         // without inserting a player more than once.
         let storedPlayers = DemoData.roster.map(StoredPlayer.init)
+        // Fixed fixture identities are reproducible across isolated debug stores.
+        for player in storedPlayers {
+            player.personID = UUID(uuidString: String(format: "00000000-0000-0000-0001-%012d", player.number))!
+        }
         let storedPlayersByNumber = Dictionary(uniqueKeysWithValues: storedPlayers.map { ($0.number, $0) })
 
         let team = StoredRivalTeam(name: demoTeamName, players: storedPlayers)
@@ -36,14 +40,26 @@ enum DemoDataSeeder {
             kindCode: DemoData.sessionKind.rawValue,
             rivalTeam: team
         )
-        session.shots = DemoData.shots.map { shot in
-            StoredShot(
+        session.matchID = UUID(uuidString: "00000000-0000-0000-0002-000000000001")!
+        let second = StoredSession(date: DemoData.sessionDate, kindCode: SessionKind.video.rawValue, rivalTeam: team)
+        second.matchID = UUID(uuidString: "00000000-0000-0000-0002-000000000002")!
+        let empty = StoredSession(date: DemoData.sessionDate.addingTimeInterval(-86400), kindCode: SessionKind.live.rawValue, rivalTeam: team)
+        empty.matchID = UUID(uuidString: "00000000-0000-0000-0002-000000000003")!
+        for match in [session, second, empty] {
+            match.participants = storedPlayers.map { StoredMatchParticipant($0.domainPlayer) }
+        }
+        for (index, shot) in DemoData.shots.enumerated() {
+            let match = index < DemoData.shots.count / 2 ? session : second
+            let stored = StoredShot(
                 shot,
                 shooter: shot.shooter.flatMap { storedPlayersByNumber[$0.number] },
                 facingGoalkeeper: shot.facingGoalkeeper.flatMap { storedPlayersByNumber[$0.number] }
             )
+            stored.shooterSnapshot = match.participants.first { $0.personID == stored.shooter?.personID }
+            stored.goalkeeperSnapshot = match.participants.first { $0.personID == stored.facingGoalkeeper?.personID }
+            match.shots.append(stored)
         }
-        team.sessions = [session]
+        team.sessions = [session, second, empty]
 
         // Inserting the team is enough: SwiftData follows its relationships
         // (players, sessions, and each session's shots) and inserts every

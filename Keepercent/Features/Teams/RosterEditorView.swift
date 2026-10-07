@@ -23,9 +23,8 @@
 //
 //   1. Rebuilds a fresh `Roster` from `team.players` (via `currentRoster()`
 //      below) and asks it to perform the SAME operation the UI action
-//      implies (`addUnknown`, `update`, `remove`). This is what actually
-//      validates the change — uniqueness, range, and (for removal) the
-//      recorded-shot-count rule — against the CURRENT full roster, using
+//      implies (`addUnknown`, `update`). This is what actually
+//      validates the change — uniqueness and range — against the active roster, using
 //      only the domain's own rules. If it throws, NOTHING is written to
 //      SwiftData, and the thrown error's own payload becomes the message
 //      shown to the user (`rosterErrorMessage`).
@@ -33,7 +32,7 @@
 //      change the action implies, directly: `addUnknown` inserts one new
 //      `StoredPlayer`; `update` mutates the four fields of the one
 //      `StoredPlayer` instance the edit sheet was opened for, in place;
-//      `remove` deletes that one row. No other row is ever touched, so no
+//      archive marks that row inactive, never deletes it. No other row is touched, so no
 //      other player's `StoredShot` relationships are ever disturbed.
 //
 // The validated `Roster` returned by step 1 is deliberately discarded
@@ -78,6 +77,7 @@ struct RosterEditorView: View {
     @State private var newSessionKind: SessionKind = .live
     @State private var newSessionMatchDate: Date = .now
     @State private var newSessionErrorMessage: String?
+    @State private var newSessionParticipants: [Player] = []
     @State private var path = NavigationPath()
 
     /// A fresh `Roster` built from this team's current `StoredPlayer` rows,
@@ -88,11 +88,11 @@ struct RosterEditorView: View {
     /// silently swallow that corruption instead of surfacing it, so this is
     /// a `Result` the view explicitly branches on instead.
     private var rosterResult: Result<Roster, Error> {
-        Result { try Roster(players: team.players.map(\.domainPlayer)) }
+        Result { try Roster(players: team.players.filter { $0.archivedAt == nil }.map(\.domainPlayer)) }
     }
 
     private func currentRoster() throws -> Roster {
-        try Roster(players: team.players.map(\.domainPlayer))
+        try Roster(players: team.players.filter { $0.archivedAt == nil }.map(\.domainPlayer))
     }
 
     /// This team's sessions, newest match date first (T3.2 item 4).
@@ -116,14 +116,15 @@ struct RosterEditorView: View {
                                     // reason to tap a roster row. Editing
                                     // moved to the context menu below
                                     // (`onEditPlayer`).
+                                    guard let id = player.id else { return }
                                     if player.isGoalkeeper {
-                                        path.append(GoalkeeperCardRoute(playerNumber: player.number))
+                                        path.append(GoalkeeperCardRoute(playerID: id))
                                     } else {
-                                        path.append(ShooterCardRoute(playerNumber: player.number))
+                                        path.append(ShooterCardRoute(playerID: id))
                                     }
                                 },
                                 onEditPlayer: { player in
-                                    editingPlayer = team.players.first { $0.number == player.number }
+                                    editingPlayer = team.players.first { $0.personID == player.id }
                                 },
                                 onTapAddUnknown: {
                                     addUnknownErrorMessage = nil
@@ -132,6 +133,8 @@ struct RosterEditorView: View {
                                 isScrollable: false
                             )
 
+                            archivedPlayersSection
+                            facingHistorySection
                             sessionsSection
                         }
                         .padding(.bottom)
@@ -158,6 +161,7 @@ struct RosterEditorView: View {
                         newSessionKind = .live
                         newSessionMatchDate = .now
                         newSessionErrorMessage = nil
+                        newSessionParticipants = team.players.filter { $0.archivedAt == nil }.map(\.domainPlayer)
                         isPresentingNewSessionSheet = true
                     } label: {
                         Label("New Session", systemImage: "plus.circle")
@@ -184,16 +188,15 @@ struct RosterEditorView: View {
             }
             // T4.3: a distinct route type again, same reasoning as
             // `ScoutingRoute` above, but this one carries the tapped
-            // shirt number so the destination knows which shooter to
-            // narrow to.
+            // stable person identity so the destination knows whom to narrow to.
             .navigationDestination(for: ShooterCardRoute.self) { route in
-                ShooterCardView(team: team, playerNumber: route.playerNumber)
+                ShooterCardView(team: team, playerID: route.playerID)
             }
             // T4.4: same reasoning as `ShooterCardRoute` — a distinct route
-            // type carrying the tapped shirt number, so the destination
+            // type carrying the tapped person identity, so the destination
             // knows which goalkeeper to narrow to.
             .navigationDestination(for: GoalkeeperCardRoute.self) { route in
-                GoalkeeperCardView(team: team, playerNumber: route.playerNumber)
+                GoalkeeperCardView(team: team, playerID: route.playerID)
             }
         }
         // T3.3, decision ③: the team sidebar is hidden while a session is
@@ -208,7 +211,7 @@ struct RosterEditorView: View {
             let originalNumber = stored.number
             PlayerEditorView(
                 player: stored.domainPlayer,
-                shotCount: stored.shotsTaken.count,
+                shotCount: stored.shotsTaken.count + stored.shotsFaced.count,
                 onSave: { updated in performUpdate(stored: stored, originalNumber: originalNumber, to: updated) },
                 onDelete: { remove(stored) }
             )
@@ -246,7 +249,9 @@ struct RosterEditorView: View {
         // picks on screen instead of SwiftUI dismissing the sheet to show
         // the alert.
         .sheet(isPresented: $isPresentingNewSessionSheet) {
-            NewSessionSheet(kind: $newSessionKind, matchDate: $newSessionMatchDate, onStart: startSession)
+            NewSessionSheet(kind: $newSessionKind, matchDate: $newSessionMatchDate, onStart: startSession,
+                            available: team.players.filter { $0.archivedAt == nil }.map(\.domainPlayer),
+                            participants: $newSessionParticipants)
                 .alert(
                     "Couldn't Start Session",
                     isPresented: Binding(
@@ -299,6 +304,51 @@ struct RosterEditorView: View {
         }
     }
 
+    private var archivedPlayersSection: some View {
+        VStack(alignment: .leading) {
+            let archived = team.players.filter { $0.archivedAt != nil }.sorted { $0.number < $1.number }
+            if !archived.isEmpty {
+                Text("Archived players").font(.headline)
+                ForEach(archived, id: \.persistentModelID) { player in
+                    if let id = player.personID {
+                        Button {
+                            path.append(ShooterCardRoute(playerID: id))
+                        } label: {
+                            Text(verbatim: "#\(player.number) · \(player.name ?? "")")
+                        }
+                        if player.isGoalkeeper || !player.shotsFaced.isEmpty {
+                            Button("Goalkeeper") { path.append(GoalkeeperCardRoute(playerID: id)) }
+                        }
+                    }
+                }
+            }
+        }
+        .padding(.horizontal)
+    }
+
+    private var facingHistorySection: some View {
+        VStack(alignment: .leading) {
+            let historical = team.players.filter { $0.archivedAt == nil && (!$0.shotsTaken.isEmpty || !$0.shotsFaced.isEmpty) }
+            if !historical.isEmpty {
+                Text("Player history").font(.headline)
+                ForEach(historical, id: \.persistentModelID) { player in
+                    if let id = player.personID {
+                        Text(verbatim: "#\(player.number) · \(player.name ?? "")")
+                        HStack {
+                            if !player.shotsTaken.isEmpty {
+                                Button("Shooter") { path.append(ShooterCardRoute(playerID: id)) }
+                            }
+                            if !player.shotsFaced.isEmpty {
+                                Button("Goalkeeper") { path.append(GoalkeeperCardRoute(playerID: id)) }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .padding(.horizontal)
+    }
+
     // MARK: - Actions
 
     /// The "+" tile: validates through `Roster.addUnknown`, then inserts
@@ -346,18 +396,13 @@ struct RosterEditorView: View {
         }
     }
 
-    /// Validates removal through `Roster.remove`, passing the REAL count
-    /// from the SwiftData relationship (`stored.shotsTaken.count`) — never
-    /// a guess, never a hardcoded 0. `Array.count` is never negative, so
-    /// `Roster.remove`'s precondition against a negative count can never
-    /// trip here.
+    /// Archive instead of deleting: both shooting and goalkeeper facing
+    /// associations and every match snapshot remain reachable.
     private func remove(_ stored: StoredPlayer) {
         do {
-            let roster = try currentRoster()
-            let shotCount = stored.shotsTaken.count
-            _ = try roster.remove(number: stored.number, recordedShotCount: shotCount)
-            team.players.removeAll { $0.persistentModelID == stored.persistentModelID }
-            modelContext.delete(stored)
+            // Archive even zero-shot identities: match participation and keeper
+            // facing links are history too. Never delete an existing person.
+            stored.archivedAt = .now
             try modelContext.save()
             editingPlayer = nil
         } catch {
@@ -383,6 +428,8 @@ struct RosterEditorView: View {
                 calendar: .current
             )
             let stored = StoredSession(date: session.matchDate, kindCode: session.kind.rawValue, rivalTeam: team)
+            let roster = try MatchRoster(players: newSessionParticipants)
+            stored.participants = roster.players.map(StoredMatchParticipant.init)
             team.sessions.append(stored)
             modelContext.insert(stored)
             try modelContext.save()
@@ -391,7 +438,7 @@ struct RosterEditorView: View {
             path.append(stored.persistentModelID)
         } catch {
             modelContext.rollback()
-            newSessionErrorMessage = sessionErrorMessage(error)
+            newSessionErrorMessage = error is RosterError ? rosterErrorMessage(error) : sessionErrorMessage(error)
         }
     }
 }
@@ -404,17 +451,15 @@ struct RosterEditorView: View {
 private struct ScoutingRoute: Hashable {}
 
 /// A route pushed onto `path` (T4.3) to reach `ShooterCardView` for one
-/// rival shooter, identified by shirt number — the same identity
-/// `StatsEngine.shots(by:)` already matches on.
+/// rival shooter, identified by stable person identity, not shirt number.
 private struct ShooterCardRoute: Hashable {
-    let playerNumber: Int
+    let playerID: UUID
 }
 
 /// A route pushed onto `path` (T4.4) to reach `GoalkeeperCardView` for one
-/// rival goalkeeper, identified by shirt number — the same identity
-/// `StatsEngine.shots(facing:)` already matches on.
+/// rival goalkeeper, identified by stable person identity, not shirt number.
 private struct GoalkeeperCardRoute: Hashable {
-    let playerNumber: Int
+    let playerID: UUID
 }
 
 /// A UI-ready wrapper so `.alert(presenting:)` can show whatever

@@ -23,14 +23,14 @@ struct TeamScoutingView: View {
 
     @State private var reading: StatsReading = .effectiveness
     @State private var selection: ShotOrigin?
+    @State private var scope: MatchScope = .all
 
     /// Every shot recorded across this team's sessions, decoded from
     /// SwiftData. Built fresh from `team.sessions` rather than cached in
     /// `@State`: this container has no write path of its own, so there is
     /// nothing to keep in sync besides what SwiftData already tracks.
     private var engine: StatsEngine {
-        let shots = team.sessions.flatMap { $0.shots.compactMap(\.domainShot) }
-        return StatsEngine(shots: shots)
+        ScopedMatchData.engine(team, scope: scope)
     }
 
     /// The engine `LinkedZonesView` actually reads: the rival's own shots
@@ -55,6 +55,8 @@ struct TeamScoutingView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
+                MatchScopePicker(options: ScopedMatchData.options(team), scope: $scope)
+                    .onChange(of: scope) { selection = nil }
                 Picker("Reading", selection: $reading) {
                     Text("Effectiveness").tag(StatsReading.effectiveness)
                     Text("Save rate").tag(StatsReading.saveRate)

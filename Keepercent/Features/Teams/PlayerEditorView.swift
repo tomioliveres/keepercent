@@ -4,27 +4,18 @@
 // `KeepercentDomain.Player` draft plus a plain shot count and reports back
 // through closures. It never sees `StoredPlayer` or `ModelContext` — the
 // container (`RosterEditorView`) runs every edit through
-// `Roster.update`/`Roster.remove` before touching SwiftData, so this view
+// `Roster.update` before touching SwiftData, so this view
 // never re-implements the domain's uniqueness, range or shot-count rules.
 //
-// Delete affordance decision: the "Remove Player" button is always
-// enabled, never pre-emptively greyed out. Disabling it here would need
-// this view to decide on its own whether the player currently "has
-// shots" — exactly the rule `Roster.remove` owns, and CLAUDE.md is
-// explicit that a view must never re-implement a rule the domain already
-// owns. So the button always tries, `Roster.remove` is what actually
-// decides, and a refusal is explained by reading straight from
-// `RosterError.playerHasRecordedShots`'s own payload (`rosterErrorMessage`
-// in RosterErrorMessaging.swift) — never a locally-computed guess. The
-// "Recorded shots" row below is purely informational (a straight read of
-// `shotCount`, not a re-implementation of the removal rule), so the scout
-// can see the number before even trying to remove the player, and isn't
-// surprised by the alert when it appears.
+// Archive is deliberately available even with recorded shots: the container
+// keeps the row, both shot associations and the match snapshots. The displayed
+// count includes shots taken and faced; it does not gate historical access.
 
 import SwiftUI
 import KeepercentDomain
 
 struct PlayerEditorView: View {
+    private let playerID: UUID?
     let shotCount: Int
     let onSave: (Player) -> Void
     let onDelete: () -> Void
@@ -38,6 +29,7 @@ struct PlayerEditorView: View {
     @State private var isConfirmingDelete = false
 
     init(player: Player, shotCount: Int, onSave: @escaping (Player) -> Void, onDelete: @escaping () -> Void) {
+        self.playerID = player.id
         self.shotCount = shotCount
         self.onSave = onSave
         self.onDelete = onDelete
@@ -77,13 +69,11 @@ struct PlayerEditorView: View {
                 Section {
                     LabeledContent("Recorded shots", value: "\(shotCount)")
                 } footer: {
-                    if shotCount > 0 {
-                        Text("This player has recorded shots. Removal will be refused until they're gone.")
-                    }
+                    Text("Archiving preserves this player's match history and excludes them from future roster suggestions.")
                 }
 
                 Section {
-                    Button("Remove Player", role: .destructive) {
+                    Button("Archive Player", role: .destructive) {
                         isConfirmingDelete = true
                     }
                 }
@@ -98,6 +88,7 @@ struct PlayerEditorView: View {
                         guard let number = parsedNumber else { return }
                         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
                         onSave(Player(
+                            id: playerID,
                             number: number,
                             name: trimmedName.isEmpty ? nil : trimmedName,
                             isGoalkeeper: isGoalkeeper,
@@ -108,14 +99,14 @@ struct PlayerEditorView: View {
                 }
             }
             .confirmationDialog(
-                "Remove this player?",
+                "Archive this player?",
                 isPresented: $isConfirmingDelete,
                 titleVisibility: .visible
             ) {
-                Button("Remove Player", role: .destructive, action: onDelete)
+                Button("Archive Player", role: .destructive, action: onDelete)
                 Button("Cancel", role: .cancel) {}
             } message: {
-                Text("This can't be undone. If shots are recorded against this player, removal will be refused and explained.")
+                Text("Match history and recorded shots will be preserved.")
             }
         }
     }

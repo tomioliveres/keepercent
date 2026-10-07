@@ -26,12 +26,16 @@ public enum Handedness: String, CaseIterable, Equatable, Hashable, Sendable {
 /// primitives (a raw string for `handedness`), and this struct is how the
 /// domain and `StatsEngine` see a player.
 public struct Player: Equatable, Hashable, Sendable {
+    /// Stable person identity. Nil is explicit legacy/test compatibility,
+    /// never a generated or number-derived production identity.
+    public let id: UUID?
     public let number: Int
     public let name: String?
     public let isGoalkeeper: Bool
     public let handedness: Handedness?
 
-    public init(number: Int, name: String? = nil, isGoalkeeper: Bool = false, handedness: Handedness? = nil) {
+    public init(id: UUID? = nil, number: Int, name: String? = nil, isGoalkeeper: Bool = false, handedness: Handedness? = nil) {
+        self.id = id
         self.number = number
         self.name = name
         self.isGoalkeeper = isGoalkeeper
@@ -167,8 +171,9 @@ extension Player {
     /// Handedness is optional in the domain, so an unrecognized code
     /// decodes to nil instead of invalidating the whole player: a shirt
     /// number and a name are still useful scouting.
-    public init(number: Int, name: String?, isGoalkeeper: Bool, handednessCode: String?) {
+    public init(id: UUID? = nil, number: Int, name: String?, isGoalkeeper: Bool, handednessCode: String?) {
         self.init(
+            id: id,
             number: number,
             name: name,
             isGoalkeeper: isGoalkeeper,

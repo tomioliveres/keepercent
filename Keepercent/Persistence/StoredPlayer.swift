@@ -9,6 +9,8 @@ import KeepercentDomain
 
 @Model
 final class StoredPlayer {
+    var personID: UUID?
+    var archivedAt: Date?
     var number: Int
     var name: String?
     var isGoalkeeper: Bool
@@ -41,6 +43,8 @@ final class StoredPlayer {
         shotsFaced: [StoredShot] = []
     ) {
         self.number = number
+        self.personID = UUID()
+        self.archivedAt = nil
         self.name = name
         self.isGoalkeeper = isGoalkeeper
         self.handednessCode = handednessCode
@@ -57,6 +61,7 @@ final class StoredPlayer {
             isGoalkeeper: player.isGoalkeeper,
             handednessCode: player.handedness?.rawValue
         )
+        if let id = player.id { personID = id }
     }
 
     /// The domain value this row represents. The handedness decoding rule
@@ -65,6 +70,7 @@ final class StoredPlayer {
     /// where it is covered by `swift test`.
     var domainPlayer: Player {
         Player(
+            id: personID,
             number: number,
             name: name,
             isGoalkeeper: isGoalkeeper,

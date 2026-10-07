@@ -264,8 +264,12 @@ private extension StatsEngine {
     /// tie) and counts, after every goal, whether the next shot targeted
     /// the same goal zone. Shots with no recorded shooter are skipped.
     static func repeatAfterGoal(_ field: [Shot]) -> ScoutingPattern? {
+        // Number-only values are supported explicitly for legacy domain fixtures;
+        // production persistence supplies a stable identity before UI entry.
+        enum Identity: Hashable { case person(UUID), legacyNumber(Int) }
         let byShooter = Dictionary(grouping: field.enumerated().filter { $0.element.shooter != nil }) {
-            $0.element.shooter?.number
+            let player = $0.element.shooter!
+            return player.id.map(Identity.person) ?? .legacyNumber(player.number)
         }
         var pairs = 0
         var repeats = 0

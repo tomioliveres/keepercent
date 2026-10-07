@@ -54,16 +54,23 @@ public struct StatsEngine: Equatable, Sendable {
 // MARK: - Filters
 
 extension StatsEngine {
-    /// The rival shooter's own shots, matched by shirt number: a container
-    /// only ever feeds one rival team's shots, so the number alone is
-    /// enough to identify them.
+    public func shots(by identity: UUID) -> StatsEngine {
+        StatsEngine(shots: shots.filter { $0.attackingSide == .rival && $0.shooter?.id == identity })
+    }
+
+    public func shots(facing identity: UUID) -> StatsEngine {
+        StatsEngine(shots: shots.filter { $0.attackingSide == .own && $0.facingGoalkeeper?.id == identity })
+    }
+
+    /// Explicit number-only compatibility for legacy fixtures. Production
+    /// person cards must use the UUID overload; numbers are not identities.
     public func shots(by shooterNumber: Int) -> StatsEngine {
         StatsEngine(shots: shots.filter {
             $0.attackingSide == .rival && $0.shooter?.number == shooterNumber
         })
     }
 
-    /// The shots faced by one rival goalkeeper, matched by shirt number.
+    /// Number-only compatibility; not a production person-history filter.
     public func shots(facing goalkeeperNumber: Int) -> StatsEngine {
         StatsEngine(shots: shots.filter {
             $0.attackingSide == .own && $0.facingGoalkeeper?.number == goalkeeperNumber

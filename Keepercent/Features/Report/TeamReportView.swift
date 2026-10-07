@@ -4,28 +4,32 @@ import KeepercentDomain
 /// The container owns the SwiftData read; the card receives only domain values.
 struct TeamReportView: View {
     let team: StoredRivalTeam
-    let goalkeeperNumber: Int
+    let playerID: UUID
+    let scope: MatchScope
+
+    private var player: Player? { ScopedMatchData.player(playerID, team: team, scope: scope) }
+    private var scopeLabel: String { ScopedMatchData.label(team, scope: scope) }
+    private var goalkeeperNumber: Int? { player?.number }
 
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.displayScale) private var displayScale
     @State private var sharedImage: Image?
 
     private var engine: StatsEngine {
-        let shots = team.sessions.flatMap { $0.shots.compactMap(\.domainShot) }
-        return StatsEngine(shots: shots).shots(facing: goalkeeperNumber)
+        ScopedMatchData.engine(team, scope: scope).shots(facing: playerID)
     }
 
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
-                TeamReportCardView(goalkeeperNumber: goalkeeperNumber, engine: engine)
+                TeamReportCardView(goalkeeperNumber: goalkeeperNumber, engine: engine, scopeLabel: scopeLabel)
                     .frame(width: 320)
 
                 if let sharedImage {
                     ShareLink(
                         item: sharedImage,
                         subject: Text("Goalkeeper scouting report"),
-                        preview: SharePreview(Text("Goalkeeper #\(goalkeeperNumber) report"), image: sharedImage)
+                        preview: SharePreview(Text("Goalkeeper scouting report"), image: sharedImage)
                     ) {
                         // Navy on amber: white text on the light amber
                         // fill would be unreadable, in dark mode above all.
@@ -49,13 +53,15 @@ struct TeamReportView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear(perform: renderImage)
         .onChange(of: engine.shots) { renderImage() }
+        .onChange(of: scopeLabel) { renderImage() }
+        .onChange(of: goalkeeperNumber) { renderImage() }
         .onChange(of: colorScheme) { renderImage() }
     }
 
     @MainActor
     private func renderImage() {
         sharedImage = nil
-        let card = TeamReportCardView(goalkeeperNumber: goalkeeperNumber, engine: engine)
+        let card = TeamReportCardView(goalkeeperNumber: goalkeeperNumber, engine: engine, scopeLabel: scopeLabel)
             .frame(width: 320)
             .environment(\.colorScheme, colorScheme)
         let renderer = ImageRenderer(content: card)

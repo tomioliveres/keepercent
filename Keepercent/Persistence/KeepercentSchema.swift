@@ -11,18 +11,21 @@ enum KeepercentSchema {
         StoredPlayer.self,
         StoredSession.self,
         StoredShot.self,
+        StoredMatchParticipant.self,
     ]
 
-    /// The container used by the running app. A hackathon MVP has no
-    /// migration story yet, so a store that fails to open (corrupt file,
-    /// incompatible schema) is unrecoverable: crashing loudly at launch
+    /// The container used by the running app. Additive schema opening and
+    /// transactional historical backfill happen before seeding/UI. A store
+    /// that fails either step is unrecoverable: crashing loudly at launch
     /// beats silently losing scouting data or running against a container
     /// that never actually persists.
     static func makeContainer(inMemory: Bool = false) -> ModelContainer {
         let schema = Schema(models)
         let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: inMemory)
         do {
-            return try ModelContainer(for: schema, configurations: [configuration])
+            let container = try ModelContainer(for: schema, configurations: [configuration])
+            try MatchHistoryUpgrade.run(in: ModelContext(container))
+            return container
         } catch {
             fatalError("Failed to create the SwiftData container: \(error)")
         }

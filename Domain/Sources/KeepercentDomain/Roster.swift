@@ -165,13 +165,17 @@ public struct Roster: Equatable, Hashable, Sendable {
     /// conflict, since that number is about to be vacated by the very same
     /// update.
     public func update(number: Int, to updated: Player) throws -> Roster {
-        guard playersByNumber[number] != nil else {
+        guard let original = playersByNumber[number] else {
             throw RosterError.playerNotFound(number: number)
         }
         try validate(number: updated.number, replacing: number)
         var result = playersByNumber
         result.removeValue(forKey: number)
-        result[updated.number] = updated
+        // Editing changes roster facts, never replaces the person. Number-only
+        // legacy values remain deterministic; no UUID is created in the domain.
+        result[updated.number] = Player(id: original.id ?? updated.id, number: updated.number,
+                                       name: updated.name, isGoalkeeper: updated.isGoalkeeper,
+                                       handedness: updated.handedness)
         return Roster(playersByNumber: result)
     }
 

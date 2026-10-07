@@ -25,12 +25,15 @@ struct NewSessionSheet: View {
     @Binding var kind: SessionKind
     @Binding var matchDate: Date
     let onStart: () -> Void
+    var available: [Player] = []
+    @Binding var participants: [Player]
 
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationStack {
             Form {
+                MatchRosterSelection(available: available, players: $participants)
                 Section {
                     Picker("Kind", selection: $kind) {
                         ForEach(SessionKind.allCases, id: \.self) { kind in
@@ -65,5 +68,5 @@ struct NewSessionSheet: View {
 }
 
 #Preview("NewSessionSheet") {
-    NewSessionSheet(kind: .constant(.live), matchDate: .constant(.now), onStart: {})
+    NewSessionSheet(kind: .constant(.live), matchDate: .constant(.now), onStart: {}, participants: .constant([]))
 }

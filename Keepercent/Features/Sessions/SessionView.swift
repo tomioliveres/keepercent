@@ -111,6 +111,13 @@ struct SessionView: View {
     @State private var lastShotID: PersistentIdentifier?
     @State private var saveHapticTrigger = false
     @State private var isPresentingShotLog = false
+    @State private var isPresentingMatchRoster = false
+    @State private var rosterDraft: [Player] = []
+    @State private var rosterError: String?
+
+    private var matchPlayers: [Player] {
+        session.participants.map(\.domainPlayer).sorted { $0.number < $1.number }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -135,6 +142,13 @@ struct SessionView: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {
+                    rosterDraft = matchPlayers
+                    rosterError = nil
+                    isPresentingMatchRoster = true
+                } label: { Label("Match roster", systemImage: "person.3") }
+            }
+            ToolbarItem(placement: .primaryAction) {
+                Button {
                     isPresentingShotLog = true
                 } label: {
                     Label("Shot Log", systemImage: "list.bullet.rectangle")
@@ -143,6 +157,11 @@ struct SessionView: View {
         }
         .sheet(isPresented: $isPresentingShotLog) {
             ShotLogView(session: session, onDeletedShot: shotWasDeleted)
+        }
+        .sheet(isPresented: $isPresentingMatchRoster) {
+            MatchRosterSheet(available: team.players.filter { $0.archivedAt == nil }.map(\.domainPlayer),
+                             players: $rosterDraft, lockedIDs: Set(matchPlayers.compactMap(\.id)),
+                             errorMessage: rosterError, onSave: saveMatchRoster)
         }
         .sensoryFeedback(.success, trigger: saveHapticTrigger)
         .task(id: lastShotCard) {
@@ -168,6 +187,11 @@ struct SessionView: View {
             Text(headerSubtitle)
                 .font(.subheadline)
                 .foregroundStyle(.primary)
+            if session.historyWasBackfilled == true {
+                Text("Historical roster uses the player details available when this store was upgraded.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 
@@ -229,7 +253,7 @@ struct SessionView: View {
     private var shooterContent: some View {
         if attackingSide == .rival {
             ShooterGridColumn(
-                players: team.players.map(\.domainPlayer).sorted { $0.number < $1.number },
+                players: matchPlayers,
                 selectedNumber: selectedShooterNumber,
                 onSelect: { selectedShooterNumber = $0 }
             )
@@ -280,7 +304,7 @@ struct SessionView: View {
         ShotEntryContextPanel(
             attackingSide: attackingSide,
             onSelectAttackingSide: { attackingSide = $0 },
-            goalkeepers: team.players.filter(\.isGoalkeeper).map(\.domainPlayer).sorted { $0.number < $1.number },
+            goalkeepers: matchPlayers.filter(\.isGoalkeeper),
             activeGoalkeeperNumber: activeRivalGoalkeeperNumber,
             onSelectGoalkeeper: { activeRivalGoalkeeperNumber = $0 },
             delivery: delivery,
@@ -299,12 +323,12 @@ struct SessionView: View {
 
     private var selectedShooter: Player? {
         guard let number = selectedShooterNumber else { return nil }
-        return team.players.first { $0.number == number }?.domainPlayer
+        return matchPlayers.first { $0.number == number }
     }
 
     private var activeRivalGoalkeeper: Player? {
         guard let number = activeRivalGoalkeeperNumber else { return nil }
-        return team.players.first { $0.number == number }?.domainPlayer
+        return matchPlayers.first { $0.number == number }
     }
 
     private func selectOrigin(_ origin: ShotOrigin, _ point: CourtPoint?) {
@@ -373,12 +397,14 @@ struct SessionView: View {
     /// this file's header comment.
     private func persist(_ shot: Shot) {
         let shooterStored = shot.shooter.flatMap { shooter in
-            team.players.first { $0.number == shooter.number }
+            team.players.first { $0.personID == shooter.id }
         }
         let goalkeeperStored = shot.facingGoalkeeper.flatMap { goalkeeper in
-            team.players.first { $0.number == goalkeeper.number }
+            team.players.first { $0.personID == goalkeeper.id }
         }
         let stored = StoredShot(shot, shooter: shooterStored, facingGoalkeeper: goalkeeperStored)
+        stored.shooterSnapshot = session.participants.first { $0.personID == shot.shooter?.id }
+        stored.goalkeeperSnapshot = session.participants.first { $0.personID == shot.facingGoalkeeper?.id }
         session.shots.append(stored)
         modelContext.insert(stored)
 
@@ -410,6 +436,23 @@ struct SessionView: View {
     }
 
     // MARK: - Undo
+
+    private func saveMatchRoster() {
+        do {
+            let validated = try MatchRoster(players: rosterDraft)
+            for player in validated.players where !session.participants.contains(where: { $0.personID == player.id }) {
+                let snapshot = StoredMatchParticipant(player)
+                modelContext.insert(snapshot)
+                session.participants.append(snapshot)
+            }
+            try modelContext.save()
+            selectedShooterNumber = nil
+            isPresentingMatchRoster = false
+        } catch {
+            modelContext.rollback()
+            rosterError = rosterErrorMessage(error)
+        }
+    }
 
     private func undoLastShot() {
         guard let lastShotID,
@@ -463,6 +506,7 @@ struct SessionView: View {
         StoredPlayer(Player(number: 7)),
         StoredPlayer(Player(number: 12, name: "Sofía", isGoalkeeper: true, handedness: .right)),
     ]
+    session.participants = team.players.map { StoredMatchParticipant($0.domainPlayer) }
     container.mainContext.insert(team)
 
     return NavigationStack {

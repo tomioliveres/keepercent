@@ -5,36 +5,38 @@
 // `GoalkeeperCardContentView` only ever sees a `KeepercentDomain.Player`
 // and a `StatsEngine`.
 //
-// The goalkeeper is identified by shirt number, the same match
-// `StatsEngine.shots(facing:)` already uses.
+// Stable identity follows the goalkeeper through renumbering and archiving.
 
 import SwiftUI
 import KeepercentDomain
 
 struct GoalkeeperCardView: View {
     let team: StoredRivalTeam
-    let playerNumber: Int
+    let playerID: UUID
+    @State private var scope: MatchScope = .all
 
-    /// The roster row for this goalkeeper, or a bare, unnamed `Player`
-    /// built from just the number if the row was somehow removed after
-    /// this screen was pushed — same fallback `ShooterCardView` uses.
-    private var player: Player {
-        team.players.first { $0.number == playerNumber }?.domainPlayer ?? Player(number: playerNumber)
+    /// Scoped snapshot or all-match person; never a guessed number-only player.
+    private var player: Player? {
+        ScopedMatchData.player(playerID, team: team, scope: scope)
     }
 
-    /// Every shot recorded across this team's sessions, decoded from
-    /// SwiftData exactly as `ShooterCardView` does, then narrowed to the
-    /// shots this one goalkeeper faced (`shots(facing:)` already restricts
-    /// to `.own` shots aimed at this shirt number).
+    /// The selected match scope is retained before filtering by person identity.
     private var engine: StatsEngine {
-        let shots = team.sessions.flatMap { $0.shots.compactMap(\.domainShot) }
-        return StatsEngine(shots: shots).shots(facing: playerNumber)
+        ScopedMatchData.engine(team, scope: scope).shots(facing: playerID)
     }
 
     var body: some View {
         ScrollView {
-            GoalkeeperCardContentView(player: player, engine: engine)
-                .padding()
+            VStack(alignment: .leading) {
+                MatchScopePicker(options: ScopedMatchData.options(team), scope: $scope)
+                if let player {
+                    GoalkeeperCardContentView(player: player, engine: engine).id(scope)
+                } else {
+                    ContentUnavailableView("No Goalkeeper Data", systemImage: "chart.bar.xaxis",
+                                           description: Text("No rival goalkeeper has faced shots."))
+                }
+            }
+            .padding()
         }
         // Same reasoning as `ShooterCardView`'s own bar title: the card's
         // header already shows "#1 · Name".
@@ -43,7 +45,7 @@ struct GoalkeeperCardView: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 NavigationLink {
-                    TeamReportView(team: team, goalkeeperNumber: playerNumber)
+                    TeamReportView(team: team, playerID: playerID, scope: scope)
                 } label: {
                     Label("Team Report", systemImage: "square.and.arrow.up")
                 }

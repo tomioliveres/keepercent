@@ -7,6 +7,11 @@ import KeepercentDomain
 
 @Model
 final class StoredSession {
+    var matchID: UUID?
+    var historyUpgraded: Bool?
+    var historyWasBackfilled: Bool?
+    @Relationship(deleteRule: .cascade)
+    var participants: [StoredMatchParticipant] = []
     var date: Date
     /// `SessionKind.rawValue` (see Shot.swift for why the raw enum value IS
     /// the persistence code for these small string enums).
@@ -23,6 +28,9 @@ final class StoredSession {
 
     init(date: Date, kindCode: String, rivalTeam: StoredRivalTeam?, shots: [StoredShot] = []) {
         self.date = date
+        self.matchID = UUID()
+        self.historyUpgraded = true
+        self.historyWasBackfilled = false
         self.kindCode = kindCode
         self.rivalTeam = rivalTeam
         self.shots = shots
