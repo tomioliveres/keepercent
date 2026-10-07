@@ -384,9 +384,11 @@ struct RosterEditorView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.vertical, 8)
-            .contentShape(Rectangle())
+            .background(Color.clear)
+            .contentShape(.interaction, Rectangle())
         }
         .buttonStyle(.plain)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     /// The "+" tile: validates through `Roster.addUnknown`, then inserts

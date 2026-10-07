@@ -44,6 +44,12 @@ struct MatchRosterSelection: View {
                     // a captured array index that removal could invalidate.
                     HStack {
                         Text("Shirt Number")
+                        if lockedIDs.contains(id) {
+                            Image(systemName: "lock.fill")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .accessibilityHidden(true)
+                        }
                         Spacer()
                         TextField("Number", value: Binding(
                             get: { players.first { $0.id == id }?.number ?? player.number },
@@ -59,6 +65,8 @@ struct MatchRosterSelection: View {
                         .accessibilityLabel("Shirt Number")
                     }
                     .disabled(!selected || lockedIDs.contains(id))
+                    .foregroundStyle(selected ? Color.primary : Color.secondary)
+                    .opacity(selected ? 1 : 0.5)
                 }
             }
         } header: {

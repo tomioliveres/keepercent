@@ -32,16 +32,21 @@ struct GoalkeeperCardContentView: View {
         let patterns = engine.goalkeeperPatterns()
         VStack(alignment: .leading, spacing: 24) {
             header
-            InsightTextView(facts: .goalkeeper(
-                overall: engine.saveRate,
-                weakZone: engine.fieldShots.weakGoalZones(limit: 1).first,
-                patterns: Array(patterns.prefix(PatternsSection.limit))
-            ))
-            PatternsSection(patterns: patterns, shotCount: engine.shots.count)
-            LinkedZonesView(engine: engine, reading: .saveRate, selection: $selection)
-            SevenMeterSection(engine: engine, reading: .saveRate)
-            weakZonesSection
-            strongZonesSection
+            if engine.shots.isEmpty {
+                ContentUnavailableView("No Goalkeeper Data", systemImage: "chart.bar.xaxis",
+                                       description: Text("No shots faced yet"))
+            } else {
+                InsightTextView(facts: .goalkeeper(
+                    overall: engine.saveRate,
+                    weakZone: engine.fieldShots.weakGoalZones(limit: 1).first,
+                    patterns: Array(patterns.prefix(PatternsSection.limit))
+                ))
+                PatternsSection(patterns: patterns, shotCount: engine.shots.count)
+                LinkedZonesView(engine: engine, reading: .saveRate, selection: $selection)
+                SevenMeterSection(engine: engine, reading: .saveRate)
+                weakZonesSection
+                strongZonesSection
+            }
         }
     }
 
@@ -51,9 +56,11 @@ struct GoalkeeperCardContentView: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(playerTitle)
                 .font(.title2.bold())
-            Text(headerStatsLine)
-                .font(.subheadline)
-                .foregroundStyle(engine.saveRate.attempts == 0 ? Color.primary : Color.secondary)
+            if !engine.shots.isEmpty {
+                Text(headerStatsLine)
+                    .font(.subheadline)
+                    .foregroundStyle(engine.saveRate.attempts == 0 ? Color.primary : Color.secondary)
+            }
         }
     }
 

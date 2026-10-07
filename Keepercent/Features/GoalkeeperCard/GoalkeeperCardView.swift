@@ -49,6 +49,9 @@ struct GoalkeeperCardView: View {
                 } label: {
                     Label("Team Report", systemImage: "square.and.arrow.up")
                 }
+                // No attributable scoped attempts means no useful report.
+                // Post/miss-only samples still count as data, not an empty card.
+                .disabled(player == nil || engine.shots.isEmpty)
             }
         }
     }
