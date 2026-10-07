@@ -39,6 +39,7 @@ struct GoalkeeperCardContentView: View {
             ))
             PatternsSection(patterns: patterns, shotCount: engine.shots.count)
             LinkedZonesView(engine: engine, reading: .saveRate, selection: $selection)
+            SevenMeterSection(engine: engine, reading: .saveRate)
             weakZonesSection
             strongZonesSection
         }
