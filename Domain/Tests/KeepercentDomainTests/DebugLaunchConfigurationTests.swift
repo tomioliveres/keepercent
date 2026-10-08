@@ -3,6 +3,13 @@ import Testing
 
 @Suite("Debug launch configuration")
 struct DebugLaunchConfigurationTests {
+    @Test("The own-roster verification mode does not fall back to rival-only demo")
+    func ownRosterVerificationMode() {
+        let configuration = DebugLaunchConfiguration.parse(screen: nil, data: "demoOwnRoster")
+        #expect(configuration?.screen == .teams)
+        #expect(configuration?.data.rawValue == "demoOwnRoster")
+    }
+
     @Test("No arguments preserve the normal launch")
     func noArguments() {
         #expect(DebugLaunchConfiguration.parse(screen: nil, data: nil) == nil)
@@ -20,7 +27,7 @@ struct DebugLaunchConfigurationTests {
     }
 
     @Test("All data modes are selectable without conflating empty stores", arguments: [
-        ("demo", DebugLaunchData.demo), ("empty", .empty),
+        ("demo", DebugLaunchData.demo), ("demoOwnRoster", .demoOwnRoster), ("empty", .empty),
         ("emptyGoalkeeper", .emptyGoalkeeper)
     ])
     func dataValues(raw: String, expected: DebugLaunchData) {
@@ -48,5 +55,6 @@ struct DebugLaunchConfigurationTests {
         #expect(DebugLaunchConfiguration.parse(screen: "sessions", data: nil)?.data == .demo)
         #expect(DebugLaunchConfiguration.parse(screen: "sessions", data: "unknown")?.data == .demo)
         #expect(DebugLaunchConfiguration.parse(screen: nil, data: "Empty")?.data == .demo)
+        #expect(DebugLaunchConfiguration.parse(screen: nil, data: "DemoOwnRoster")?.data == .demo)
     }
 }

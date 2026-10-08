@@ -12,6 +12,22 @@ import SwiftData
 import KeepercentDomain
 
 enum DemoDataSeeder {
+    /// Verification-only companion to the rival fixture. Never attach today's
+    /// own roster to existing matches or retrofit their unknown attribution.
+    static func seedOwnRosterVerification(into context: ModelContext) throws {
+        try seed(into: context)
+        var descriptor = FetchDescriptor<StoredOwnTeam>()
+        descriptor.fetchLimit = 1
+        // Respect any configured club, including edits made during verification.
+        guard try context.fetch(descriptor).isEmpty else { return }
+        let club = StoredOwnTeam(
+            name: DemoData.verificationOwnTeamName, createdAt: DemoData.sessionDate
+        )
+        club.players = DemoData.verificationOwnRoster.map(StoredPlayer.init)
+        context.insert(club)
+        try context.save()
+    }
+
     /// Inserts `DemoData`'s rival team, roster, session and shots into
     /// `context`. Idempotent: if a rival team with `DemoData.rivalTeamName`
     /// already exists, this returns immediately instead of inserting a

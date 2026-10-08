@@ -30,6 +30,12 @@ struct KeepercentApp: App {
                 } catch {
                     fatalError("Failed to seed the debug store: \(error)")
                 }
+            } else if debugLaunch.data == .demoOwnRoster {
+                do {
+                    try DemoDataSeeder.seedOwnRosterVerification(into: isolated.mainContext)
+                } catch {
+                    fatalError("Failed to seed the own-roster debug fixture: \(error)")
+                }
             } else if debugLaunch.data == .emptyGoalkeeper {
                 let goalkeeper = StoredPlayer(
                     number: 1, name: nil, isGoalkeeper: true, handednessCode: nil

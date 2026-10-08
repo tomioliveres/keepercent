@@ -14,6 +14,24 @@ import Foundation
 
 public enum DemoData {}
 
+// MARK: - Own-roster verification fixture
+
+extension DemoData {
+    /// Separate from the rival-only demo; existing matches stay unattached.
+    public static let verificationOwnTeamName = "HC Marina"
+
+    /// Fixed identities use namespace 0003, distinct from seeded rival people
+    /// (0001) and matches (0002). Shared numbers deliberately exercise both sides.
+    public static let verificationOwnRoster: [Player] = [
+        Player(id: UUID(uuidString: "00000000-0000-0000-0003-000000000001")!,
+               number: 1, name: "Alex Costa", isGoalkeeper: true, handedness: .right),
+        Player(id: UUID(uuidString: "00000000-0000-0000-0003-000000000003")!,
+               number: 3, name: "Sam Roca", handedness: .right),
+        Player(id: UUID(uuidString: "00000000-0000-0000-0003-000000000004")!,
+               number: 4, name: "Noa Serra", handedness: .left)
+    ]
+}
+
 // MARK: - Match fixture membership
 
 extension DemoData {

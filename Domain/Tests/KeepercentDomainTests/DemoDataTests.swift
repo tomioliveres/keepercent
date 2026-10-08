@@ -12,6 +12,42 @@ private func utcDay(_ date: Date) -> DateComponents {
 }
 
 struct DemoDataTests {
+    @Test func verificationOwnRosterIsNamedAndValid() throws {
+        #expect(DemoData.verificationOwnTeamName == "HC Marina")
+        let roster = DemoData.verificationOwnRoster
+        #expect(roster.map(\.number) == [1, 3, 4])
+        #expect(roster.map(\.name) == ["Alex Costa", "Sam Roca", "Noa Serra"])
+        #expect(roster.map(\.isGoalkeeper) == [true, false, false])
+        #expect(try Roster(players: roster).players == roster)
+        #expect(try MatchRoster(players: roster).players == roster)
+    }
+
+    @Test func verificationIdentitiesAreFixedDistinctAndIndependentOfRivalNumbers() throws {
+        let ids = try DemoData.verificationOwnRoster.map { try #require($0.id) }
+        #expect(ids.map(\.uuidString) == [
+            "00000000-0000-0000-0003-000000000001",
+            "00000000-0000-0000-0003-000000000003",
+            "00000000-0000-0000-0003-000000000004"
+        ])
+        #expect(Set(ids).count == 3)
+        let seededRivalIDs = DemoData.roster.map {
+            UUID(uuidString: String(format: "00000000-0000-0000-0001-%012d", $0.number))!
+        }
+        #expect(Set(ids).isDisjoint(with: seededRivalIDs))
+        #expect(Set(ids).isDisjoint(with: DemoData.roster.compactMap(\.id)))
+        #expect(Set(DemoData.verificationOwnRoster.map(\.number))
+            .isSubset(of: Set(DemoData.roster.map(\.number))))
+        #expect(DemoData.verificationOwnRoster.map(\.handedness) == [.right, .right, .left])
+    }
+
+    @Test func existingDemoKeepsUnknownOwnAttribution() {
+        #expect(DemoData.shots.count == 40)
+        #expect(DemoData.shots.allSatisfy { $0.ownShooter == nil && $0.ownGoalkeeper == nil })
+        #expect(DemoData.roster.count == 12)
+        #expect(DemoData.rivalTeamName == "BM Serra")
+        #expect(DemoData.sessionDate == Date(timeIntervalSince1970: 1_789_927_200))
+    }
+
     @Test func populatedMatchesIncludeBothSidesAndBothGoalkeepers() {
         #expect(DemoData.matchShotIndices.count == 3)
         for indices in DemoData.matchShotIndices.prefix(2) {

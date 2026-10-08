@@ -11,8 +11,8 @@
     "Own Team Roster" : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Own Team Roster" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Plantilla del equipo propio" } },
-        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Plantel del equipo propio" } }
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Plantilla propia" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Plantel propio" } }
       }
     },
     "Own team is optional. Rival-only scouting remains available." : {
