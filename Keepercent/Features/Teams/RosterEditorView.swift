@@ -68,6 +68,7 @@ struct RosterEditorView: View {
     /// signal, via `.onChange(of:)`, needs no second source of truth.
     @Binding var columnVisibility: NavigationSplitViewVisibility
     @Environment(\.modelContext) private var modelContext
+    @Query(sort: \StoredOwnTeam.createdAt) private var ownTeams: [StoredOwnTeam]
 
     @State private var editingPlayer: StoredPlayer?
     @State private var isAddingUnknown = false
@@ -78,6 +79,8 @@ struct RosterEditorView: View {
     @State private var newSessionMatchDate: Date = .now
     @State private var newSessionErrorMessage: String?
     @State private var newSessionParticipants: [Player] = []
+    @State private var includeOwnTeam = false
+    @State private var newSessionOwnParticipants: [Player] = []
     @State private var path = NavigationPath()
 
     /// A fresh `Roster` built from this team's current `StoredPlayer` rows,
@@ -162,6 +165,8 @@ struct RosterEditorView: View {
                         newSessionMatchDate = .now
                         newSessionErrorMessage = nil
                         newSessionParticipants = team.players.filter { $0.archivedAt == nil }.map(\.domainPlayer)
+                        includeOwnTeam = ownTeams.first != nil
+                        newSessionOwnParticipants = ownTeams.first?.players.filter { $0.archivedAt == nil }.map(\.domainPlayer) ?? []
                         isPresentingNewSessionSheet = true
                     } label: {
                         Label("New Session", systemImage: "plus.circle")
@@ -251,7 +256,10 @@ struct RosterEditorView: View {
         .sheet(isPresented: $isPresentingNewSessionSheet) {
             NewSessionSheet(kind: $newSessionKind, matchDate: $newSessionMatchDate, onStart: startSession,
                             available: team.players.filter { $0.archivedAt == nil }.map(\.domainPlayer),
-                            participants: $newSessionParticipants)
+                             participants: $newSessionParticipants,
+                             ownTeamName: ownTeams.first?.name,
+                             ownAvailable: ownTeams.first?.players.filter { $0.archivedAt == nil }.map(\.domainPlayer) ?? [],
+                             includeOwn: $includeOwnTeam, ownParticipants: $newSessionOwnParticipants)
                 .alert(
                     "Couldn't Start Session",
                     isPresented: Binding(
@@ -470,6 +478,11 @@ struct RosterEditorView: View {
             let stored = StoredSession(date: session.matchDate, kindCode: session.kind.rawValue, rivalTeam: team)
             let roster = try MatchRoster(players: newSessionParticipants)
             stored.participants = roster.players.map(StoredMatchParticipant.init)
+            if includeOwnTeam, let ownTeam = ownTeams.first {
+                let ownRoster = try MatchRoster(players: newSessionOwnParticipants)
+                stored.ownTeam = ownTeam
+                stored.ownParticipants = ownRoster.players.map(StoredMatchParticipant.init)
+            }
             team.sessions.append(stored)
             modelContext.insert(stored)
             try modelContext.save()

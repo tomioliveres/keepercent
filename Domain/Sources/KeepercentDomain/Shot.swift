@@ -19,7 +19,7 @@ public enum Handedness: String, CaseIterable, Equatable, Hashable, Sendable {
     case right
 }
 
-/// A player on a rival team's roster: a shirt number, an optional name, and
+/// A player on either team's roster: a shirt number, an optional name, and
 /// whether they are the goalkeeper. See docs/mvp.md §5.
 ///
 /// A value struct, not persisted directly: SwiftData stores its fields as
@@ -90,6 +90,10 @@ public struct Shot: Equatable, Hashable, Sendable {
     public let shooter: Player?
     /// The rival goalkeeper being faced; `nil` when the rival attacks.
     public let facingGoalkeeper: Player?
+    /// Optional own-side facts, separate from the rival-only associations.
+    /// Wrong-side inputs are discarded even when decoding stored records.
+    public let ownShooter: Player?
+    public let ownGoalkeeper: Player?
     /// The raw normalized tap the shot originated from, in the `0...1`
     /// court frame `CourtGeometry` derives a `CourtZone` from
     /// (docs/mvp.md §5.2). Always `nil` for a 7 m throw: the initializer
@@ -116,6 +120,8 @@ public struct Shot: Equatable, Hashable, Sendable {
         attackingSide: AttackingSide,
         shooter: Player? = nil,
         facingGoalkeeper: Player? = nil,
+        ownShooter: Player? = nil,
+        ownGoalkeeper: Player? = nil,
         originPoint: CourtPoint? = nil,
         isSevenMeters: Bool = false,
         target: GoalTarget,
@@ -127,6 +133,8 @@ public struct Shot: Equatable, Hashable, Sendable {
         self.attackingSide = attackingSide
         self.shooter = shooter
         self.facingGoalkeeper = facingGoalkeeper
+        self.ownShooter = attackingSide == .own ? ownShooter : nil
+        self.ownGoalkeeper = attackingSide == .rival ? ownGoalkeeper : nil
         // A 7 m throw has no recorded origin (docs/mvp.md §5). Normalizing
         // here keeps the contradictory pair unrepresentable instead of
         // merely ignored by `origin`.
@@ -193,6 +201,8 @@ extension Shot {
         attackingSideCode: String,
         shooter: Player?,
         facingGoalkeeper: Player?,
+        ownShooter: Player? = nil,
+        ownGoalkeeper: Player? = nil,
         originX: Double?,
         originY: Double?,
         isSevenMeters: Bool,
@@ -218,6 +228,8 @@ extension Shot {
             attackingSide: attackingSide,
             shooter: shooter,
             facingGoalkeeper: facingGoalkeeper,
+            ownShooter: ownShooter,
+            ownGoalkeeper: ownGoalkeeper,
             originPoint: originPoint,
             isSevenMeters: isSevenMeters,
             target: target,

@@ -11,7 +11,7 @@ struct StoreCompatibilityTests {
         let oldIDs = try JSONDecoder().decode([PersistentIdentifier].self,
                                               from: Data(contentsOf: directory.appendingPathComponent("identifiers.json")))
         let schema = Schema(KeepercentSchema.models)
-        #expect(Set(schema.entities.map(\.name)) == Set(["StoredRivalTeam", "StoredPlayer", "StoredSession", "StoredShot", "StoredMatchParticipant"]))
+        #expect(Set(schema.entities.map(\.name)) == Set(["StoredRivalTeam", "StoredPlayer", "StoredSession", "StoredShot", "StoredMatchParticipant", "StoredOwnTeam"]))
         func open() throws -> ModelContainer {
             try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, url: storeURL)])
         }
@@ -25,6 +25,9 @@ struct StoreCompatibilityTests {
             let sessions = try context.fetch(FetchDescriptor<StoredSession>())
             let shots = try context.fetch(FetchDescriptor<StoredShot>())
             #expect(teams.count == 1 && players.count == 3 && sessions.count == 2 && shots.count == 3)
+            #expect(try context.fetch(FetchDescriptor<StoredOwnTeam>()).isEmpty)
+            #expect(sessions.allSatisfy { $0.ownTeam == nil && $0.ownParticipants.isEmpty })
+            #expect(shots.allSatisfy { $0.ownShooter == nil && $0.ownGoalkeeper == nil && $0.ownShooterSnapshot == nil && $0.ownGoalkeeperSnapshot == nil })
             let currentIDs = Set(teams.map(\.persistentModelID) + players.map(\.persistentModelID) + sessions.map(\.persistentModelID) + shots.map(\.persistentModelID))
             // Decoded IDs and managed-object-backed IDs have different backing
             // implementations. Compare their complete canonical persisted encoding,
@@ -106,5 +109,6 @@ struct StoreCompatibilityTests {
             #expect(later.participants.count == 1)
             #expect(sessions.first { $0.shots.isEmpty }?.participants.isEmpty == true)
         }
+        try exerciseOwnAttributionAcrossReopen(at: storeURL)
     }
 }

@@ -51,6 +51,9 @@ struct ShotEntryContextPanel: View {
     /// view — see `LastShotCardView`'s header comment).
     let lastShotCard: LastShotCardState?
     let onUndo: () -> Void
+    var ownPlayers: [Player] = []
+    var ownPlayerID: UUID? = nil
+    var onSelectOwnPlayer: (UUID?) -> Void = { _ in }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -64,6 +67,7 @@ struct ShotEntryContextPanel: View {
             .pickerStyle(.segmented)
 
             activeGoalkeeperSection
+            ownAttributionSection
             chipsSection
 
             if showsOutcomeQuestion {
@@ -144,6 +148,21 @@ struct ShotEntryContextPanel: View {
                     chip("From Right", isSelected: approach == .fromRight) { onToggleApproach(.fromRight) }
                 }
             }
+        }
+    }
+
+    private var ownAttributionSection: some View {
+        let title: LocalizedStringKey = attackingSide == .own ? "Own Shooter (optional)" : "Own Goalkeeper (optional)"
+        return VStack(alignment: .leading, spacing: 4) {
+            Text(title).font(.caption).foregroundStyle(.secondary)
+            Picker(title, selection: Binding(get: { ownPlayerID }, set: onSelectOwnPlayer)) {
+                Text("None").tag(UUID?.none)
+                ForEach(ownPlayers, id: \.id) { player in
+                    Text(verbatim: "#\(player.number)\(player.name.map { " \($0)" } ?? "")")
+                        .tag(player.id)
+                }
+            }
+            .pickerStyle(.menu)
         }
     }
 

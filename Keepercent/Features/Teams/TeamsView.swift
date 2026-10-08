@@ -48,6 +48,7 @@ struct TeamsView: View {
     @State private var newTeamName = ""
     @State private var newTeamErrorMessage: String?
     @State private var isShowingScaffold = false
+    @State private var isShowingOwnRoster = false
     @State private var seedErrorMessage: String?
     /// Drives whether the sidebar column is visible. T3.3 needs the team
     /// list hidden while a shot-entry session is open, on iPad, so the
@@ -83,6 +84,9 @@ struct TeamsView: View {
                     }
                 }
                 ToolbarItem(placement: .secondaryAction) {
+                    Button("Own Team Roster") { isShowingOwnRoster = true }
+                }
+                ToolbarItem(placement: .secondaryAction) {
                     Button("Drawing Scaffold (T2.x)") {
                         isShowingScaffold = true
                     }
@@ -106,6 +110,7 @@ struct TeamsView: View {
         .sheet(isPresented: $isPresentingNewTeamSheet) {
             NewTeamSheet(name: $newTeamName, errorMessage: newTeamErrorMessage, onCreate: createTeam)
         }
+        .sheet(isPresented: $isShowingOwnRoster) { OwnTeamRosterView() }
         .sheet(isPresented: $isShowingScaffold) {
             NavigationStack {
                 ContentView()

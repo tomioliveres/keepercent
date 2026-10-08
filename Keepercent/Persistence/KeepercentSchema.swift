@@ -12,6 +12,7 @@ enum KeepercentSchema {
         StoredSession.self,
         StoredShot.self,
         StoredMatchParticipant.self,
+        StoredOwnTeam.self,
     ]
 
     /// The container used by the running app. Additive schema opening and

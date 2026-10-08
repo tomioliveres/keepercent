@@ -33,6 +33,10 @@ final class StoredPlayer {
     var shotsTaken: [StoredShot]
     @Relationship(deleteRule: .nullify, inverse: \StoredShot.facingGoalkeeper)
     var shotsFaced: [StoredShot]
+    @Relationship(deleteRule: .nullify, inverse: \StoredShot.ownShooter)
+    var ownShotsTaken: [StoredShot] = []
+    @Relationship(deleteRule: .nullify, inverse: \StoredShot.ownGoalkeeper)
+    var ownShotsFaced: [StoredShot] = []
 
     init(
         number: Int,

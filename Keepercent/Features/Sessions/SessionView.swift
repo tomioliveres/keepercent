@@ -90,12 +90,15 @@ struct SessionView: View {
     let session: StoredSession
 
     @Environment(\.modelContext) private var modelContext
+    @Query(sort: \StoredOwnTeam.createdAt) private var ownTeams: [StoredOwnTeam]
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.verticalSizeClass) private var verticalSizeClass
 
     // Sticky / persistent across shots (T3.3 decision ②).
     @State private var attackingSide: AttackingSide = .rival
     @State private var activeRivalGoalkeeperNumber: Int?
+    @State private var selectedOwnShooterID: UUID?
+    @State private var activeOwnGoalkeeperID: UUID?
 
     // Reset after every successful record.
     @State private var selectedShooterNumber: Int?
@@ -113,11 +116,19 @@ struct SessionView: View {
     @State private var isPresentingShotLog = false
     @State private var isPresentingMatchRoster = false
     @State private var rosterDraft: [Player] = []
+    @State private var ownRosterDraft: [Player] = []
+    @State private var includeOwnTeam = false
     @State private var rosterError: String?
 
     private var matchPlayers: [Player] {
         session.participants.map(\.domainPlayer).sorted { $0.number < $1.number }
     }
+
+    private var ownMatchPlayers: [Player] {
+        session.ownParticipants.map(\.domainPlayer).sorted { $0.number < $1.number }
+    }
+
+    private var availableOwnTeam: StoredOwnTeam? { session.ownTeam ?? ownTeams.first }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -143,6 +154,8 @@ struct SessionView: View {
             ToolbarItem(placement: .primaryAction) {
                 Button {
                     rosterDraft = matchPlayers
+                    ownRosterDraft = ownMatchPlayers
+                    includeOwnTeam = session.ownTeam != nil
                     rosterError = nil
                     isPresentingMatchRoster = true
                 } label: { Label("Match roster", systemImage: "person.3") }
@@ -161,7 +174,11 @@ struct SessionView: View {
         .sheet(isPresented: $isPresentingMatchRoster) {
             MatchRosterSheet(available: team.players.filter { $0.archivedAt == nil }.map(\.domainPlayer),
                              players: $rosterDraft, lockedIDs: Set(matchPlayers.compactMap(\.id)),
-                             errorMessage: rosterError, onSave: saveMatchRoster)
+                              errorMessage: rosterError, onSave: saveMatchRoster,
+                              ownTeamName: availableOwnTeam?.name,
+                              ownAvailable: availableOwnTeam?.players.filter { $0.archivedAt == nil }.map(\.domainPlayer) ?? [],
+                              includeOwn: $includeOwnTeam, ownPlayers: $ownRosterDraft,
+                              ownLockedIDs: Set(ownMatchPlayers.compactMap(\.id)), ownIsAttached: session.ownTeam != nil)
         }
         .sensoryFeedback(.success, trigger: saveHapticTrigger)
         .task(id: lastShotCard) {
@@ -175,6 +192,8 @@ struct SessionView: View {
             // anyway); clearing it here keeps the shooter grid's own
             // selection highlight from pointing at a stale choice.
             if newValue == .own { selectedShooterNumber = nil }
+            selectedOwnShooterID = nil
+            activeOwnGoalkeeperID = nil
         }
     }
 
@@ -258,7 +277,7 @@ struct SessionView: View {
                 onSelect: { selectedShooterNumber = $0 }
             )
         } else {
-            Text("No shooter needed for an own-team attack — the active rival goalkeeper above is who this shot is recorded against.")
+            Text("Own shooter is optional. The active rival goalkeeper is still required.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
@@ -315,7 +334,13 @@ struct SessionView: View {
             onChooseOutcome: { attemptRecord(outcome: $0) },
             errorMessage: errorMessage,
             lastShotCard: lastShotCard,
-            onUndo: undoLastShot
+            onUndo: undoLastShot,
+            ownPlayers: attackingSide == .own ? ownMatchPlayers : ownMatchPlayers.filter(\.isGoalkeeper),
+            ownPlayerID: attackingSide == .own ? selectedOwnShooterID : activeOwnGoalkeeperID,
+            onSelectOwnPlayer: { id in
+                if attackingSide == .own { selectedOwnShooterID = id }
+                else { activeOwnGoalkeeperID = id }
+            }
         )
     }
 
@@ -377,6 +402,8 @@ struct SessionView: View {
                 attackingSide: attackingSide,
                 shooter: selectedShooter,
                 activeRivalGoalkeeper: activeRivalGoalkeeper,
+                ownShooter: ownMatchPlayers.first { $0.id == selectedOwnShooterID },
+                ownGoalkeeper: ownMatchPlayers.first { $0.id == activeOwnGoalkeeperID },
                 originPoint: originPoint,
                 isSevenMeters: isSevenMeters,
                 target: target,
@@ -402,9 +429,14 @@ struct SessionView: View {
         let goalkeeperStored = shot.facingGoalkeeper.flatMap { goalkeeper in
             team.players.first { $0.personID == goalkeeper.id }
         }
-        let stored = StoredShot(shot, shooter: shooterStored, facingGoalkeeper: goalkeeperStored)
+        let ownShooterStored = shot.ownShooter.flatMap { player in session.ownTeam?.players.first { $0.personID == player.id } }
+        let ownKeeperStored = shot.ownGoalkeeper.flatMap { player in session.ownTeam?.players.first { $0.personID == player.id } }
+        let stored = StoredShot(shot, shooter: shooterStored, facingGoalkeeper: goalkeeperStored,
+                                ownShooter: ownShooterStored, ownGoalkeeper: ownKeeperStored)
         stored.shooterSnapshot = session.participants.first { $0.personID == shot.shooter?.id }
         stored.goalkeeperSnapshot = session.participants.first { $0.personID == shot.facingGoalkeeper?.id }
+        stored.ownShooterSnapshot = session.ownParticipants.first { $0.personID == shot.ownShooter?.id }
+        stored.ownGoalkeeperSnapshot = session.ownParticipants.first { $0.personID == shot.ownGoalkeeper?.id }
         session.shots.append(stored)
         modelContext.insert(stored)
 
@@ -427,6 +459,7 @@ struct SessionView: View {
     /// ②) untouched.
     private func resetEntryState() {
         selectedShooterNumber = nil
+        selectedOwnShooterID = nil
         originPoint = nil
         isSevenMeters = false
         selectedOrigin = nil
@@ -440,13 +473,26 @@ struct SessionView: View {
     private func saveMatchRoster() {
         do {
             let validated = try MatchRoster(players: rosterDraft)
+            // Validate each side before either graph is mutated. Opposing teams
+            // may use the same number; duplicates within either side reject.
+            let ownValidated = try MatchRoster(players: includeOwnTeam ? ownRosterDraft : [])
             for player in validated.players where !session.participants.contains(where: { $0.personID == player.id }) {
                 let snapshot = StoredMatchParticipant(player)
                 modelContext.insert(snapshot)
                 session.participants.append(snapshot)
             }
+            if includeOwnTeam, let ownTeam = availableOwnTeam {
+                session.ownTeam = ownTeam
+                for player in ownValidated.players where !session.ownParticipants.contains(where: { $0.personID == player.id }) {
+                    let snapshot = StoredMatchParticipant(player)
+                    modelContext.insert(snapshot)
+                    session.ownParticipants.append(snapshot)
+                }
+            }
             try modelContext.save()
             selectedShooterNumber = nil
+            selectedOwnShooterID = nil
+            activeOwnGoalkeeperID = nil
             isPresentingMatchRoster = false
         } catch {
             modelContext.rollback()

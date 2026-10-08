@@ -15,6 +15,10 @@ import KeepercentDomain
 final class StoredShot {
     var shooterSnapshot: StoredMatchParticipant?
     var goalkeeperSnapshot: StoredMatchParticipant?
+    var ownShooterSnapshot: StoredMatchParticipant?
+    var ownGoalkeeperSnapshot: StoredMatchParticipant?
+    var ownShooter: StoredPlayer?
+    var ownGoalkeeper: StoredPlayer?
     var date: Date
     /// `AttackingSide.rawValue`.
     var attackingSideCode: String
@@ -54,7 +58,9 @@ final class StoredShot {
         deliveryCode: String?,
         approachCode: String?,
         shooter: StoredPlayer?,
-        facingGoalkeeper: StoredPlayer?
+        facingGoalkeeper: StoredPlayer?,
+        ownShooter: StoredPlayer? = nil,
+        ownGoalkeeper: StoredPlayer? = nil
     ) {
         self.date = date
         self.attackingSideCode = attackingSideCode
@@ -67,11 +73,14 @@ final class StoredShot {
         self.approachCode = approachCode
         self.shooter = shooter
         self.facingGoalkeeper = facingGoalkeeper
+        self.ownShooter = attackingSideCode == AttackingSide.own.rawValue ? ownShooter : nil
+        self.ownGoalkeeper = attackingSideCode == AttackingSide.rival.rawValue ? ownGoalkeeper : nil
     }
 
     /// Convenience initializer from the domain value, so the field-by-field
     /// code mapping is written in exactly one place.
-    convenience init(_ shot: Shot, shooter: StoredPlayer?, facingGoalkeeper: StoredPlayer?) {
+    convenience init(_ shot: Shot, shooter: StoredPlayer?, facingGoalkeeper: StoredPlayer?,
+                     ownShooter: StoredPlayer? = nil, ownGoalkeeper: StoredPlayer? = nil) {
         self.init(
             date: shot.date,
             attackingSideCode: shot.attackingSide.rawValue,
@@ -83,7 +92,9 @@ final class StoredShot {
             deliveryCode: shot.delivery?.rawValue,
             approachCode: shot.approach?.rawValue,
             shooter: shooter,
-            facingGoalkeeper: facingGoalkeeper
+            facingGoalkeeper: facingGoalkeeper,
+            ownShooter: shot.ownShooter == nil ? nil : ownShooter,
+            ownGoalkeeper: shot.ownGoalkeeper == nil ? nil : ownGoalkeeper
         )
     }
 
@@ -96,6 +107,8 @@ final class StoredShot {
             attackingSideCode: attackingSideCode,
             shooter: shooterSnapshot?.domainPlayer,
             facingGoalkeeper: goalkeeperSnapshot?.domainPlayer,
+            ownShooter: ownShooterSnapshot?.domainPlayer,
+            ownGoalkeeper: ownGoalkeeperSnapshot?.domainPlayer,
             originX: originX,
             originY: originY,
             isSevenMeters: isSevenMeters,

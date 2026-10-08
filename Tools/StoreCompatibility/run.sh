@@ -7,4 +7,5 @@ directory="$(mktemp -d /var/folders/4k/20l7cw4s07z28vbtfqtvb34m0000gn/T/opencode
 export KEEPERCENT_COMPATIBILITY_DIRECTORY="$directory"
 printf 'Compatibility evidence directory: %s\n' "$directory"
 swift run --package-path "$root" --scratch-path "$directory/build" LegacyStore "$directory"
-swift test --package-path "$root" --scratch-path "$directory/build" --filter StoreCompatibilityTests
+swift run --package-path "$root" --scratch-path "$directory/build" MC4Store "$directory"
+swift test --package-path "$root" --scratch-path "$directory/build" --filter 'StoreCompatibilityTests|OwnAttributionStoreTests'

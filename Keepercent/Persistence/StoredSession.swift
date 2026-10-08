@@ -12,6 +12,10 @@ final class StoredSession {
     var historyWasBackfilled: Bool?
     @Relationship(deleteRule: .cascade)
     var participants: [StoredMatchParticipant] = []
+    /// Nil/empty on existing matches. Never infer own attendance during upgrade.
+    var ownTeam: StoredOwnTeam?
+    @Relationship(deleteRule: .cascade)
+    var ownParticipants: [StoredMatchParticipant] = []
     var date: Date
     /// `SessionKind.rawValue` (see Shot.swift for why the raw enum value IS
     /// the persistence code for these small string enums).

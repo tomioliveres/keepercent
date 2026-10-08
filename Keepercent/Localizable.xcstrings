@@ -1,6 +1,69 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Configure Own Team" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Configure Own Team" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Configurar equipo propio" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Configurar equipo propio" } }
+      }
+    },
+    "Own Team Roster" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Own Team Roster" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Plantilla del equipo propio" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Plantel del equipo propio" } }
+      }
+    },
+    "Own team is optional. Rival-only scouting remains available." : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Own team is optional. Rival-only scouting remains available." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "El equipo propio es opcional. Puedes seguir analizando solo al rival." } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "El equipo propio es opcional. Puedes seguir analizando solo al rival." } }
+      }
+    },
+    "Own Team (optional)" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Own Team (optional)" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Equipo propio (opcional)" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Equipo propio (opcional)" } }
+      }
+    },
+    "Own match roster" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Own match roster" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Plantilla propia del partido" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Plantel propio del partido" } }
+      }
+    },
+    "No own team configured. You can continue without one." : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No own team configured. You can continue without one." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "No hay equipo propio configurado. Puedes continuar sin él." } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "No hay equipo propio configurado. Puedes continuar sin él." } }
+      }
+    },
+    "Own Shooter (optional)" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Own Shooter (optional)" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Tirador propio (opcional)" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Tirador propio (opcional)" } }
+      }
+    },
+    "Own Goalkeeper (optional)" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Own Goalkeeper (optional)" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Portero propio (opcional)" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Portero propio (opcional)" } }
+      }
+    },
+    "Own shooter is optional. The active rival goalkeeper is still required." : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Own shooter is optional. The active rival goalkeeper is still required." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "El tirador propio es opcional. El portero rival activo sigue siendo obligatorio." } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "El tirador propio es opcional. El portero rival activo sigue siendo obligatorio." } }
+      }
+    },
     "Historical roster uses the player details available when this store was upgraded." : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Historical roster uses the player details available when this store was upgraded." } },

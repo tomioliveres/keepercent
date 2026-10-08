@@ -6,11 +6,14 @@ import KeepercentDomain
 struct MatchRosterSelection: View {
     @Binding var players: [Player]
     var lockedIDs: Set<UUID> = []
+    var title: LocalizedStringKey = "Match roster"
     @State private var draft: MatchRosterDraft
 
-    init(available: [Player], players: Binding<[Player]>, lockedIDs: Set<UUID> = []) {
+    init(available: [Player], players: Binding<[Player]>, lockedIDs: Set<UUID> = [],
+         title: LocalizedStringKey = "Match roster") {
         _players = players
         self.lockedIDs = lockedIDs
+        self.title = title
         _draft = State(initialValue: MatchRosterDraft(
             available: available, selected: players.wrappedValue, lockedIDs: lockedIDs))
     }
@@ -59,9 +62,39 @@ struct MatchRosterSelection: View {
                 }
             }
         } header: {
-            Text("Match roster")
+            Text(title)
         } footer: {
             Text("Only selected players belong to this match. Later club roster edits do not change these snapshots.")
+        }
+    }
+}
+
+/// Always keep the selection view alive when skipping, so turning the own
+/// team off/on cannot discard a deselected player's edited number draft.
+struct OwnMatchRosterSelection: View {
+    let teamName: String?
+    let available: [Player]
+    @Binding var included: Bool
+    @Binding var players: [Player]
+    var lockedIDs: Set<UUID> = []
+    var isAttached = false
+
+    var body: some View {
+        Section("Own Team (optional)") {
+            if let teamName {
+                Picker("Own Team (optional)", selection: $included) {
+                    Text("None").tag(false)
+                    Text(verbatim: teamName).tag(true)
+                }
+                .disabled(isAttached)
+            } else {
+                Text("No own team configured. You can continue without one.")
+            }
+        }
+        if teamName != nil {
+            MatchRosterSelection(available: available, players: $players, lockedIDs: lockedIDs,
+                                 title: "Own match roster")
+                .disabled(!included)
         }
     }
 }
@@ -72,12 +105,21 @@ struct MatchRosterSheet: View {
     let lockedIDs: Set<UUID>
     let errorMessage: String?
     let onSave: () -> Void
+    let ownTeamName: String?
+    let ownAvailable: [Player]
+    @Binding var includeOwn: Bool
+    @Binding var ownPlayers: [Player]
+    let ownLockedIDs: Set<UUID>
+    let ownIsAttached: Bool
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationStack {
             Form {
                 MatchRosterSelection(available: available, players: $players, lockedIDs: lockedIDs)
+                OwnMatchRosterSelection(teamName: ownTeamName, available: ownAvailable,
+                                        included: $includeOwn, players: $ownPlayers,
+                                        lockedIDs: ownLockedIDs, isAttached: ownIsAttached)
                 if let errorMessage { Text(errorMessage).foregroundStyle(.red) }
             }
             .navigationTitle("Match roster")

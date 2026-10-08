@@ -9,13 +9,9 @@ import Foundation
 /// The four display components of a recorded shot's summary card, and the
 /// joined text docs/mvp.md §6 shows.
 public struct ShotSummary: Equatable, Hashable, Sendable {
-    /// Who the shot is attributed to. For a rival attack, the shooter's
-    /// shirt number ("#7"). For an own-team attack, the active rival
-    /// goalkeeper's number ("vs #12") — chosen because an own-team `Shot`
-    /// carries no shooter at all (own players are not on any roster; see
-    /// `Shot.record`), so the goalkeeper faced is the only person the card
-    /// can name. "—" when the shot carries neither (a corrupt or
-    /// decoded-away row).
+    /// Rival identity keeps its legacy wording. Optional own attribution
+    /// carries an explicit team/role label so matching shirt numbers on
+    /// opposite sides cannot be mistaken for the same person.
     public let subject: String
     /// Where the shot originated: "7 m" for a seven-meter throw, else the
     /// origin zone's sector (e.g. "left back", matching docs/mvp.md §6's
@@ -43,11 +39,15 @@ public struct ShotSummary: Equatable, Hashable, Sendable {
     private static func subject(for shot: Shot, locale: Locale) -> String {
         switch shot.attackingSide {
         case .rival:
-            guard let shooter = shot.shooter else { return placeholder }
-            return "#\(shooter.number)"
+            let rival = shot.shooter.map { "#\($0.number)" } ?? placeholder
+            guard let keeper = shot.ownGoalkeeper else { return rival }
+            let label = String(domainKey: "shot.ownGoalkeeper", defaultValue: "Own goalkeeper", locale: locale)
+            return "\(rival) · \(label) #\(keeper.number)"
         case .own:
-            guard let goalkeeper = shot.facingGoalkeeper else { return placeholder }
-            return String(domain: "vs #\(goalkeeper.number)", locale: locale)
+            let rival = shot.facingGoalkeeper.map { String(domain: "vs #\($0.number)", locale: locale) } ?? placeholder
+            guard let shooter = shot.ownShooter else { return rival }
+            let label = String(domainKey: "shot.ownShooter", defaultValue: "Own shooter", locale: locale)
+            return "\(label) #\(shooter.number) · \(rival)"
         }
     }
 

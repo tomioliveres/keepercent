@@ -27,6 +27,10 @@ struct NewSessionSheet: View {
     let onStart: () -> Void
     var available: [Player] = []
     @Binding var participants: [Player]
+    var ownTeamName: String? = nil
+    var ownAvailable: [Player] = []
+    @Binding var includeOwn: Bool
+    @Binding var ownParticipants: [Player]
 
     @Environment(\.dismiss) private var dismiss
 
@@ -34,6 +38,8 @@ struct NewSessionSheet: View {
         NavigationStack {
             Form {
                 MatchRosterSelection(available: available, players: $participants)
+                OwnMatchRosterSelection(teamName: ownTeamName, available: ownAvailable,
+                                        included: $includeOwn, players: $ownParticipants)
                 Section {
                     Picker("Kind", selection: $kind) {
                         ForEach(SessionKind.allCases, id: \.self) { kind in
@@ -68,5 +74,6 @@ struct NewSessionSheet: View {
 }
 
 #Preview("NewSessionSheet") {
-    NewSessionSheet(kind: .constant(.live), matchDate: .constant(.now), onStart: {}, participants: .constant([]))
+    NewSessionSheet(kind: .constant(.live), matchDate: .constant(.now), onStart: {}, participants: .constant([]),
+                    includeOwn: .constant(false), ownParticipants: .constant([]))
 }

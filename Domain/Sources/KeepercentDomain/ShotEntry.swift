@@ -53,6 +53,8 @@ extension Shot {
         attackingSide: AttackingSide,
         shooter: Player?,
         activeRivalGoalkeeper: Player?,
+        ownShooter: Player? = nil,
+        ownGoalkeeper: Player? = nil,
         originPoint: CourtPoint?,
         isSevenMeters: Bool = false,
         target: GoalTarget,
@@ -61,13 +63,9 @@ extension Shot {
         approach: ShotApproach? = nil,
         date: Date
     ) throws(ShotEntryError) -> Shot {
-        // Who took the shot / who they faced. Own goalkeepers are out of
-        // scope (docs/mvp.md §9), so a rival attack never carries a
-        // `facingGoalkeeper`, even when one is set as active; and an own
-        // attack never carries a `shooter`, even when one was passed in —
-        // own players are not on any roster, so a contradictory shooter is
-        // dropped the same way `Shot.init` drops `originPoint` for a 7 m
-        // throw, rather than treated as an error the caller must avoid.
+        // Rival associations remain mandatory and retain their original
+        // meaning. Own attribution is independently optional; Shot.init
+        // discards wrong-side own inputs instead of leaking a stale selection.
         let resolvedShooter: Player?
         let resolvedFacingGoalkeeper: Player?
         switch attackingSide {
@@ -105,6 +103,8 @@ extension Shot {
             attackingSide: attackingSide,
             shooter: resolvedShooter,
             facingGoalkeeper: resolvedFacingGoalkeeper,
+            ownShooter: ownShooter,
+            ownGoalkeeper: ownGoalkeeper,
             originPoint: originPoint,
             isSevenMeters: isSevenMeters,
             target: target,
