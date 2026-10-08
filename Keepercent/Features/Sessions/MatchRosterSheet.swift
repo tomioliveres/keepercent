@@ -6,32 +6,23 @@ import KeepercentDomain
 struct MatchRosterSelection: View {
     @Binding var players: [Player]
     var lockedIDs: Set<UUID> = []
-    @State private var choices: [Player]
+    @State private var draft: MatchRosterDraft
 
     init(available: [Player], players: Binding<[Player]>, lockedIDs: Set<UUID> = []) {
         _players = players
         self.lockedIDs = lockedIDs
-        let initial = players.wrappedValue
-        let ids = Set(initial.compactMap(\.id))
-        // Capture suggested order once per presentation, with existing snapshots
-        // taking precedence. Selection and editable numbers never reorder rows.
-        let choices = initial + available.filter { player in
-            guard let id = player.id else { return false }
-            return !ids.contains(id)
-        }
-        _choices = State(initialValue: choices.sorted {
-            if $0.number != $1.number { return $0.number < $1.number }
-            return ($0.id?.uuidString ?? "") < ($1.id?.uuidString ?? "")
-        })
+        _draft = State(initialValue: MatchRosterDraft(
+            available: available, selected: players.wrappedValue, lockedIDs: lockedIDs))
     }
 
     var body: some View {
         Section {
-            ForEach(choices, id: \.id) { player in
+            ForEach(draft.choices, id: \.id) { player in
                 if let id = player.id {
-                    let selected = players.contains { $0.id == id }
-                    Toggle(isOn: Binding(get: { selected }, set: { included in
-                        if included { players.append(player) } else { players.removeAll { $0.id == id } }
+                    let selected = draft.isSelected(id)
+                    Toggle(isOn: Binding(get: { draft.isSelected(id) }, set: { included in
+                        draft.setIncluded(included, for: id)
+                        players = draft.selectedPlayers
                     })) {
                         HStack {
                             Text(verbatim: player.name ?? "#\(player.number)")
@@ -52,12 +43,10 @@ struct MatchRosterSelection: View {
                         }
                         Spacer()
                         TextField("Number", value: Binding(
-                            get: { players.first { $0.id == id }?.number ?? player.number },
+                            get: { draft.player(id: id)?.number ?? player.number },
                             set: { number in
-                                guard let index = players.firstIndex(where: { $0.id == id }) else { return }
-                                let old = players[index]
-                                players[index] = Player(id: id, number: number, name: old.name,
-                                                        isGoalkeeper: old.isGoalkeeper, handedness: old.handedness)
+                                draft.setNumber(number, for: id)
+                                players = draft.selectedPlayers
                             }), format: .number)
                         .keyboardType(.numberPad)
                         .multilineTextAlignment(.trailing)
