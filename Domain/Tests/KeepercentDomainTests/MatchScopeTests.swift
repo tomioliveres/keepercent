@@ -3,6 +3,35 @@ import Testing
 @testable import KeepercentDomain
 
 struct MatchScopeTests {
+    @Test func ownShooterHistoryPartitionsAcrossOpponentsWithoutNumberJoins() {
+        let id = UUID(uuidString: "00000000-0000-0000-0000-000000000301")!
+        let first = UUID()
+        let second = UUID()
+        let target = GoalTarget.inside(GoalZone(row: .middle, column: .center))
+        let old = Player(id: id, number: 7, name: "Original", handedness: .left)
+        let renamed = Player(id: id, number: 19, name: "Renamed", isGoalkeeper: true)
+        let goal = Shot(attackingSide: .own, ownShooter: old, target: target, outcome: .goal, date: .distantPast)
+        let penalty = Shot(attackingSide: .own, ownShooter: renamed, isSevenMeters: true,
+                           target: target, outcome: .saved, date: .distantPast)
+        let replacement = Shot(attackingSide: .own, ownShooter: Player(id: UUID(), number: 7),
+                               target: target, outcome: .goal, date: .distantPast)
+        let unknown = Shot(attackingSide: .own, target: target, outcome: .goal, date: .distantPast)
+        let matches = [MatchShots(id: first, shots: [goal]),
+                       MatchShots(id: second, shots: [penalty, replacement, unknown])]
+        func scoped(_ scope: MatchScope) -> StatsEngine {
+            StatsEngine(shots: scope.shots(in: matches)).shots(byOwnShooter: id)
+        }
+        #expect(scoped(.all).shots == [goal, penalty])
+        #expect(scoped(.match(first)).shots.first?.ownShooter == old)
+        #expect(scoped(.match(second)).shots.first?.ownShooter == renamed)
+        #expect(scoped(.all).fieldShots.effectiveness == Tally(successes: 1, attempts: 1))
+        #expect(scoped(.all).sevenMeterShots.effectiveness == Tally(successes: 0, attempts: 1))
+        #expect(scoped(.match(first)).effectiveness.attempts + scoped(.match(second)).effectiveness.attempts
+                == scoped(.all).effectiveness.attempts)
+        #expect(scoped(.match(UUID())).shots.isEmpty)
+        #expect(goal.ownShooter == old)
+    }
+
     @Test func specificMatchDoesNotLeakOtherMatchesWithIdenticalShotDates() {
         let first = UUID()
         let second = UUID()

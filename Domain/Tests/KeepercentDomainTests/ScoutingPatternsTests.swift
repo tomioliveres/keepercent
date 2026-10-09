@@ -84,6 +84,51 @@ private func find(_ kind: ScoutingPatternKind, in patterns: [ScoutingPattern]) -
     patterns.first { $0.kind == kind }
 }
 
+@Suite("Scouting patterns: own attacking shooter")
+struct ScoutingPatternsOwnShooterTests {
+    @Test func sectorHandReadsOwnSnapshotNotPermissiveRivalField() throws {
+        func own(_ player: Player, origin: CourtPoint, target: GoalTarget) -> Shot {
+            Shot(attackingSide: .own, shooter: rightHander, ownShooter: player,
+                 originPoint: origin, target: target, outcome: .goal, date: referenceDate)
+        }
+        let shots = repeated(5) { own(leftHander, origin: leftBackNear, target: inside(.bottom, .right)) }
+            + repeated(5) { own(rightHander, origin: rightBackNear, target: inside(.bottom, .right)) }
+        let patterns = shooterPatterns(shots)
+        let cross = try #require(find(.lineFromSector(.crossShot, sector: .leftBack, hand: .left), in: patterns))
+        #expect(cross.tally == Tally(successes: 5, attempts: 5))
+        #expect(find(.lineFromSector(.crossShot, sector: .leftBack, hand: .right), in: patterns) == nil)
+    }
+
+    @Test func repeatReadsOwnIdentityWithoutInventingLegacyAttribution() throws {
+        let id = UUID(uuidString: "00000000-0000-0000-0000-000000000201")!
+        let shots = (0..<5).map { index in
+            Shot(attackingSide: .own, ownShooter: Player(id: id, number: index + 1),
+                 originPoint: centerNear, target: inside(.middle, .center), outcome: .goal,
+                 date: referenceDate.addingTimeInterval(Double(index)))
+        }
+        let pattern = try #require(find(.repeatAfterGoal, in: shooterPatterns(shots)))
+        #expect(pattern.tally == Tally(successes: 4, attempts: 4))
+        let unknown = repeated(5) {
+            Shot(attackingSide: .own, shooter: leftHander, originPoint: centerNear,
+                 target: inside(.middle, .center), outcome: .goal, date: referenceDate)
+        }
+        #expect(find(.repeatAfterGoal, in: shooterPatterns(unknown)) == nil)
+    }
+
+    @Test func ownRepeatNeverJoinsNumbersOrDifferentIdentities() {
+        func attack(_ player: Player) -> Shot {
+            Shot(attackingSide: .own, ownShooter: player, originPoint: centerNear,
+                 target: inside(.middle, .center), outcome: .goal, date: referenceDate)
+        }
+        let missingIDs = repeated(5) { attack(Player(number: 7)) }
+        #expect(find(.repeatAfterGoal, in: shooterPatterns(missingIDs)) == nil)
+        let distinct = (1...5).map {
+            attack(Player(id: UUID(uuidString: String(format: "00000000-0000-0000-0000-%012d", $0))!, number: 7))
+        }
+        #expect(find(.repeatAfterGoal, in: shooterPatterns(distinct)) == nil)
+    }
+}
+
 @Suite("Scouting patterns: thresholds")
 struct ScoutingPatternThresholdTests {
     @Test("Thresholds are the documented values")

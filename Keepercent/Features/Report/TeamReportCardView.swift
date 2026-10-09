@@ -1,11 +1,17 @@
 import SwiftUI
 import KeepercentDomain
 
+enum TeamReportPerspective: Equatable {
+    case rival
+    case own
+}
+
 /// The same fixed-width SwiftUI drawing is used on screen and by ImageRenderer.
 struct TeamReportCardView: View {
     let goalkeeperNumber: Int?
     let engine: StatsEngine
     var scopeLabel: String = String(localized: "All matches")
+    var perspective: TeamReportPerspective = .rival
     @Environment(\.colorScheme) private var colorScheme
 
     private var field: StatsEngine { engine.fieldShots }
@@ -17,11 +23,21 @@ struct TeamReportCardView: View {
                 Text("KEEPERCENT · TEAM REPORT")
                     .font(.caption.bold())
                     .foregroundStyle(.secondary)
-                Text("Where to shoot / where not to")
-                    .font(.title3.bold())
+                Group {
+                    if perspective == .own {
+                        Text("Own goalkeeper report")
+                    } else {
+                        Text("Where to shoot / where not to")
+                    }
+                }.font(.title3.bold())
                 if let goalkeeperNumber {
-                    Text("Against goalkeeper #\(goalkeeperNumber)")
-                        .font(.subheadline)
+                    Group {
+                        if perspective == .own {
+                            Text("Own goalkeeper #\(goalkeeperNumber)")
+                        } else {
+                            Text("Against goalkeeper #\(goalkeeperNumber)")
+                        }
+                    }.font(.subheadline)
                 } else {
                     Text("Goalkeeper unavailable").font(.subheadline)
                 }

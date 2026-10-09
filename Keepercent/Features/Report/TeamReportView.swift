@@ -3,12 +3,42 @@ import KeepercentDomain
 
 /// The container owns the SwiftData read; the card receives only domain values.
 struct TeamReportView: View {
-    let team: StoredRivalTeam
+    private enum Team {
+        case rival(StoredRivalTeam)
+        case own(StoredOwnTeam)
+    }
+    private let team: Team
     let playerID: UUID
     let scope: MatchScope
 
-    private var player: Player? { ScopedMatchData.player(playerID, team: team, scope: scope) }
-    private var scopeLabel: String { ScopedMatchData.label(team, scope: scope) }
+    init(team: StoredRivalTeam, playerID: UUID, scope: MatchScope) {
+        self.team = .rival(team)
+        self.playerID = playerID
+        self.scope = scope
+    }
+
+    init(ownTeam: StoredOwnTeam, playerID: UUID, scope: MatchScope) {
+        self.team = .own(ownTeam)
+        self.playerID = playerID
+        self.scope = scope
+    }
+
+    private var player: Player? {
+        switch team {
+        case .rival(let team): return ScopedMatchData.player(playerID, team: team, scope: scope)
+        case .own(let team): return ScopedMatchData.player(playerID, team: team, scope: scope)
+        }
+    }
+    private var scopeLabel: String {
+        switch team {
+        case .rival(let team): return ScopedMatchData.label(team, scope: scope)
+        case .own(let team): return ScopedMatchData.label(team, scope: scope)
+        }
+    }
+    private var perspective: TeamReportPerspective {
+        if case .own = team { return .own }
+        return .rival
+    }
     private var goalkeeperNumber: Int? { player?.number }
 
     @Environment(\.colorScheme) private var colorScheme
@@ -16,13 +46,17 @@ struct TeamReportView: View {
     @State private var sharedImage: Image?
 
     private var engine: StatsEngine {
-        ScopedMatchData.engine(team, scope: scope).shots(facing: playerID)
+        switch team {
+        case .rival(let team): return ScopedMatchData.engine(team, scope: scope).shots(facing: playerID)
+        case .own(let team): return ScopedMatchData.engine(team, scope: scope).shots(facingOwnGoalkeeper: playerID)
+        }
     }
 
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
-                TeamReportCardView(goalkeeperNumber: goalkeeperNumber, engine: engine, scopeLabel: scopeLabel)
+                TeamReportCardView(goalkeeperNumber: goalkeeperNumber, engine: engine, scopeLabel: scopeLabel,
+                                   perspective: perspective)
                     .frame(width: 320)
 
                 if let sharedImage {
@@ -55,13 +89,15 @@ struct TeamReportView: View {
         .onChange(of: engine.shots) { renderImage() }
         .onChange(of: scopeLabel) { renderImage() }
         .onChange(of: goalkeeperNumber) { renderImage() }
+        .onChange(of: perspective) { renderImage() }
         .onChange(of: colorScheme) { renderImage() }
     }
 
     @MainActor
     private func renderImage() {
         sharedImage = nil
-        let card = TeamReportCardView(goalkeeperNumber: goalkeeperNumber, engine: engine, scopeLabel: scopeLabel)
+        let card = TeamReportCardView(goalkeeperNumber: goalkeeperNumber, engine: engine, scopeLabel: scopeLabel,
+                                      perspective: perspective)
             .frame(width: 320)
             .environment(\.colorScheme, colorScheme)
         let renderer = ImageRenderer(content: card)

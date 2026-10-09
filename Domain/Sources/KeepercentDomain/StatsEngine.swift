@@ -54,6 +54,15 @@ public struct StatsEngine: Equatable, Sendable {
 // MARK: - Filters
 
 extension StatsEngine {
+    /// Own people have separate optional attribution; never infer them from rivals or numbers.
+    public func shots(byOwnShooter identity: UUID) -> StatsEngine {
+        StatsEngine(shots: shots.filter { $0.attackingSide == .own && $0.ownShooter?.id == identity })
+    }
+
+    public func shots(facingOwnGoalkeeper identity: UUID) -> StatsEngine {
+        StatsEngine(shots: shots.filter { $0.attackingSide == .rival && $0.ownGoalkeeper?.id == identity })
+    }
+
     public func shots(by identity: UUID) -> StatsEngine {
         StatsEngine(shots: shots.filter { $0.attackingSide == .rival && $0.shooter?.id == identity })
     }

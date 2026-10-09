@@ -1,6 +1,55 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "My club" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "My club" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Mi club" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Mi club" } }
+      }
+    },
+    "Own player statistics across opponents" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Own player statistics across opponents" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Estadísticas propias frente a distintos rivales" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Estadísticas propias frente a distintos rivales" } }
+      }
+    },
+    "No own player data" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No own player data" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Sin datos de jugadores propios" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Sin datos de jugadores propios" } }
+      }
+    },
+    "No attributed own-player history is available yet." : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No attributed own-player history is available yet." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Aún no hay historial atribuido a jugadores propios." } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Aún no hay historial atribuido a jugadores propios." } }
+      }
+    },
+    "Opponent unavailable" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Opponent unavailable" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Rival no disponible" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Rival no disponible" } }
+      }
+    },
+    "Own goalkeeper report" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Own goalkeeper report" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Informe del portero propio" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Informe del portero propio" } }
+      }
+    },
+    "Own goalkeeper #%lld" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Own goalkeeper #%lld" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Portero propio n.º %lld" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Portero propio n.º %lld" } }
+      }
+    },
     "Configure Own Team" : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Configure Own Team" } },

@@ -11,8 +11,8 @@
 
 import Foundation
 
-/// What a scouting pattern describes. Shooter kinds read a rival shooter's
-/// (or the whole rival team's) shots; goalkeeper kinds read the shots a
+/// What a scouting pattern describes. Shooter kinds read the attacking shooter's
+/// (or the attacking team's) shots; goalkeeper kinds read the shots a
 /// goalkeeper faced.
 public enum ScoutingPatternKind: Equatable, Hashable, Sendable {
     // MARK: Shooter
@@ -190,6 +190,10 @@ extension StatsEngine {
 // MARK: - Rules
 
 private extension StatsEngine {
+    static func attackingShooter(_ shot: Shot) -> Player? {
+        shot.attackingSide == .own ? shot.ownShooter : shot.shooter
+    }
+
     /// Compares a share or gap with its threshold, tolerating the rounding
     /// that makes 0.7 - 0.4 come out as 0.29999999999999993.
     static func reaches(_ value: Double, _ threshold: Double) -> Bool {
@@ -230,7 +234,7 @@ private extension StatsEngine {
         var found: [ScoutingPattern?] = []
         for sector in CourtSector.allCases {
             for hand in hands {
-                let group = lineShots.filter { zone(of: $0)?.sector == sector && $0.shooter?.handedness == hand }
+                let group = lineShots.filter { zone(of: $0)?.sector == sector && attackingShooter($0)?.handedness == hand }
                 let pattern = tendency(in: group, among: [.crossShot, .nearPost], share: ScoutingPattern.lineShare, key: \.line) {
                     .lineFromSector($0, sector: sector, hand: hand)
                 }
@@ -264,12 +268,16 @@ private extension StatsEngine {
     /// tie) and counts, after every goal, whether the next shot targeted
     /// the same goal zone. Shots with no recorded shooter are skipped.
     static func repeatAfterGoal(_ field: [Shot]) -> ScoutingPattern? {
-        // Number-only values are supported explicitly for legacy domain fixtures;
-        // production persistence supplies a stable identity before UI entry.
-        enum Identity: Hashable { case person(UUID), legacyNumber(Int) }
-        let byShooter = Dictionary(grouping: field.enumerated().filter { $0.element.shooter != nil }) {
-            let player = $0.element.shooter!
-            return player.id.map(Identity.person) ?? .legacyNumber(player.number)
+        // Rival number-only fixtures retain their compatibility contract. Own
+        // attribution has no legacy number identity to reconstruct or guess.
+        enum Identity: Hashable { case person(UUID, AttackingSide), legacyNumber(Int) }
+        let identified = field.enumerated().filter {
+            guard let player = attackingShooter($0.element) else { return false }
+            return $0.element.attackingSide == .rival || player.id != nil
+        }
+        let byShooter = Dictionary(grouping: identified) { entry in
+            let player = attackingShooter(entry.element)!
+            return player.id.map { Identity.person($0, entry.element.attackingSide) } ?? .legacyNumber(player.number)
         }
         var pairs = 0
         var repeats = 0
