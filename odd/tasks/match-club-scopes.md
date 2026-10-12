@@ -1,5 +1,17 @@
 # T6.11 — Match and club scopes
 
+**Current outcome (2026-10-12): LOCAL completed on `task/T6.11` with explicitly accepted verification debt; task-wide verification remains incomplete.** MC-4/5/6 are implemented and MC-7 closes the local documentary record, not a merge, publication, full runtime pass or native approval. Historical pending instructions/evidence below are snapshot-specific and superseded only as current closure instructions. Exact tested and latest externally verified source: `fe252991aff96e3ddbd411c9110bc8b1bd8a16ba`.
+
+## MC-7 local closure preparation — 2026-10-12
+
+The user authorized documentary/local closure with accepted partial verification on existing `task/T6.11` at `fe252991aff96e3ddbd411c9110bc8b1bd8a16ba`. Route: delegated direct, one writer (preparation plus two task documents); approximately 60–120 authored changed lines, advisory forecast, not a cap. Exact edit surfaces: this document and `odd/tasks/keepercent.md`. Parent owns the documentary commit, its native assessment and authoritative handoff; no source edits, new UI runs, merge, PR, push or second task.
+
+- [x] MC7-D1 Read both complete local ledgers, CLAUDE.md, injected skills and the complete authoritative T6.11 handoff, including reconciliations, bounded MC-6 verdict and MC-6-only Addendum. Local files are authoritative; mirror #4006 is outdated/truncated and #4373 historical.
+- [x] MC7-D2 All four final commands passed serially in the foreground; observed evidence is recorded in the final closure below.
+- [x] MC7-D3 Both ledgers record local accepted-debt closure only, retaining incomplete verification, candidate-specific omissions and historical evidence. Parent repeats one reported quick command before delivery.
+
+Passive documentation changes have no meaningful RED/GREEN; strict Domain TDD remains sourced from CLAUDE.md for behavior changes. No normalizer is needed. Rollback boundary: this two-document closure delta only, preserving all behavioral work and handoffs. Generated products/disposable harness stores are limited to the explicitly authorized validation commands; no real store or simulator is opened.
+
 ## Objective, authorization and constraints
 
 Historical first work unit (2026-10-06): prepare the next task without extending the acknowledged T6.1-A tree, record its closure and accepted verification debt, include the existing CLAUDE.md personal-project update, correct the local handoff log references, and apply only corroborated review advisories. That closure request did not authorize match/club implementation. The user separately authorized T6.11 implementation on 2026-10-07; the current contract below supersedes only the former future-work restriction, not historical verification evidence.
@@ -86,14 +98,14 @@ The user authorized advancing T6.11 after the read-only model investigation and 
 - Keep existing linked origin/target maps, deterministic statistics, no-data states and independent 7 m behavior.
 - No third-party app dependencies, simulator launch, source publication, push or PR creation. Advanced trajectories, defensive pressure, numerical situation, clock, substitutions and subjective ratings are deferred. Championship tagging is not required for this slice.
 
-### Remaining work units and routes
+### Implementation work units and routes — locally closed with accepted debt
 
-- [ ] MC-4 Rival match history and scopes: stable identity, safe existing-store upgrade, per-match roster snapshots, archiving, scope picker and scope-preserving report.
-- [ ] MC-5 Optional own-team roster and shot attribution without blocking rival-only scouting.
-- [ ] MC-6 My club player/goalkeeper cards across opponents with match/historical scope.
-- [ ] MC-7 Exact-SHA external UI verification, native review and local closure; do not close T6.11 after only MC-4.
+- [x] MC-4 Rival match history and scopes: locally closed with bounded R3 pass and earlier accepted partial coverage; native review omitted for that candidate, not approved.
+- [x] MC-5 Optional own-team roster and shot attribution: locally closed with explicitly accepted partial verification and candidate-specific native omission, not a verifier pass.
+- [x] MC-6 My club cards and scoped report: locally closed with accepted bounded MC-6 core runtime pass / task-wide partial coverage and candidate-specific native omission.
+- [x] MC-7 Exact-SHA evidence reconciliation and final local/documentary closure authorized 2026-10-12; verification incomplete, no native approval, merge or publication.
 
-MC-3: delegated read-only mapping (unfamiliar relationships and evidence beyond the inline budget). MC-4/5/6: delegated direct, one bounded writer at a time (preparatory reading and multiple non-trivial files). MC-7: parent Git/state/spot checks and provider-selected native review, with UI inspection performed by Claude Code or Codex desktop only. Stop at each visible slice's ready handoff until external verification returns.
+MC-3: delegated read-only mapping (unfamiliar relationships and evidence beyond the inline budget). MC-4/5/6: delegated direct, one bounded writer at a time (preparatory reading and multiple non-trivial files). Historical MC-7 route: parent Git/state/spot checks and provider-selected native review, external UI inspection only. Current documentary route and accepted omissions are recorded above/below; no new UI run or unchanged-candidate re-review.
 
 ### Verification and compatibility gate
 
@@ -115,7 +127,7 @@ Forecast (advisory estimates, generated files excluded): MC-4 approximately 1,60
 
 Current start: `task/T6.11` at `8f2c1b44b21a1cf3f1876ed656d4bbe971d592b3`, also current main. Historical closure/extraction commit `0d07d1efe3f7f71776db1bb7185f0c91b59ae5f2` is integrated. RDD is on (global). Pending reviewed boundary remains `8cb5920b075756f4a96c23b8019cbcd80890b2e2`, per Engram `keepercent/t6.11/closure-first-commit`; medium under-budget is not approval. Use explicit committed-only assessment boundaries and record each unit's result. Preserve unrelated `.claude/`, `tmp/` and all historical handoffs.
 
-Next: parent readback, local work-unit Git/review-boundary decisions and exact-SHA external UI handoff for MC-4. Local implementation is ready; MC-4 remains unchecked until external checks return. MC-5/6 were not implemented; T6.11 is not closed.
+Historical next step (2026-10-07): MC-4 external handoff before MC-5/6 implementation. Current next step: parent documentary commit/assessment/handoff synchronization; subsequent merge/PR/push requires a separate human decision. T6.11 is locally closed with accepted debt, not delivered.
 
 ### MC-4 local implementation evidence — 2026-10-07
 
@@ -334,3 +346,48 @@ Behavior commit: `46edf5a556082e5e573d0eac4c3e80184dc84e73` (`feat(my-club): add
 Committed-only native assessment from explicit MC-6 boundary `63739a5bb8f6812c925e44eb4f173bafdf5a3d17`, with unrelated untracked inventory explicitly excluded: **medium**, `executable_change`, `review_due: true` / `slice_budget_reached`. The earlier unassessable inventory result is resolved, not inferred as low risk. Native review waits for external verification under the project contract; no MC-6 consent, START, approval or acknowledgement. Retain the assessment's exact returned STATUS for re-entry after that verification, with the same explicit base and committed-only selectors.
 
 The ready shared `handoff/T6.11.md` will target the exact final SHA including this passive receipt. Preserve the complete historical MC-5 verifier evidence, accepted debt and candidate-scoped omission. MC-6 and T6.11 remain unchecked: new local checks passed, external UI/SwiftData projection/export evidence remains pending. Full-document mirror synchronization remains pending; canonical mirror #4006 and overflow #4373 are preserved, with the new MC-6 contract/results saved separately.
+
+## MC-7 final local closure — 2026-10-12
+
+The user's later explicit authorization closes MC-4/5/6/7 and master T6.11 **locally with accepted debt**, superseding historical pending closure instructions, not rewriting their evidence. Source HEAD remains `fe252991aff96e3ddbd411c9110bc8b1bd8a16ba`; this unit edits only two ledgers. Parent records the exact upcoming documentary commit separately in the shared authoritative handoff and Engram after committing; no future SHA or looping bookkeeping commit is invented. The verifier-owned handoff remains `unverifiable` and is preserved by this writer.
+
+### Behavioral commits and external scope
+
+| Unit | Source record | Accepted evidence, not a full-feature pass |
+| --- | --- | --- |
+| MC-4 | `b769a9a507e4c7caf87aaa42f7c90a66a95a8c65`; corrections `b68b7d56e6d6884b59e27ff0d847f3e297369f81`, `1919e34cb2e7c045b92c91e94d2faad800897e48`, `53930aad9abdd8f0552bebd73826ebbab7ffbeba` | Bounded draft-retention pass at `dfb886e7150d387c4b4f47272b416908586b210a`; earlier explicitly accepted partial coverage stays debt. |
+| MC-5 | `023eb58790fd4fa5823c6cdef28f5bc3c244722e`; fixture/title correction `30254fae94c03b3b80d8f801e39a487fdec28a24` | Accepted partial bounded data-integrity evidence at `63739a5bb8f6812c925e44eb4f173bafdf5a3d17`, not a verifier pass. |
+| MC-6 | `46edf5a556082e5e573d0eac4c3e80184dc84e73`; passive receipt/verification source `fe252991aff96e3ddbd411c9110bc8b1bd8a16ba` | Accepted **bounded MC-6 core runtime pass / task-wide partial coverage**, incorporating the MC-6-only Addendum. |
+
+External source locator: shared `.git/handoff/T6.11.md`, latest reconciliation, bounded MC-6 verdict and Addendum, plus preserved MC-4/5 history. MC-6 exercised iPhone 17 / iOS 26.1 / light / es / disposable `demoOwnRoster`: two populated matches against BM Serra; separate own/rival identities and attributable partitions; role/archive routes; Sam 3→7 and rename, Noa reusing 3 without merging; original single-match snapshot versus current All identity; selected own-GK report and complete `export-alex-B.png` (960×1294); attributed post/miss-only GK sample with report access and no invented 0%. Captures: `../keepercent-verify/build/shots/T6.11-mc6b/`, s00–s86 and m01–m06. These are externally supplied historical results, not rerun locally. The Addendum closes MC-6 identity gaps only; it does not prove all MC-5 typed-entry paths.
+
+### Native candidate omissions — NOT approved
+
+| Candidate | Native tier / range evidence | Preserved failed lineage |
+| --- | --- | --- |
+| MC-4 | High, selected branch-point range, 42 paths / 1,708 authored lines | `review-49eb091c42ce1cf2` |
+| MC-5 | High, 36 paths / 1,333 authored lines | `review-967573e940b5c576` |
+| MC-6 | Medium, 15 paths / 596 authored lines, base `63739a5bb8f6812c925e44eb4f173bafdf5a3d17` | `review-5df5b27b9262e3b3`, target `sha256:0f734ba9c1e0ad7ed5f96eb5e64c5a2dc45ddc42aa489a16e7c0d60bf4304b3f` |
+
+Granted reviewer Tasks refused before inspection with `opencode_review_transport_binding_invalid`; no reviewer result, finding, approval, acknowledgement or receipt exists. Humans separately selected Report and continue for MC-4/5 and **Continue without reporting** for MC-6. Exact declines returned `action: declined`, `consent: declined_this_candidate` and matching targets; bound STATUS still reports reviewing/reoffers slots. Preserve all failed authority, no retry/reset/abandon/unchanged re-review. RDD remains globally enabled. Earlier closure/extraction medium under-budget evidence is not converted into approval; parent owns this new documentary unit's assessment.
+
+### Final local checks — unchanged source at fe252991
+
+All commands ran exactly, serially, foreground after preparation; no normalization, UI execution or real stores. Passive docs have no meaningful TDD RED/GREEN; these are ordinary regression/compile/structural checks, not refreshed runtime proof.
+
+| Exact command | Observed result |
+| --- | --- |
+| `swift test --package-path Domain` | Exit 0; 456 tests / 110 suites passed, 12.015 seconds. Nonfatal LocalizationTests/#expect unnecessary `await` and `try` warnings. |
+| `bash Tools/StoreCompatibility/run.sh` | Exit 0; two tests / two suites passed, 1.401 seconds, after creating separate frozen Legacy and MC-4 fixtures. Evidence directory `/var/folders/4k/20l7cw4s07z28vbtfqtvb34m0000gn/T/opencode/keepercent-compatibility.WjB58J`; no warning observed. Native macOS disk proof, NOT iOS persistence/upgrade proof. |
+| `xcodebuild -project Keepercent.xcodeproj -scheme Keepercent -destination 'generic/platform=iOS Simulator' build` | Exit 0; BUILD SUCCEEDED, app compiled/linked arm64 and x86_64. Nonfatal AppIntents metadata warning and `ShotEntryContextPanel.swift:158:73` non-Sendable-to-`@isolated(any) @Sendable (UUID?) -> Void` conversion warning (both architectures). No simulator boot. |
+| `git diff --check` | Exit 0; no whitespace errors; repeated after final closure bookkeeping. |
+
+### Accepted debt and follow-ups — not passed
+
+- MC-4: retain every previously accepted unexercised round-4/R3 obligation, including per-person totals/splits, Match Roster/attendance/additions, archived routes/order across relaunches, origin/7 m, All export, post/miss-only paths, remaining locales/iPad interactions, multiwindow and iOS upgrades; historical exercised cases remain SHA-scoped.
+- MC-5: explicit None clearing of a populated own selection; own shooter must not satisfy a missing required rival keeper; typed creation and within-side duplicates, typed draft paths and earlier rename/renumber/reuse obligations; remaining visual configurations and iOS disk persistence/upgrades. MC-6 Addendum is not blanket MC-5 coverage.
+- MC-6: two **distinct opponents**, full device/language/appearance matrix, multiwindow invalidation, iOS disk persistence/upgrades and rival report/export runtime regression remain accepted debt. Two populated BM Serra matches do not prove cross-opponent behavior.
+- Rival report route exists at target and base: `Keepercent/Features/GoalkeeperCard/GoalkeeperCardView.swift:45–54` wires primary-action Team Report navigation, disabled only for missing person or empty relevant shots. Roster routes reach this card (`RosterEditorView.swift:122–124,203–204`). Rival reports read own attacks facing the rival keeper; own reports read rival attacks facing the own keeper. Runtime inability is accepted missing proof, not an absent-route defect or malformed check.
+- Three later UX follow-ups, **observations not confirmed defects**: attempts versus on-target subtitle wording (`GoalkeeperCardContentView.swift:77–80`), truncated selector readability (`MatchScopePicker.swift:15–23`), pale-green/locked-toggle clarity (`MatchRosterSheet.swift:26–35`). No fixes or second task authorized.
+
+Structural readback and changed-path inspection accompany the writer handoff: only these two task documents differ from the exact source target; App/Domain/project/harness sources and all handoffs are unchanged. Unrelated `.claude/` and `tmp/` are preserved. Full-document mirrors remain pending; do not replace #4006/#4373 or the master mirror with summaries. Parent owns full synchronization, any memory relation judgments, documentary commit/native assessment and one repeated quick check before delivery. Selected historical `feature-branch-chain` remains local-only; next merge/PR/push is a separate human decision, not an automatic next task.
