@@ -4,6 +4,13 @@ import Testing
 
 @Suite("Pattern phraser")
 struct PatternPhraserTests {
+    @Test func deliveryConversionSamples() {
+        #expect(sentence(.deliveryConversion, 4, 4, contrast: Tally(successes: 0, attempts: 4))
+            == "Standing: 4 of 4 goals; jump: 0 of 4 goals")
+        #expect(sentence(.deliveryConversion, 1, 4, contrast: Tally(successes: 3, attempts: 4))
+            == "Standing: 1 of 4 goals; jump: 3 of 4 goals")
+    }
+
     private func sentence(
         _ kind: ScoutingPatternKind,
         _ successes: Int,

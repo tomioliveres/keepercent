@@ -548,6 +548,23 @@
         }
       }
     },
+    "Standing: %@ goals; jump: %@ goals" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En apoyo: %1$@ goles; en suspensión: %2$@ goles"
+          }
+        },
+        "es-419" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A pie firme: %1$@ goles; en suspensión: %2$@ goles"
+          }
+        }
+      }
+    },
     "Scores from near %@ vs far %@" : {
       "extractionState" : "manual",
       "localizations" : {

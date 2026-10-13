@@ -8,6 +8,16 @@ import Testing
 /// the suite.
 @Suite("Spanish phrasing, Spain and Latin America")
 struct LocalizationTests {
+    @Test func deliveryConversionSamples() {
+        let finding = pattern(.deliveryConversion, 4, 4, contrast: Tally(successes: 0, attempts: 4))
+        #expect(PatternPhraser.sentence(for: finding, locale: spain)
+            == "En apoyo: 4 de 4 goles; en suspensión: 0 de 4 goles")
+        for locale in [latinAmerica, Locale(identifier: "es-419")] {
+            #expect(PatternPhraser.sentence(for: finding, locale: locale)
+                == "A pie firme: 4 de 4 goles; en suspensión: 0 de 4 goles")
+        }
+    }
+
     private let spain = Locale(identifier: "es_ES")
     private let latinAmerica = Locale(identifier: "es_AR")
 
