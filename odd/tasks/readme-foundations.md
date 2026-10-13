@@ -13,7 +13,7 @@ Explain the integrated app, its native offline architecture and actual AI usage,
 
 ## Authorized scope and constraints
 
-- This slice may edit `README.md`, this feature document and only the T6.2 entry in `odd/tasks/keepercent.md`.
+- RF-2 edits are confined to `README.md`, this feature document and the T6.2 entry in `odd/tasks/keepercent.md`. RF-3 additionally authorizes the four captured assets `docs/assets/readme/scouting.png`, `shooter-card.png`, `goalkeeper-card.png` and `shooter-interaction.gif`; no other media or source files.
 - English artifacts; no app/Domain/project changes, new fixtures, dependency changes or source implementation.
 - Preserve T6.1/T6.11 closure, accepted debt, manual VoiceOver pending, every historical handoff, `docs/T6.2-readme`, and preexisting untracked `.claude/` and `tmp/`.
 - OpenCode does not boot a simulator. Claude Code or Codex desktop captures visual assets from the exact handed-off SHA; no third-party/reference material is used.
@@ -31,9 +31,9 @@ Explain the integrated app, its native offline architecture and actual AI usage,
 - [ ] RF-3 Capture and integrate public README screenshots and a short GIF.
   - Route: external visual capture first, then a bounded asset/documentation writer. No OpenCode simulator launch.
   - Acceptance: use synthetic demo data and Keepercent-only images; record exact SHA, device/OS, appearance, locale, launch arguments and any data preparation. Show a small representative set of current screens and a short linked-card interaction, not a full UI acceptance matrix. Do not invent a populated own-history demo: `demoOwnRoster` creates a roster without attributing prior matches.
-  - Intended later asset directory: `docs/assets/readme/`; not part of RF-2's allowed edit surface. Do not add broken image links or placeholder assets before real captures exist.
+  - Asset directory: `docs/assets/readme/`, RF-3 only. Integrate unchanged captured `scouting-2.png` as `scouting.png`, the top shooter/goalkeeper card PNGs and `shooter-interaction.gif`. Short captions describe visible summaries and filter selection/clearing, not complete cards or visible Directions arrows. No fake assets or broader verification claims.
   - Checks: inspect actual images/GIF for legibility and content, relative asset links and rendered Markdown; document missing visual capability as unavailable rather than pass.
-  - Progress: external capture request `.git/handoff/T6.2.md` binds the final documentation SHA. Capture output stays in the verifier's local build directory for later inspection/integration; no public assets are added by RF-2. T6.2 remains unchecked.
+  - Progress: capture-only handoff passed at exact `e377111e6b533f89812abb84faac346c84037ba3`, iPhone 17 / iOS 26.1, portrait/light/default Dynamic Type, English/en_US. External Claude inspection covered the PNGs and GIF's motion (84 frames, about 8.5 seconds); OpenCode exploration inspected PNGs and one static GIF frame, with parent spot readback of the scouting capture. The user copied the four assets; the writer preserved their bytes and integrated README links and captions. Rendered Markdown inspection is unavailable in the exposed tools and remains explicitly pending, not passed. RF-3 and T6.2 remain unchecked until that requirement is resolved.
 
 ## Delivery and recovery
 
@@ -41,7 +41,7 @@ Explain the integrated app, its native offline architecture and actual AI usage,
 - Historical authored count: 164 across the prior branch's two work-unit/bookkeeping commits; those commits are not in this branch. Current resumption: 150 authored changed lines in `ea5ec6f`; final bookkeeping count is recorded in the session recovery summary. This is selective reuse, not integration of the historical branch.
 - Rollback: RF-2's README and T6.2 documentation only; no app behavior or data changes.
 - Mirror: `odd/readme-foundations/tasks/resume-34a2bd4`, with the complete current document and locator; historical observation #4887 at the original topic and the original branch remain recovery evidence.
-- Next: run the RF-3 external capture request, then inspect/integrate the real assets and rendered README. No full task closure until visual assets are addressed.
+- Next: inspect the rendered README before parent-owned review and closure. Capture and asset integration are complete; no rendered pass or full task closure is claimed.
 
 ## RF-2 current-claim evidence
 
@@ -67,3 +67,24 @@ Current source inspection at the resumption base supports these claims; it is no
 - Parent must recheck the final working tree and this untracked document before staging; writer checks do not substitute for parent readback.
 - Inventory includes this preexisting untracked task document as well as tracked README/master-ledger changes; `.claude/` and `tmp/` remain untouched.
 - Parent structural readback and repeated whitespace/source-boundary checks passed. RF-2's documentation outcome and passive committed assessment are complete. RF-3 remains unchecked for external capture; no assets or handoffs were prepared by the writer.
+
+## RF-3 asset provenance and verification
+
+- Capture source: `e377111e6b533f89812abb84faac346c84037ba3`, authoritative capture-only pass in shared `.git/handoff/T6.2.md`; that handoff remains unchanged. Device: iPhone 17, iOS 26.1 (23B86), portrait, light, default Dynamic Type, English/en_US; status bar set to 9:41 during capture and cleared afterwards.
+- Independent launches: `-KPScreen scouting -KPData demo`, `-KPScreen shooterCard -KPData demo`, `-KPScreen goalkeeperCard -KPData demo`, each with `-AppleLanguages (en) -AppleLocale en_US`. Data is synthetic and in-memory; no own-club history, persistent data preparation or third-party material is represented.
+- Exact source directory: `../keepercent-verify/build/readme/T6.2/`. The user copied the assets into `docs/assets/readme/`; this writer did not copy, modify or re-encode binary inputs. All four source/destination SHA-256 pairs match:
+
+| Source filename | Public filename | SHA-256 |
+| --- | --- | --- |
+| `scouting-2.png` | `scouting.png` | `56549157d78adc70cc25acfaa5618052c6d93f2eefe81934a2c86766990077fa` |
+| `shooter-card.png` | `shooter-card.png` | `67b5e745db3924b4026e8f18f65fa8055b909ecfcc0bfe937f0eb1c63f77778d` |
+| `goalkeeper-card.png` | `goalkeeper-card.png` | `f34bbe8aaae64b055a935e1df1285677f4a2e4d11ed6bc463a5257e1a6bc7b89` |
+| `shooter-interaction.gif` | `shooter-interaction.gif` | `70a70a18fdf543c003e855e9ca46bf33a32dcbffae9e5be1c1ba980ac0a11495` |
+
+- Native `sips` readback: each PNG is 1206 × 2622; GIF is 450 × 978. Writer Read inspection covered all three public PNGs and one static GIF frame, not GIF playback. External Claude capture proof records actual motion: 84 frames, 8.49 seconds, native AVFoundation/ImageIO encoding without installations or external services.
+- Visible content: scouting shows both maps and 18 field shots, with the All matches selector offscreen. Top cards show All matches and rival demo identities: Jordi Ferrer (#3), 2 shots / 0 goals / 0%; Marc Puig (#1), 12 shots on target / 4 saves / 33%. Their origin courts are partly offscreen. README captions describe selected visible portions, not whole cards or reports.
+- GIF caption is limited to court-origin filter selection and repeated-tap clearing. Capture evidence also records a Directions mode change; no visible-arrow claim or diagnosis is made.
+- Passive documentation and existing images have no meaningful behavioral RED/GREEN. No Domain test, app build or simulator run is required or performed by this writer. Capture-only proof does not establish task-wide functional or accessibility acceptance.
+- Writer checks: `git diff --check` passed; `git diff --name-only` lists only the three authorized Markdown files; `git diff e377111e6b533f89812abb84faac346c84037ba3 -- Domain Keepercent Keepercent.xcodeproj CLAUDE.md` is empty. Manual structure checks resolve all 14 README relative links (including four full-size media links and the provenance fragment), four matching image sources with descriptive alt text and width 260 only, and two balanced fenced blocks. Rendered layout and GIF playback were not checked here.
+- Parent structural readback and repeated `git diff --check` passed. Native assessment of the staged seven-path media/documentation unit returned passive / `non_executable_only`, 47 authored text lines, `review_due: false` / `passive`, with unrelated untracked inventory explicitly excluded. No review transaction or receipt is required for these passive documents/images; the local integration commit is recorded in the full recovery mirror.
+- Pending acceptance: rendered Markdown inspection is unavailable in the exposed tools. Structural checks do not substitute for a rendered pass; RF-3 and T6.2 remain unchecked. No merge, push or task closure is authorized by the capture result.

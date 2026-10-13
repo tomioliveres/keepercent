@@ -20,6 +20,21 @@ That includes *which* post or part of the crossbar was hit, and where a goalkeep
 - **Sample-aware statistics and plain-language insights**, including deterministic scouting patterns. Shooter effectiveness and goalkeeper save rate use different denominators; missing data is not a measured 0%.
 - **Scoped goalkeeper image reports**, for rival or own goalkeepers, prepared from the selected match or All matches and shared explicitly through the system share interface.
 
+## Screenshots
+
+Synthetic demo data, showing selected portions of the screens rather than complete cards or reports. Select an image to open it at full size.
+
+| Scouting | Shooter | Goalkeeper |
+| --- | --- | --- |
+| [<img src="docs/assets/readme/scouting.png" alt="Scouting overview with goal effectiveness and court-origin maps" width="260">](docs/assets/readme/scouting.png) | [<img src="docs/assets/readme/shooter-card.png" alt="Jordi Ferrer's shooter summary and goal effectiveness map" width="260">](docs/assets/readme/shooter-card.png) | [<img src="docs/assets/readme/goalkeeper-card.png" alt="Marc Puig's goalkeeper summary, scouting patterns and save-rate goal map" width="260">](docs/assets/readme/goalkeeper-card.png) |
+| Goal effectiveness and court origins. | Jordi Ferrer: 2 shots, 0 goals. | Marc Puig: 4 saves from 12 shots on target. |
+
+[<img src="docs/assets/readme/shooter-interaction.gif" alt="Shooter court-origin filter selected and cleared by tapping the same zone again" width="260">](docs/assets/readme/shooter-interaction.gif)
+
+**Linked-card interaction:** select a court-origin filter, then tap the same zone again to clear it.
+
+Captured from `e377111e6b533f89812abb84faac346c84037ba3` on iPhone 17 / iOS 26.1, portrait, light appearance, English (`en_US`). [Capture details and verification limits](odd/tasks/readme-foundations.md#rf-3-asset-provenance-and-verification).
+
 ## Quick start
 
 Requirements: **Xcode 27**, with **iOS/iPadOS 26** as the minimum deployment target. No backend account or third-party runtime dependency setup is needed.
@@ -75,6 +90,6 @@ Generative AI was used as a coding assistant during development. The project req
 
 This README describes the integrated match/club app, not just the original hackathon MVP. Roster OCR/PDF import remains deferred and unmerged; manual roster entry is the current path.
 
-The polish/accessibility task is closed with limited verification and recorded debt, not a full accessibility pass. Broader visual coverage and manual VoiceOver acceptance remain incomplete. No complete UI acceptance or App Store readiness is claimed. Public screenshots and a short interaction GIF are still pending.
+The polish/accessibility task is closed with limited verification and recorded debt, not a full accessibility pass. Broader visual coverage and manual VoiceOver acceptance remain incomplete. No complete UI acceptance or App Store readiness is claimed. Public screenshots and a short interaction GIF are integrated above; rendered README inspection remains pending.
 
 See the [original product plan](docs/mvp.md) for historical intent and the [task ledger](odd/tasks/keepercent.md) for current progress. The [README foundations task](odd/tasks/readme-foundations.md) records this bounded documentation update and its verification.
