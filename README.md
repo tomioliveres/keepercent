@@ -90,6 +90,6 @@ Generative AI was used as a coding assistant during development. The project req
 
 This README describes the integrated match/club app, not just the original hackathon MVP. Roster OCR/PDF import remains deferred and unmerged; manual roster entry is the current path.
 
-The polish/accessibility task is closed with limited verification and recorded debt, not a full accessibility pass. Broader visual coverage and manual VoiceOver acceptance remain incomplete. No complete UI acceptance or App Store readiness is claimed. Public screenshots and a short interaction GIF are integrated above; rendered README inspection remains pending.
+The polish/accessibility task is closed with limited verification and recorded debt, not a full accessibility pass. Broader visual coverage and manual VoiceOver acceptance remain incomplete. No complete UI acceptance or App Store readiness is claimed. Public screenshots and a short interaction GIF are available above.
 
 See the [original product plan](docs/mvp.md) for historical intent and the [task ledger](odd/tasks/keepercent.md) for current progress. The [README foundations task](odd/tasks/readme-foundations.md) records this bounded documentation update and its verification.
