@@ -22,7 +22,7 @@ Compare overall standing and jump field-shot conversion in existing shooter patt
 
 ## Work units
 
-- [ ] DC-2 Reconcile and reuse the historical calculation/tests; integrate the shooter finding and phrasing with observed Domain RED → GREEN → REFACTOR; run functional checks and commit the cohesive behavior.
+- [x] DC-2 Reconcile and reuse the historical calculation/tests; integrate the shooter finding and phrasing with observed Domain RED → GREEN → REFACTOR; run functional checks and commit the cohesive behavior. Work-unit commit: `402df5400392b3e09b0d56083f35de406724fda3`.
   - Route: delegated direct. Preparation and multiple nontrivial Domain/test/catalog/app files require one bounded writer.
   - TDD source: `CLAUDE.md`; runner `swift test --package-path Domain`.
 - [ ] DC-3 Verify the exact committed UI in Codex, then perform the applicable native review and documentary closure. Do not check off T6.6 additions before observed acceptance.
@@ -39,17 +39,18 @@ Compare overall standing and jump field-shot conversion in existing shooter patt
 ## Delivery and progress
 
 - Delivery strategy: `ask-on-risk`; initial forecast 300–380 authored changed lines, excluding generated content. Approximately 400 lines is advisory, not a reason to omit tests or compress readable code. Ask about delivery strategy before committing if the actual forecast/running count exceeds it.
-- Functional checks passed in the uncommitted writer tree; visual acceptance and native review are pending. RDD is on (global); candidate consent remains human-owned.
-- No merge, push or PR is authorized by this task record. One behavior work-unit commit on this feature branch is planned.
+- Functional checks passed in the writer tree committed as `402df5400392b3e09b0d56083f35de406724fda3`; parent repeated the comparison suite successfully (three tests, five parameterized cases). Visual acceptance and native review are pending. RDD is on (global); candidate consent remains human-owned.
+- No merge, push or PR is authorized by this task record. Behavior commit: `402df54`, 254 authored changed lines across 11 files; the following progress record is documentation-only.
+- Native assessment against explicit base `51a94e3`, committed-only, returned medium / `under_budget` (254 lines). An initial undeclared-untracked refusal was reconciled using the canonical inventory and explicit exclusion of unrelated `.claude/` and `tmp/`. No START, reviewer verdict, acknowledgement or receipt. Per project policy, offer the accumulated slice review at task close after visual verification.
 - Rollback boundary: additive conversion API/finding, tests, phrasing/catalog entry and exhaustive presentation symbol plus scoped tracking notes.
-- Next: parent inspects the bounded writer result, commits the cohesive behavior and prepares the exact-SHA handoff; stop for Codex before native review.
+- Next: Codex verifies the exact SHA in the shared handoff `T6.6-conversion.md`; OpenCode resumes DC-3 from its evidence before native review. Source bytes are unchanged by the documentary progress record.
 
-## DC-2 implementation evidence (2026-10-13, uncommitted)
+## DC-2 implementation evidence (2026-10-13)
 
 - Read historical helper and all 164 test lines through `git show`; reused its named immutable API, field-only calculation and rounding tolerance. Consolidated behavioral tests rather than restoring historical bookkeeping.
 - RED: comparison tests failed on missing `deliveryConversionComparison`; integrated pattern/phrase tests then failed on missing `.deliveryConversion`. GREEN observed for the integrated scouting suite before final triangulation.
 - Added shooter conversion to existing ranking and presentation, preserving all old sort keys, goalkeeper saves, delivery target preferences and the four-row cap. Goals use all known-delivery field attempts, including saves, posts and misses.
-- DC-2 implementation is done but uncommitted; its checkbox stays open until the parent commits. DC-3 visual proof and native review remain pending. No simulator, review, commit or handoff mutation performed by the writer.
+- DC-2 is committed as `402df54`. DC-3 visual proof and native review remain pending. No simulator, review, commit or handoff mutation was performed by the writer; parent owns the shared handoff.
 - Final serial checks: `swift test --package-path Domain --filter DeliveryConversionComparisonTests` passed 3 tests (build 5.96 s, tests 0.002 s); `swift test --package-path Domain --filter ScoutingPatternsTests` passed 37 tests (0.61 s / 0.006 s); `swift test --package-path Domain --filter PatternPhraserTests` passed 8 tests (0.52 s / 0.016 s); `swift test --package-path Domain --filter LocalizationTests` passed 7 tests (1.54 s / 0.024 s); `swift test --package-path Domain` passed 464 tests / 111 suites (1.60 s / 31.444 s). Generic simulator `xcodebuild` succeeded; `git diff --check` passed. Build/diff wall-clock timing was not exposed by the tool. Existing unnecessary `try`/`await` compiler warnings and the AppIntents metadata-skip warning were observed; no unrelated catalog changes appeared.
 
 ### Disposable Codex data recipe
