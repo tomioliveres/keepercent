@@ -27,21 +27,21 @@ Explain the integrated app, its native offline architecture and actual AI usage,
   - Acceptance: explain optional own club, match-scoped history, stable identity/snapshots and scoped reports without claiming broader runtime verification. Correct obsolete generative runtime/video-player promises and stale MVP status. Preserve native/offline boundaries and explicit sharing exception. Keep README scannable and links valid.
   - Checks: `git diff --check`; balanced Markdown fences; relative file/fragment links inspected; all material claims backed by current source paths; only authorized documentation paths changed; parent structural readback.
   - TDD exception: passive documentation has no meaningful behavioral RED. Domain tests, app build and simulator are N/A for this work unit; no new functional proof is claimed.
-  - Progress: README refresh implemented, selectively reusing RF-1 prose with current match/club claims. Writer verification and parent structural readback passed; parent repeated `git diff --check` and confirmed the source/project/context comparison is empty. Commit and native assessment evidence will be recorded after the documentation work unit is committed; RF-3 remains open.
+  - Progress: README refresh implemented, selectively reusing RF-1 prose with current match/club claims. Writer verification and parent structural readback passed; parent repeated `git diff --check` and confirmed the source/project/context comparison is empty. Work unit `ea5ec6fc6dbf85704f1f65bd550c4224a36d021e` (`docs(readme): document integrated match and club scouting`), 131 additions / 19 deletions across three Markdown files. Native committed assessment from explicit base `34a2bd4af279dc1a1ce69a01322d0b1f2f69b193`: passive / `non_executable_only`, `review_due: false` / `passive`; unrelated untracked inventory explicitly excluded. No START, consent, reviewer, acknowledgement or review receipt. RF-3 remains open.
 - [ ] RF-3 Capture and integrate public README screenshots and a short GIF.
   - Route: external visual capture first, then a bounded asset/documentation writer. No OpenCode simulator launch.
   - Acceptance: use synthetic demo data and Keepercent-only images; record exact SHA, device/OS, appearance, locale, launch arguments and any data preparation. Show a small representative set of current screens and a short linked-card interaction, not a full UI acceptance matrix. Do not invent a populated own-history demo: `demoOwnRoster` creates a roster without attributing prior matches.
   - Intended later asset directory: `docs/assets/readme/`; not part of RF-2's allowed edit surface. Do not add broken image links or placeholder assets before real captures exist.
   - Checks: inspect actual images/GIF for legibility and content, relative asset links and rendered Markdown; document missing visual capability as unavailable rather than pass.
-  - Progress: pending external handoff; T6.2 remains unchecked.
+  - Progress: external capture request `.git/handoff/T6.2.md` binds the final documentation SHA. Capture output stays in the verifier's local build directory for later inspection/integration; no public assets are added by RF-2. T6.2 remains unchecked.
 
 ## Delivery and recovery
 
 - Strategy: `single-pr`, carried forward from RF-1; no PR/publishing authorized. Forecast for this resumption: about 200–300 authored documentation lines before assets. Reassess actual growth before the next commit if the accumulated range exceeds the advisory delivery budget.
-- Historical authored count: 164 across the prior branch's two work-unit/bookkeeping commits; those commits are not in this branch. Current resumption is uncommitted; record new commit evidence separately, not as integration of the historical branch.
+- Historical authored count: 164 across the prior branch's two work-unit/bookkeeping commits; those commits are not in this branch. Current resumption: 150 authored changed lines in `ea5ec6f`; final bookkeeping count is recorded in the session recovery summary. This is selective reuse, not integration of the historical branch.
 - Rollback: RF-2's README and T6.2 documentation only; no app behavior or data changes.
 - Mirror: `odd/readme-foundations/tasks/resume-34a2bd4`, with the complete current document and locator; historical observation #4887 at the original topic and the original branch remain recovery evidence.
-- Next: complete RF-2, then hand RF-3 to the external capture runtime. No full task closure until visual assets are addressed.
+- Next: run the RF-3 external capture request, then inspect/integrate the real assets and rendered README. No full task closure until visual assets are addressed.
 
 ## RF-2 current-claim evidence
 
@@ -66,4 +66,4 @@ Current source inspection at the resumption base supports these claims; it is no
 - Manual structural inspection: all 9 README relative links resolve to observed files/directories; this document has no Markdown links or fences, and the changed T6.2 ledger link resolves to this document. README has two balanced fenced blocks (four delimiters), valid heading/table structure and no image links or fragment targets. No external URL, rendered Markdown, simulator, image or GIF check is implied.
 - Parent must recheck the final working tree and this untracked document before staging; writer checks do not substitute for parent readback.
 - Inventory includes this preexisting untracked task document as well as tracked README/master-ledger changes; `.claude/` and `tmp/` remain untouched.
-- Parent structural readback and repeated whitespace/source-boundary checks passed. RF-2's documentation outcome is complete; commit/evaluation bookkeeping follows. RF-3 remains unchecked for external capture; no assets or handoffs were prepared by the writer.
+- Parent structural readback and repeated whitespace/source-boundary checks passed. RF-2's documentation outcome and passive committed assessment are complete. RF-3 remains unchecked for external capture; no assets or handoffs were prepared by the writer.
