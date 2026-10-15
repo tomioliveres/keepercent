@@ -8,9 +8,9 @@ Delivery: ask-on-risk; forecast below 400 authored changed lines. Checks: skill 
 - S3: "una base reutilizable para los próximos proyectos" — keep platform/project details out of the common policy; record per-case evidence and explicit incremental provenance.
 
 ## Tasks
-- T1 [S1,S3] inline, implemented; structural checks passed — global policy and iOS adapter; no writer trigger. Installed user skills are outside the project Git repository; record hashes rather than commit the home repository.
-- T2 [S2] inline, implemented; structural checks passed — project profile and routing, same understood workflow. Commit tracked project deliverables on the feature branch; preserve pre-existing untracked adapters as local configuration.
-- T3 [S1-S3] delegated verification, passed; native assessment pending — independent read-only scenario evaluation (risk item 3: consumed workflow contracts), then parent spot check and native assessment if applicable.
+- T1 [S1,S3] inline, complete — installed hashes below; project integration commit `ce8fc75` — global policy and iOS adapter; no writer trigger. Installed user skills are outside the project Git repository; record hashes rather than commit the home repository.
+- T2 [S2] inline, complete — commit `ce8fc75`; structural checks passed — project profile and routing, same understood workflow. Commit tracked project deliverables on the feature branch; preserve pre-existing untracked adapters as local configuration.
+- T3 [S1-S3] delegated verification, complete — S1/S2/S3 passed, one correction/recheck; integration commit `ce8fc75` — independent read-only scenario evaluation (risk item 3: consumed workflow contracts), then parent spot check and native assessment if applicable.
 
 ## Log
 - L1 (2026-10-15): "Dale, aplicá esas mejoras al flujo global y ajustá Keepercent para usarlo, así nos queda una base reutilizable para los próximos proyectos."
@@ -26,3 +26,6 @@ Delivery: ask-on-risk; forecast below 400 authored changed lines. Checks: skill 
 - Installed SHA-256 `verify-interface/references/evidence.md`: `099a21eecee07368ccdddb7e0bf06e1debbf50c11f566cb9588b26915acf2b59`.
 - Installed SHA-256 `verify-ios-simulator/SKILL.md`: `ffe22a10880942bef65d838d9c900a8fdb51c2d04879998969a3810fd851863f`.
 - Installed SHA-256 `verify-ios-simulator/references/execution-evidence.md`: `03991ec11cbc774843987a618709ba5cba9d166ac7550cc04985cfeb356bd30d`.
+- L9: Work-unit commit `ce8fc75` contains the tracked profile, routing and task document (67 changed lines). Global skills and the two pre-existing untracked local adapters were updated in place, not committed wholesale. The reviewed legacy adapters remain local configuration; do not infer they are versioned.
+- L10: Native committed assessment from explicit baseline completed after sandbox-approved temporary-index access and canonical exclusion of unrelated untracked files: `medium`, `executable_change` (CLAUDE.md), `review_due: false`, `under_budget`. No START, consent, review receipt or approval; ordinary delivery remains unmanaged. Native assessment covers only the three committed project files; independent scratch evaluation covered all installed/global/local instructions.
+- L11: All tasks complete; risk item 3 (shared workflow contracts). Rollback boundary: common verify-interface skill, the two modified iOS skill files, project profile and one CLAUDE routing line, and the two local adapters (pre-change copies in system temp ui-verification.1miIwN). No changes to app source, historical handoffs, icon assets, remote state, or permissions. Runtime pilot and performance measurement were outside this instruction-only change.
