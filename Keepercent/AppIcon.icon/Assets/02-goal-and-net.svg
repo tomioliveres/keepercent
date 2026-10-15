@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1254 1254">
+  <defs>
+    <radialGradient id="inside" cx=".5" cy=".55" r=".72"><stop stop-color="#154e60"/><stop offset=".55" stop-color="#0a3545"/><stop offset="1" stop-color="#00151e"/></radialGradient>
+    <linearGradient id="face" x2=".12" y2="1"><stop stop-color="#ffffff" stop-opacity=".22"/><stop offset=".08" stop-color="#ffffff" stop-opacity="0"/><stop offset=".8" stop-color="#250000" stop-opacity=".08"/><stop offset="1" stop-color="#160000" stop-opacity=".25"/></linearGradient>
+    <linearGradient id="red" x2="0" y2="1"><stop stop-color="#ff5555"/><stop offset=".45" stop-color="#ed373b"/><stop offset="1" stop-color="#bd252b"/></linearGradient>
+    <clipPath id="post"><path d="M201 812V221q0-52 52-52h748q52 0 52 52v591h-58V239q0-19-19-19H278q-19 0-19 19v573z"/></clipPath>
+  </defs>
+  <path fill="url(#inside)" d="M258 220h738v592H258z"/>
+  <path d="M258 220L297 252Q304 520 292 783L258 812M372 220Q393 512 375 812M499 220Q511 512 500 812M626 220V812M752 220Q740 512 752 812M878 220Q855 512 877 812M996 220L956 252Q949 520 960 783L996 812M258 299Q323 320 382 316H872Q935 320 996 299M258 394Q324 417 382 413H872Q935 417 996 394M258 492Q324 515 382 511H872Q935 515 996 492M258 590Q324 613 382 609H872Q935 613 996 590M258 688Q324 711 382 707H872Q935 711 996 688M258 786Q324 809 382 805H872Q935 809 996 786" fill="none" stroke="#23617a" stroke-width="7" opacity=".48"/>
+  <path d="M201 812V221q0-52 52-52h748q52 0 52 52v591h-58V239q0-19-19-19H278q-19 0-19 19v573z" fill="url(#red)"/>
+  <g clip-path="url(#post)" fill="#fff"><path d="M339 168h88v53h-88zm163 0h80v53h-80zm169 0h80v53h-80zm156 0h88v53h-88zM200 302h60v92h-60zm0 190h60v91h-60zm0 178h60v77h-60zm795-368h59v92h-59zm0 190h59v91h-59zm0 178h59v77h-59z"/></g>
+  <path d="M201 812V221q0-52 52-52h748q52 0 52 52v591M259 812V239q0-19 19-19h698q19 0 19 19v573" fill="none" stroke="#ff9694" stroke-width="5" opacity=".45"/>
+  <path d="M265 812V241q0-16 16-16h692q16 0 16 16v571" fill="none" stroke="#000b10" stroke-width="16" opacity=".6"/>
+  <path d="M268 812V244q0-15 15-15h688q15 0 15 15v568" fill="none" stroke="#000b10" stroke-width="27" opacity=".15"/>
+  <g clip-path="url(#post)">
+    <path d="M195 163h864v650H195z" fill="url(#face)"/>
+    <path d="M207 812V222q0-47 47-47h746q47 0 47 47v590" fill="none" stroke="#fff" stroke-width="5" opacity=".3"/>
+    <path d="M253 812V240q0-25 25-25h698q25 0 25 25v572" fill="none" stroke="#6b1218" stroke-width="8" opacity=".5"/>
+  </g>
+</svg>

@@ -1,0 +1,62 @@
+{
+  "fill" : {
+    "solid" : "extended-srgb:0.00000,0.00000,0.00000,0.00000"
+  },
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "glass" : false,
+          "image-name" : "03-symbols.svg",
+          "name" : "03-symbols"
+        }
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.85
+      },
+      "translucency" : {
+        "enabled" : false,
+        "value" : 0.3
+      }
+    },
+    {
+      "layers" : [
+        {
+          "image-name" : "02-goal-and-net.svg",
+          "name" : "02-goal-and-net"
+        }
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : false,
+        "value" : 0.3
+      }
+    },
+    {
+      "layers" : [
+        {
+          "glass" : false,
+          "image-name" : "01-court.svg",
+          "name" : "01-court"
+        }
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : false,
+        "value" : 0.3
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "squares" : [
+      "iOS"
+    ]
+  }
+}
