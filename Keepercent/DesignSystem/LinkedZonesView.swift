@@ -30,6 +30,7 @@ struct LinkedZonesView: View {
     let reading: StatsReading
     @Binding var selection: ShotOrigin?
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.colorSchemeContrast) private var colorSchemeContrast
     @State private var courtMode: CourtMode = .zones
 
     /// What the court draws over its zones.
@@ -100,6 +101,9 @@ struct LinkedZonesView: View {
             Text(sevenMeterCaption)
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            if courtMode == .zones {
+                HeatmapLegend()
+            }
             arrowLegend
         }
     }
@@ -113,8 +117,8 @@ struct LinkedZonesView: View {
         let tallies = engine.originTallies(reading)
         return Dictionary(uniqueKeysWithValues: CourtZone.allCases.map { zone in
             let origin = ShotOrigin.zone(zone)
-            return (origin, HeatmapColor.tint(for: tallies[origin], appearance: colorScheme))
-        } + [(.sevenMeters, HeatmapColor.tint(for: tallies[.sevenMeters], appearance: colorScheme))])
+            return (origin, HeatmapColor.tint(for: tallies[origin], appearance: colorScheme, contrast: colorSchemeContrast))
+        } + [(.sevenMeters, HeatmapColor.tint(for: tallies[.sevenMeters], appearance: colorScheme, contrast: colorSchemeContrast))])
         .mapValues { courtMode == .zones ? $0 : $0.opacity(0.3) }
     }
 
@@ -285,6 +289,7 @@ struct LinkedZonesView: View {
                 accessibilityScope: "goal.linked",
                 onTargetTapped: { _ in }
             )
+            HeatmapLegend()
         }
     }
 
@@ -358,7 +363,7 @@ struct LinkedZonesView: View {
     private var goalTints: [GoalZone: Color] {
         let tallies = goalEngine.goalZoneTallies(reading)
         return Dictionary(uniqueKeysWithValues: GoalZone.allCases.map { zone in
-            (zone, HeatmapColor.tint(for: tallies[zone], appearance: colorScheme))
+            (zone, HeatmapColor.tint(for: tallies[zone], appearance: colorScheme, contrast: colorSchemeContrast))
         })
     }
 

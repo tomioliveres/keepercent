@@ -6,6 +6,7 @@ struct SevenMeterSection: View {
     let engine: StatsEngine
     let reading: StatsReading
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.colorSchemeContrast) private var colorSchemeContrast
     @Environment(\.locale) private var locale
 
     var body: some View {
@@ -24,6 +25,7 @@ struct SevenMeterSection: View {
                     .font(.subheadline)
                     .monospacedDigit()
                 goalHeatmap(for: sample)
+                HeatmapLegend()
                 Text(reading == .effectiveness
                      ? LocalizedStringKey("Cells: goals / inside attempts · Outside: located misses")
                      : LocalizedStringKey("Cells: saves / on target inside · Outside: located misses"))
@@ -50,7 +52,7 @@ struct SevenMeterSection: View {
     private func goalHeatmap(for sample: StatsEngine) -> some View {
         let tallies = sample.goalZoneTallies(reading)
         let tints = Dictionary(uniqueKeysWithValues: GoalZone.allCases.map { zone in
-            (zone, HeatmapColor.tint(for: tallies[zone], appearance: colorScheme))
+            (zone, HeatmapColor.tint(for: tallies[zone], appearance: colorScheme, contrast: colorSchemeContrast))
         })
         let labels = tallies.reduce(into: [GoalZone: String]()) { result, entry in
             if let label = HeatmapColor.label(for: entry.value) {

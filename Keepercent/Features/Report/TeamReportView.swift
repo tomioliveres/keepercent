@@ -42,6 +42,7 @@ struct TeamReportView: View {
     private var goalkeeperNumber: Int? { player?.number }
 
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.colorSchemeContrast) private var colorSchemeContrast
     @Environment(\.displayScale) private var displayScale
     @State private var sharedImage: Image?
 
@@ -56,7 +57,7 @@ struct TeamReportView: View {
         ScrollView {
             VStack(spacing: 16) {
                 TeamReportCardView(goalkeeperNumber: goalkeeperNumber, engine: engine, scopeLabel: scopeLabel,
-                                   perspective: perspective)
+                                   perspective: perspective, contrast: colorSchemeContrast)
                     .frame(width: 320)
 
                 if let sharedImage {
@@ -91,13 +92,14 @@ struct TeamReportView: View {
         .onChange(of: goalkeeperNumber) { renderImage() }
         .onChange(of: perspective) { renderImage() }
         .onChange(of: colorScheme) { renderImage() }
+        .onChange(of: colorSchemeContrast) { renderImage() }
     }
 
     @MainActor
     private func renderImage() {
         sharedImage = nil
         let card = TeamReportCardView(goalkeeperNumber: goalkeeperNumber, engine: engine, scopeLabel: scopeLabel,
-                                      perspective: perspective)
+                                      perspective: perspective, contrast: colorSchemeContrast)
             .frame(width: 320)
             .environment(\.colorScheme, colorScheme)
         let renderer = ImageRenderer(content: card)

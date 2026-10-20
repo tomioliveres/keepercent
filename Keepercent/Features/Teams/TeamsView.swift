@@ -90,11 +90,13 @@ struct TeamsView: View {
                 ToolbarItem(placement: .secondaryAction) {
                     Button("My club") { isShowingMyClub = true }
                 }
+                #if DEBUG
                 ToolbarItem(placement: .secondaryAction) {
                     Button("Drawing Scaffold (T2.x)") {
                         isShowingScaffold = true
                     }
                 }
+                #endif
             }
         } detail: {
             if let selectedTeam {
