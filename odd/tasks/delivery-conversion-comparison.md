@@ -25,7 +25,7 @@ Compare overall standing and jump field-shot conversion in existing shooter patt
 - [x] DC-2 Reconcile and reuse the historical calculation/tests; integrate the shooter finding and phrasing with observed Domain RED → GREEN → REFACTOR; run functional checks and commit the cohesive behavior. Work-unit commit: `402df5400392b3e09b0d56083f35de406724fda3`.
   - Route: delegated direct. Preparation and multiple nontrivial Domain/test/catalog/app files require one bounded writer.
   - TDD source: `CLAUDE.md`; runner `swift test --package-path Domain`.
-- [ ] DC-3 Verify the exact committed UI in Codex, then perform the applicable native review and documentary closure. Do not check off T6.6 additions before observed acceptance.
+- [x] DC-3 Verify the exact committed UI in Codex, then perform the applicable native review and documentary closure. Do not check off T6.6 additions before observed acceptance. Closed 2026-10-19; see DC-3 closure below.
   - Route: delegated verification/native provider actors when applicable; visual verification precedes review.
 
 ## Checks
@@ -63,3 +63,11 @@ Use the committed SHA in a disposable debug empty store, not production/demo dat
 | 5–8 | Jump / four saves | Repeat the same four origins | Repeat the same four targets |
 
 Expected existing shooter Patterns row: `Standing: 4 of 4 goals; jump: 0 of 4 goals`, trailing `100% vs 0%` (locale spacing varies). Spain: `En apoyo: 4 de 4 goles; en suspensión: 0 de 4 goles`; Latin America: `A pie firme: 4 de 4 goles; en suspensión: 0 de 4 goles`. The matching Domain regression confirms this finding reaches the top four. Balanced targets/origins, fewer than five attempts per delivery and alternating targets avoid dominant target, sector-hand and repeat competitors. Before shot 8 the jump sample is below minimum and this row must be absent. Check iPhone/iPad wrapping and VoiceOver separately; no visual pass is claimed.
+
+## DC-3 closure (2026-10-19)
+
+- Visual verification: shared handoff `T6.6-conversion.md` records `pass` at exact `df9b87661be99b2d0a8861b72c26308298e8d327` (claude-code, 2026-10-14) on iPhone 17 and iPad Air 11-inch (M3), iOS 26.1, with the disposable recipe above: row absent below the minimum sample, then the expected English, Spain and Latin American sentences. Unverified checks listed in that handoff stay unverified.
+- Native review: granted for the committed slice `51a94e3..df9b876` (medium, 11 paths, 255 changed lines). Readability and reliability reviewers returned no findings; lineage `review-8fe9ee1ec718cae4` acknowledged and its authority burned. Not to be restarted for unchanged content.
+- Build: the post-integration generic simulator build failure came from an empty local `Keepercent/AppIcon.icon` stub, not from this slice; after the authorized stub quarantine, the same build succeeded. Domain 464 tests / 111 suites passed.
+- This documentary closure is written at the next task boundary, as the acknowledged-tree rule in `CLAUDE.md` requires, on `task/T6.6-conversion` together with a merge of `origin/main`. Delivered to `main` through a pull request on 2026-10-19 by explicit user authorization.
+- T6.6 additions in `odd/tasks/keepercent.md` stay unchecked: only the overall standing/jump conversion part is done.
