@@ -3,14 +3,15 @@
 - **Date:** 2026-10-19 · **Commit audited:** `9abd1a4` (branch `codex/layered-app-icon`) · **Scope:** read-only, no source changes.
 - **Method:** SwiftUI source review of `Keepercent/Features`, `DesignSystem`, `Insights`, plus simulator captures through the `-KPScreen` / `-KPData` launch router.
 - **Devices:** iPhone 17 (iOS 26.1) and iPad Air 11" M3, portrait. Light and dark. Languages en, es, es-419. One pass at Dynamic Type `accessibility-extra-extra-large` (AX3).
-- **Evidence:** `design/ux-audit/screenshots/` (file names follow `<device>-<lang>-<appearance>-<screen>-<data>.png`).
+- **Evidence:** `design/ux-audit/screenshots/` (file names follow `<device>-<lang>-<appearance>-<screen>-<data>.png`; `flow-NN-*.png` come from the hands-on walkthrough). Raw automated audit output: `design/ux-audit/accessibility-audit.txt`.
+- **Part 2** (flow walkthrough, navigation and information architecture, automated audit, platform checklist) starts at [Part 2](#part-2--flows-navigation-and-platform-review).
 
 ## Tooling recommendation
 
 | Tool | Use it for | Verdict |
 |------|-----------|---------|
 | iOS Simulator (`simctl` + Claude Simulator MCP) | Screenshots per screen, appearance, language and text size; light interaction | **Primary.** The launch router makes every main screen one command away, so the whole matrix can be repeated cheaply. |
-| `XCUIApplication.performAccessibilityAudit()` | Automated contrast, hit-region, Dynamic Type clipping and missing-label checks | **Add next, as a task.** It needs a UI test target change, so it was out of scope for a read-only pass. It catches the class of issue in F-02, F-05 and F-09 automatically and keeps catching it. |
+| `XCUIApplication.performAccessibilityAudit()` | Automated contrast, hit-region, Dynamic Type clipping and missing-label checks | **Run in Part 2** from a disposable copy of the repository (no change to this checkout). It should become a permanent UI test (task T7.4) so the issues stay caught. |
 | Xcode Accessibility Inspector | Manual VoiceOver order and labels on one screen | Spot checks only; slow for a full matrix. |
 | Design skills in this environment | — | None targets SwiftUI/HIG; not useful here. |
 
@@ -245,19 +246,215 @@ The weak spots cluster in four areas:
 - The app already gets Liquid Glass for free in toolbars, nav bars and sheets (visible in the grouped toolbar buttons). Nothing custom fights it.
 - Opportunities: the entry overlay in F-01 (`.glassEffect` on the bottom inset), selected chips as `.glassProminent` (F-11), `.navigationSubtitle` (F-13), and `ToolbarSpacer` to separate Scouting from New Session in the roster toolbar. Two icon-only buttons (`chart.bar.xaxis`, `plus.circle`) next to each other are easy to confuse; the sidebar already uses `plus` for "New Team".
 
-## Not verified in this pass
 
-- VoiceOver navigation order and spoken output (code-reviewed only).
-- iPad landscape (three-column entry) and Split View / Stage Manager sizes.
-- Increase Contrast, Reduce Transparency, Bold Text and Button Shapes settings.
-- Sheets beyond what the code shows (roster sheet, new session sheet, edit player); these were reviewed in code, not captured.
-- es-419 was captured only at AX3; en and es at the default size.
+---
 
-## Suggested task order
+# Part 2 — Flows, navigation and platform review
 
-1. F-03, F-02, F-07, F-08 — quick, high-value fixes (colours, a `#if DEBUG`, an icon).
-2. F-01 + F-13 + F-10 + F-11 + F-12 — one "shot entry ergonomics" task.
-3. F-04, F-16, F-15, F-14 — empty and confirmation states.
-4. F-05, F-09, F-18, F-19 + a UI test using `performAccessibilityAudit()` — one Dynamic Type and VoiceOver task.
-5. F-17 — iPad layout pass, including landscape verification.
-6. The Low items as polish.
+Part 1 judged screens one by one. Part 2 uses the app the way a scout would: launch, create a match, record shots, review the shot log, find past matches, open player cards and the report, and reach the own-club features. Everything ran on iPhone 17 (iOS 26.1, es, light) with the in-memory demo store (`-KPScreen teams -KPData demo`), so no real data was touched.
+
+## Review coverage
+
+These are the reviews usually done for an iOS app, and what this audit covered.
+
+| Review | Covered | Where |
+|--------|---------|-------|
+| HIG compliance (components, idioms, iOS 26 / Liquid Glass) | Yes | Part 1, F-28 |
+| Information architecture and navigation | Yes | F-28, F-29, F-33 |
+| Task-flow walkthrough (cognitive walkthrough) | Yes | Flow table below |
+| Heuristic evaluation (Nielsen's 10 heuristics) | Yes | Heuristic table below |
+| Empty, error and first-run states | Yes | F-04, F-30, F-33, F-39 |
+| Automated accessibility audit (`performAccessibilityAudit`) | Yes | F-37, `accessibility-audit.txt` |
+| Dynamic Type, dark mode, Increase Contrast | Yes | F-02, F-05, F-36 |
+| Localization fit (en / es / es-419) | Yes | F-10, F-26 |
+| iPad layouts | Partly (portrait only) | F-17 |
+| Data management (create, edit, delete) | Yes | F-32 |
+| Manual VoiceOver pass | **No** | Needs a person listening; recommended before release |
+| Orientation (iPhone landscape, iPad landscape, Split View) | **No** | Simulator rotation was not driven |
+| Performance (launch time, Instruments, memory) | **No** | Only a simulator Debug observation (F-39) |
+| Privacy, permissions, App Store Review Guidelines | Not applicable | Offline, no permissions, no App Store submission |
+| Usability test with real scouts | **No** | The strongest next step; see the end of this part |
+
+## Answer: does Keepercent need a tab bar?
+
+**Yes.** The app has three peer areas used independently: rival teams (scouting), matches (live or video entry), and the own club (roster and stats). Today only rival teams is a real screen. The own club lives behind the ⋯ menu as two separate sheets ("Own Team Roster", "My club"), next to a debug item (`flow-08-overflow-menu.png`). Matches have no home of their own: they sit at the bottom of each team screen, below the full player list (`flow-07-matches-buried.png`).
+
+HIG: *Tab bars* — use a tab bar for peer sections of an app that people switch between often; don't use one for actions. In iOS 26 the tab bar is a floating Liquid Glass bar that can minimize while scrolling (`tabBarMinimizeBehavior(.onScrollDown)`), and on iPad the same `TabView` becomes a sidebar with `.tabViewStyle(.sidebarAdaptable)`. So one change gives the right structure on both devices.
+
+Proposed structure, to validate with the author before building:
+
+| Tab | SF Symbol | Content |
+|-----|-----------|---------|
+| Matches | `sportscourt` | Recent matches across all rivals, newest first; "New Match" as the primary action. This is the daily entry point. |
+| Rivals | `person.3` | The current teams list → team screen with a segmented control: Roster · Matches · Scouting. |
+| My Club | `shield` | One place for the own roster (editing) and own stats (cards, report), merging today's two sheets. |
+
+Shot entry is a focused task. Present it as `.fullScreenCover` (or hide the tab bar while it is pushed) so the goal and court get the whole screen. Remove the auto-push into the first team on iPhone (`flow-01-launch-inside-team.png`): opening on a pushed detail hides where you are and what else exists.
+
+## Task-flow walkthrough
+
+| # | Task | What happened | Friction |
+|---|------|---------------|----------|
+| 1 | Open the app | Lands inside "BM Serra" with a back button; the teams list is hidden behind it | Unclear where "home" is (F-28) |
+| 2 | Start a match | `+` icon in the toolbar → sheet with 28 rows (toggle + "Dorsal" per player); kind and date at the bottom | Icon ambiguity; long form (F-34) |
+| 3 | Record a shot | Tap shooter (amber) and target (pink); nothing on screen says what is next | Next step not signposted (F-01, F-30) |
+| 4 | Answer goal/save | "¿Gol o parada?" is below the fold; you have to know to scroll | F-01 |
+| 5 | Forget the origin | Tap "Gol" → nothing visible happens; the error is printed below the fold | F-30 |
+| 6 | Save | Header count changes to "1 lanzamiento registrado"; the Undo card is half off-screen and the view stays mid-page | Each next shot needs a scroll back up (F-01) |
+| 7 | Review shots | Shot log sheet: one coded line per shot, delete by swipe only | F-23, F-40 |
+| 8 | Find past matches | Back to the team, scroll past the grid and a 14-row player history to reach "Partidos" | F-29 |
+| 9 | Own-club stats | ⋯ → "Mi club" → empty state with no action; configuring is under a different menu item | F-33 |
+| 10 | Goalkeeper report | Tap goalkeeper tile → card → share icon (navigates) → report; the actual Share button is below the fold | F-08, F-31 |
+
+Core loop cost on iPhone today: about 4 taps plus 2 scrolls per shot. The goal for a live match should be 3–4 taps and no scrolling.
+
+## Heuristic evaluation (Nielsen)
+
+| Heuristic | State | Main evidence |
+|-----------|-------|---------------|
+| Visibility of system status | Weak | Errors and outcome prompt off-screen (F-01, F-30); good haptic and header count after save |
+| Match with the real world | Good | Handball vocabulary, shooter's-view goal, court zones |
+| User control and freedom | Mixed | Undo last shot is good; no editing of shots, sessions or teams (F-32) |
+| Consistency and standards | Mixed | Share icon navigates (F-08), two selection colours (F-35), mixed casing (F-26), hand-built form (F-24) |
+| Error prevention | Weak | Required origin not marked before the attempt (F-30); team names can't be fixed after a typo (F-32) |
+| Recognition rather than recall | Weak | Edit only by long-press (F-14), own club hidden in ⋯ (F-28), matches buried (F-29) |
+| Flexibility and efficiency | Weak | No shortcuts for repeat shooter or last zone; long scrolls (F-01) |
+| Aesthetic and minimalist design | Mixed | Clean screens; duplicate headers (F-13), duplicate player history (F-29) |
+| Help users recover from errors | Mixed | Clear error text, but placed out of view (F-30) |
+| Help and documentation | Missing | No first-run guidance; empty states mostly lack actions (F-04, F-33) |
+
+## Part 2 findings
+
+| ID | Sev. | Screen | Issue |
+|----|------|--------|-------|
+| F-28 | High | App structure | No top-level navigation; own club hidden in ⋯ menu; app opens pushed into a team |
+| F-29 | High | Team screen | Matches list buried below a full duplicate player history |
+| F-30 | High | Session entry | Validation error appears off-screen; required steps are not signposted |
+| F-31 | Medium | Team report | Heat colour reads "dark = saves", the opposite of "where to shoot" |
+| F-32 | Medium | Data management | Can't rename or delete a team, edit or delete a match, or edit a shot |
+| F-33 | Medium | My club | Empty state is a dead end; own club split across two sheets |
+| F-34 | Medium | New match sheet | Two rows per player (28 rows for 14 players) |
+| F-35 | Low | Session entry | Two selection colours (amber shooter, pink target) |
+| F-36 | Medium | Heatmaps | Hard-coded RGB ignores Increase Contrast |
+| F-37 | Medium | Goal, court, roster | Automated audit: small hit areas and unscaled tile names |
+| F-38 | Low | Session entry | Haptic only on success; none on error or undo |
+| F-39 | Low | Launch | Several seconds of blank white screen on cold launch |
+| F-40 | Low | Shot log | Rows lack time or order context; coded summary |
+| F-41 | Low | Team report | Title says "Team Report" for a goalkeeper report; no keeper name |
+
+### F-28 · High · No top-level navigation
+
+- **Evidence:** `flow-01-launch-inside-team.png`, `flow-08-overflow-menu.png`; `Features/Teams/TeamsView.swift` (the ⋯ `secondaryAction` items open sheets).
+- **HIG:** Tab bars; Navigation — make it clear where people are and how to get elsewhere. Menus — don't hide primary destinations in an overflow menu.
+- **Suggested fix:** See [Answer: does Keepercent need a tab bar?](#answer-does-keepercent-need-a-tab-bar). Introduce `TabView` with Matches / Rivals / My Club (`.sidebarAdaptable` on iPad). Stop auto-pushing the first team on compact width.
+
+### F-29 · High · Matches buried under the player history
+
+- **Evidence:** `flow-07-matches-buried.png` (about 2.5 screens of scrolling); `Features/Teams/RosterEditorView.swift` (`facingHistorySection` before `sessionsSection`).
+- **What happens:** "Player history" lists every active player again (the grid already shows them) before the matches list, which is the most frequent destination after the roster.
+- **Suggested fix:** Use a segmented control (Roster · Matches · Scouting) on the team screen. Move archived players and history into the player card or a disclosure group.
+
+### F-30 · High · Off-screen validation and unsignposted steps
+
+- **Evidence:** `flow-04-outcome-below-fold.png`, `flow-05-error-offscreen.png`; `Features/Sessions/ShotEntryContextPanel.swift` (error text under the outcome buttons).
+- **HIG:** Feedback — show feedback where the person is looking. Entering data — make requirements clear before submission.
+- **What happens:** Tapping "Gol" without an origin looks like a dead button: the message "Toca la pista para registrar desde dónde se lanzó." prints below the fold.
+- **Suggested fix:**
+  - Show a step indicator ("Shooter ✓ · Target ✓ · Origin —").
+  - Keep the outcome buttons disabled until required steps are done, or put the message next to the buttons in the bottom overlay from F-01.
+  - Add `.sensoryFeedback(.error, …)`.
+
+### F-31 · Medium · Report colour meaning is inverted for its title
+
+- **Evidence:** `flow-10-report.png`; `Features/Report/TeamReportCardView.swift` (`zoneCell` uses `HeatmapColor.tint` on save rate).
+- **What happens:** The card says "Where to shoot / where not to". The zone with 5 goals (the best place to shoot) is pale, and zones with only saves are dark. The eye goes to the dark cells, which are exactly where *not* to shoot.
+- **Suggested fix:** Colour by goal rate for the rival perspective, with a two-ended legend ("Shoot here" ↔ "Avoid"). Keep save rate for the own-goalkeeper perspective.
+
+### F-32 · Medium · Missing edit and delete paths
+
+- **Evidence:** No rename or delete for `StoredRivalTeam`, no edit or delete for `StoredSession`, no shot editing (only undo-last and delete in the log). Grep for `.delete(` finds only shots.
+- **HIG:** Managing data — let people correct and remove what they created.
+- **Suggested fix:** Swipe actions and context menus on teams and matches (Rename, Edit date/kind, Delete with confirmation). Edit any shot from the shot log (already listed in the backlog).
+
+### F-33 · Medium · My club is a dead end
+
+- **Evidence:** `flow-09-my-club-dead-end.png`; `Features/MyClub/MyClubView.swift:14`.
+- **What happens:** "No own team configured. You can continue without one." has no button. Configuring lives in another ⋯ item ("Own Team Roster").
+- **Suggested fix:** Merge both into the My Club tab. Give the empty state a "Set Up My Club" action.
+
+### F-34 · Medium · New match sheet is twice as long as needed
+
+- **Evidence:** `flow-02-new-session-sheet.png`; `Features/Sessions/MatchRosterSheet.swift` (a `Toggle` row plus a "Shirt Number" row per player).
+- **Suggested fix:** One row per player ("#7 Martí Roig" + toggle), editing the number through a tap or swipe action. Put kind and date first (F-20). Add "Select all / none".
+
+### F-35 · Low · Two selection colours
+
+- **Evidence:** `flow-03-shooter-and-target.png` — the shooter turns amber (`Palette.brandAmber`), the target pink (`HeatmapColor.selectionFill`).
+- **Suggested fix:** Use one selection language across the entry screen (brand amber fill and outline), so "selected" means one thing.
+
+### F-36 · Medium · Heatmaps ignore Increase Contrast
+
+- **Evidence:** `iphone-en-dark-increasecontrast-goalkeeperCard.png` looks the same as without the setting; `DesignSystem/HeatmapColor.swift` builds colours from raw RGB.
+- **HIG:** Accessibility — support Increase Contrast.
+- **Suggested fix:** Move the ramp into asset-catalog colours with high-contrast variants, or read `@Environment(\.colorSchemeContrast)` and pick a stronger ramp. Fixing F-02 at the same time is cheapest.
+
+### F-37 · Medium · Automated audit results
+
+- **Evidence:** `accessibility-audit.txt` (raw output: 6 screens × 2 text sizes × 3 viewports). The confirmed issues after triage:
+  - **Hit area too small:** "Left post, middle" and "Left post, bottom" on the entry goal, the "7 m mark" on every court, one breakdown-chart row on Scouting. These support F-06's note about the narrow posts.
+  - **Dynamic Type partially unsupported, and clipped:** every player-name label on roster tiles and the shooter grid, plus "Unknown #" (`PlayerTileView` `.caption2` + `lineLimit(1)`). This confirms F-05.
+  - **Dynamic Type unsupported:** small numeric labels inside chart bars and the "goals / shots" captions (`OutcomeBreakdownChart`).
+  - **Contrast failed:** heatmap cell values on the cards and Scouting (dark text on mid-blue), supporting F-02.
+- **Noise to filter, not fix:** "Text clipped" and some "Contrast failed" reports on every drawn goal region ("Goal, top left", "Miss, over, center"…). These elements are invisible accessibility stand-ins over the drawing, not visible text. The permanent UI test should filter these by identifier in the audit handler, not ignore them globally. Issues in viewports 2–3 were captured right after a swipe and may include mid-scroll artefacts.
+- **Suggested fix:** Make the scratch test permanent (task T7.4), with an issue handler that only suppresses the drawn-region stand-ins, and fail the build on anything else.
+
+### F-38 · Low · Feedback only on success
+
+- **Evidence:** `Features/Sessions/SessionView.swift:183` — `.sensoryFeedback(.success, …)` only.
+- **Suggested fix:** Add `.error` on validation failure and `.impact(weight: .light)` on undo, so a scout watching the court gets confirmation without looking.
+
+### F-39 · Low · Blank cold launch
+
+- **Evidence:** About 10 s of white screen before the first frame on the first launch after install (simulator, Debug build, in-memory seed). The project uses the generated empty launch screen.
+- **Suggested fix:** Measure on a device with Instruments (App Launch template) before acting. If it is real, move demo seeding off the first frame, and give the launch screen the app's background colour.
+
+### F-40 · Low · Shot log lacks context
+
+- **Evidence:** `flow-06-saved-mid-scroll.png`; the log row reads "#7 · lateral derecho · arriba derecha · GOL" in monospaced type, with no time and no shooter name.
+- **Suggested fix:** Show the shooter's name, an outcome icon and colour, and the relative time or shot number; use proportional type.
+
+### F-41 · Low · Report naming
+
+- **Evidence:** `flow-10-report.png` — nav title "Informe del equipo", body "Contra el portero #1".
+- **Suggested fix:** Title it "Goalkeeper Report" and include the keeper's name when known ("vs #1 Marc Puig").
+
+## Usability test plan (recommended next)
+
+Five handball people, 20 minutes each, on a device, without help. Tasks:
+
+1. Create a rival team and a match.
+2. Record ten shots from a short video clip.
+3. Undo a wrong shot.
+4. Find where a given player shoots most.
+5. Share a goalkeeper report.
+
+Measure time per shot, wrong taps, and where they hesitate. Do it after T7.2 and T7.7, so the test checks the new structure rather than the known issues.
+
+## Not verified
+
+- Manual VoiceOver navigation and spoken output.
+- iPhone and iPad landscape (including the three-column entry), Split View and Stage Manager.
+- Reduce Transparency, Bold Text, Button Shapes, Reduce Motion. The app uses only default SwiftUI animations, so Reduce Motion risk is low.
+- Performance on a real device.
+- Sheets were walked on iPhone only.
+
+## Suggested task order (both parts)
+
+1. **T7.1 Quick fixes:** F-02, F-03, F-07, F-08, F-36.
+2. **T7.7 Navigation structure:** F-28, F-29, F-33 — `TabView` with Matches / Rivals / My Club. Design this first with the author, since it changes where everything else lives.
+3. **T7.2 Shot entry ergonomics:** F-01, F-06, F-10, F-11, F-12, F-13, F-30, F-35, F-38.
+4. **T7.3 Empty, confirmation and data states:** F-04, F-14, F-15, F-16, F-20, F-32, F-34.
+5. **T7.4 Dynamic Type and VoiceOver:** F-05, F-09, F-18, F-19, F-37, plus the permanent `performAccessibilityAudit()` UI test.
+6. **T7.5 iPad and orientation:** F-17, with landscape verification.
+7. **T7.6 Polish:** F-21–F-27, F-31, F-39–F-41.
+8. **Usability test** with real scouts after T7.7 and T7.2.
