@@ -45,10 +45,13 @@ Functionality · code quality and cleanliness · creativity · correct use of na
 - **Once a review is acknowledged, the tree freezes until the next task starts**: the candidate's identity follows the working tree, so every commit after an acknowledgement buys another blocking prompt for work the assessor itself reports as `under_budget`. Task N's review outcome is written as the first commit of task N+1, and that review's advisory findings are applied there too — never as a follow-up commit on the just-acknowledged tree.
 - Conventional Commits. Code, comments, UI copy and documentation in English.
 
-## Workflow split (OpenCode ↔ simulator verifier)
+## Workflow split (who implements, who verifies)
 
 - **One task at a time.**
-- **OpenCode writes code**: `/next-task` (`.claude/skills/next-task/SKILL.md`) implements with TDD, runs `swift test`, builds, commits, reviews and closes. It never boots a simulator.
+- **Route implementation by size** (since 2026-10-19; when unsure, use OpenCode):
+  - **Quick, simple tasks → Claude Code**, in a Sonnet session: one understood change that is mostly visual or copy (colours, spacing, labels, small layout fixes, polish such as T7.6) and small visual defects reported by `/verify-ui`. Same conventions as OpenCode: a task branch from `main` (or the task's existing branch when fixing its defects), strict TDD in `Domain/` if logic changes, generic simulator build, Conventional Commits, ledger check-off and the RDD assessment from Engineering conventions. The session may check its own visual change in the simulator.
+  - **Complex or long tasks → OpenCode** `/next-task` (`.claude/skills/next-task/SKILL.md`): Domain logic, data and persistence, navigation or structural changes, multi-step features. It implements with TDD, runs `swift test`, builds, commits, reviews and closes. It never boots a simulator.
+- **Defect fixes from a verdict**: the user picks where they are fixed. A quick fix in Claude Code commits on the task's branch, sets the handoff back to `ready` with the new `sha`, and `/verify-ui` re-checks only the affected cases; OpenCode then closes the task as usual.
 - **Simulator verification runs only in Claude Code** (since 2026-10-19): `/verify-ui` (`.claude/skills/verify-ui/SKILL.md`) follows the installed `verify-interface` policy and the [Keepercent profile](docs/ui-verification.md), uses the isolated exact-SHA target and the shared case ledger, and never edits source, commits, merges or pushes.
 - The handoff lives in `$(git rev-parse --git-common-dir)/handoff/<task-id>.md` (inside `.git/`, never committed), mirrored to Engram `keepercent/verify/<task-id>`.
 - The verifier writes `updated: <ISO date> by claude-code` only when it can write the authoritative handoff. If it cannot write it, it reports the evidence to OpenCode without claiming a passing handoff. A missing visual capability yields `unverifiable`, not `pass`.

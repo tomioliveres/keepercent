@@ -11,7 +11,7 @@ metadata:
 
 Reply to the user in Spanish. This is the Claude Code adapter, not the global policy. First load `docs/ui-verification.md`, the installed `verify-interface` skill, its evidence reference, and the iOS adapter as resolved there. Keep this adapter's tool-specific workarounds local. If the Claude Simulator MCP is unavailable, use a permitted Computer Use route only if supported by this runtime and the profile; otherwise return `unverifiable` with missing capability.
 
-**Read-only on code.** This skill never edits source, never commits, never merges. Defects go back to OpenCode through the handoff file.
+**Read-only on code.** This skill never edits source, never commits, never merges. Defects go back to the implementer through the handoff file: OpenCode, or a separate Claude Code quick-fix session when the user chooses it (see `CLAUDE.md`, Workflow split).
 
 ## 1. Pick the handoff
 
