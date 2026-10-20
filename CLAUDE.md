@@ -5,9 +5,8 @@ Product definition and plan: [docs/mvp.md](docs/mvp.md) · Task tracking: [odd/t
 
 ## Hard rules (inherited from the hackathon, kept by choice)
 
-- **100% native**: Swift and SwiftUI only. **Zero third-party code inside the app binary** — no SPM packages, no frameworks, no vendored sources. UIKit/AppKit is allowed when a case truly needs it.
-- Anything inside Apple's SDK counts as native: SwiftData, Swift Charts, Foundation Models, Vision, PDFKit, Core ML, AVFoundation…
-- **Development tools are not bound by that rule** (a linter or formatter is fine); the restriction covers what ships in the binary.
+- **Swift and SwiftUI**, native-first. UIKit/AppKit is allowed when a case truly needs it.
+- **Third-party code is allowed since 2026-10-19.** The former "100% native, zero third-party code in the binary" rule was a hackathon requirement and no longer applies. Prefer Apple's SDK (SwiftData, Swift Charts, Foundation Models, Vision, PDFKit, Core ML, AVFoundation…) when it solves the problem well; add an SPM package only when it is clearly better, and record why in the task file.
 - `URLSession` may call any API, but this app is offline by design.
 - **Minimum OS version 26** (iOS / iPadOS). Confirmed by the organizers: 26 is the floor, a newer SDK is allowed. Built with Xcode 27, deployment target iOS 26.
 - Built **from scratch** starting at the event (Sep 18–27, 2026). No prior code.
