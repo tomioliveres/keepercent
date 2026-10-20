@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1254 1254">
+  <defs>
+    <radialGradient id="back"><stop stop-color="#243b46"/><stop offset=".65" stop-color="#1b252b"/><stop offset="1" stop-color="#151619"/></radialGradient>
+    <radialGradient id="haze"><stop stop-color="#82929a" stop-opacity=".24"/><stop offset=".45" stop-color="#5a7481" stop-opacity=".06"/><stop offset="1" stop-color="#425661" stop-opacity="0"/></radialGradient>
+    <radialGradient id="shade"><stop stop-color="#000307" stop-opacity=".42"/><stop offset=".5" stop-color="#05090d" stop-opacity=".14"/><stop offset="1" stop-color="#05090d" stop-opacity="0"/></radialGradient>
+    <linearGradient id="court" x2=".45" y2="1"><stop stop-color="#2578a9"/><stop offset=".3" stop-color="#0063cb"/><stop offset="1" stop-color="#0048bd"/></linearGradient>
+    <linearGradient id="area" x2="0" y2="1"><stop stop-color="#306b8d"/><stop offset="1" stop-color="#518dad"/></linearGradient>
+  </defs>
+  <path fill="url(#back)" d="M0 0h1254v1254H0z"/>
+  <g id="background-texture" fill="url(#haze)">
+    <ellipse cx="38" cy="78" rx="170" ry="95"/>
+    <ellipse cx="177" cy="12" rx="120" ry="62"/>
+    <ellipse cx="270" cy="109" rx="165" ry="105"/>
+    <ellipse cx="470" cy="35" rx="125" ry="66"/>
+    <ellipse cx="608" cy="4" rx="90" ry="73"/>
+    <ellipse cx="730" cy="88" rx="148" ry="85"/>
+    <ellipse cx="981" cy="45" rx="153" ry="82"/>
+    <ellipse cx="1101" cy="161" rx="109" ry="136"/>
+    <ellipse cx="1227" cy="83" rx="92" ry="126"/>
+    <ellipse cx="38" cy="275" rx="94" ry="143"/>
+    <ellipse cx="124" cy="391" rx="92" ry="106"/>
+    <ellipse cx="23" cy="507" rx="102" ry="125"/>
+    <ellipse cx="117" cy="604" rx="103" ry="139"/>
+    <ellipse cx="67" cy="766" rx="126" ry="90"/>
+    <ellipse cx="1184" cy="353" rx="108" ry="142"/>
+    <ellipse cx="1107" cy="466" rx="95" ry="115"/>
+    <ellipse cx="1219" cy="614" rx="123" ry="110"/>
+    <ellipse cx="1108" cy="740" rx="129" ry="105"/>
+  </g>
+  <g fill="url(#shade)">
+    <ellipse cx="60" cy="161" rx="100" ry="80"/>
+    <ellipse cx="349" cy="31" rx="123" ry="89"/>
+    <ellipse cx="524" cy="111" rx="124" ry="83"/>
+    <ellipse cx="867" cy="39" rx="135" ry="108"/>
+    <ellipse cx="1172" cy="237" rx="95" ry="114"/>
+    <ellipse cx="8" cy="416" rx="90" ry="155"/>
+    <ellipse cx="150" cy="729" rx="86" ry="88"/>
+    <ellipse cx="1228" cy="514" rx="87" ry="123"/>
+  </g>
+  <path fill="url(#court)" d="M0 812h1254v442H0z"/>
+  <path fill="url(#area)" d="M0 812h1254v42c-268 145-987 145-1254 0z"/>
+  <path d="M0 842c270 158 985 158 1254 0" fill="none" stroke="#fff" stroke-width="20"/>
+  <g fill="#fff">
+    <rect x="596" y="899" width="61" height="18" rx="3"/>
+    <rect x="585.5" y="1038" width="83" height="22" rx="3"/>
+    <path d="M61 1086L187 1122Q191 1123 189 1127L182 1144Q181 1147 177 1146L51 1110Q48 1109 50 1105L57 1089Q58 1085 61 1086ZM291 1138L442 1159Q446 1160 445 1164L443 1180Q442 1184 438 1183L286 1163Q282 1162 283 1158L287 1142Q288 1138 291 1138ZM554 1165H699Q703 1165 703 1169L705 1186Q705 1190 701 1190H552Q548 1190 548 1186L550 1169Q550 1165 554 1165ZM816 1159L966 1138Q970 1138 971 1142L975 1158Q976 1162 972 1163L820 1183Q816 1184 815 1180L812 1164Q811 1160 816 1159ZM1071 1122L1193 1086Q1197 1085 1198 1089L1205 1105Q1207 1109 1203 1110L1079 1146Q1075 1147 1074 1143L1067 1127Q1066 1123 1071 1122Z"/>
+  </g>
+</svg>

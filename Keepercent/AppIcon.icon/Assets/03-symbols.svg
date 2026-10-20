@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1254 1254">
+  <defs>
+    <linearGradient id="blue" x2=".25" y2="1"><stop stop-color="#60c8e1"/><stop offset=".5" stop-color="#3aa4c5"/><stop offset="1" stop-color="#2885aa"/></linearGradient>
+    <linearGradient id="white" x2=".2" y2="1"><stop stop-color="#fff"/><stop offset=".55" stop-color="#f9fbfc"/><stop offset="1" stop-color="#dce5e8"/></linearGradient>
+    <linearGradient id="bevel" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e0faff"/><stop offset=".35" stop-color="#9edbe8"/><stop offset=".65" stop-color="#3287a1"/><stop offset="1" stop-color="#16445b"/></linearGradient>
+    <linearGradient id="white-bevel" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffffff"/><stop offset=".5" stop-color="#f6f9fa"/><stop offset="1" stop-color="#9aaab2"/></linearGradient>
+    <radialGradient id="percent-cast"><stop stop-color="#00040a" stop-opacity=".9"/><stop offset=".48" stop-color="#00040a" stop-opacity=".74"/><stop offset=".72" stop-color="#00040a" stop-opacity=".32"/><stop offset="1" stop-color="#00040a" stop-opacity="0"/></radialGradient>
+    <radialGradient id="percent-contact"><stop stop-color="#000308" stop-opacity="1"/><stop offset=".77" stop-color="#000308" stop-opacity=".94"/><stop offset="1" stop-color="#000308" stop-opacity="0"/></radialGradient>
+    <linearGradient id="percent-rim" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#b6f5ff"/><stop offset=".3" stop-color="#65d1e8"/><stop offset=".7" stop-color="#278caf"/><stop offset="1" stop-color="#0b4058"/></linearGradient>
+    <radialGradient id="percent-face" cx=".3" cy=".23" r=".85"><stop stop-color="#60cbe5"/><stop offset=".55" stop-color="#43b6d7"/><stop offset=".87" stop-color="#329ebf"/><stop offset="1" stop-color="#2683a3"/></radialGradient>
+    <radialGradient id="surface-light"><stop stop-color="#c6faff" stop-opacity=".12"/><stop offset=".4" stop-color="#91e4f4" stop-opacity=".06"/><stop offset="1" stop-color="#66cce4" stop-opacity="0"/></radialGradient>
+    <radialGradient id="surface-shade"><stop stop-color="#146c91" stop-opacity=".16"/><stop offset="1" stop-color="#146c91" stop-opacity="0"/></radialGradient>
+    <linearGradient id="edge-glint"><stop stop-color="#efffff" stop-opacity="0"/><stop offset=".45" stop-color="#dcffff" stop-opacity=".85"/><stop offset="1" stop-color="#a4f2ff" stop-opacity="0"/></linearGradient>
+  </defs>
+  <g id="symbol-cast-shadows">
+    <g transform="translate(12 18)" fill="#00080d" stroke="#00080d" stroke-width="34" stroke-linejoin="round" opacity="0.035">
+      <path d="M483 307H535Q548 307 540 322L325 540.5L540 759Q548 774 535 774H483Q476 774 469 765L273 554.5Q264 540.5 273 526.5L469 316Q476 307 483 307Z"/>
+      <path d="M875 397Q882 388 890 395L916 419Q924 426 917 435L651 739Q644 747 636 740L613 719Q606 712 613 704Z"/>
+    </g>
+    <g transform="translate(12 18)" fill="#00080d" stroke="#00080d" stroke-width="26" stroke-linejoin="round" opacity="0.045">
+      <path d="M483 307H535Q548 307 540 322L325 540.5L540 759Q548 774 535 774H483Q476 774 469 765L273 554.5Q264 540.5 273 526.5L469 316Q476 307 483 307Z"/>
+      <path d="M875 397Q882 388 890 395L916 419Q924 426 917 435L651 739Q644 747 636 740L613 719Q606 712 613 704Z"/>
+    </g>
+    <g transform="translate(12 18)" fill="#00080d" stroke="#00080d" stroke-width="18" stroke-linejoin="round" opacity="0.06">
+      <path d="M483 307H535Q548 307 540 322L325 540.5L540 759Q548 774 535 774H483Q476 774 469 765L273 554.5Q264 540.5 273 526.5L469 316Q476 307 483 307Z"/>
+      <path d="M875 397Q882 388 890 395L916 419Q924 426 917 435L651 739Q644 747 636 740L613 719Q606 712 613 704Z"/>
+    </g>
+    <g transform="translate(12 18)" fill="#00080d" stroke="#00080d" stroke-width="12" stroke-linejoin="round" opacity="0.08">
+      <path d="M483 307H535Q548 307 540 322L325 540.5L540 759Q548 774 535 774H483Q476 774 469 765L273 554.5Q264 540.5 273 526.5L469 316Q476 307 483 307Z"/>
+      <path d="M875 397Q882 388 890 395L916 419Q924 426 917 435L651 739Q644 747 636 740L613 719Q606 712 613 704Z"/>
+    </g>
+    <g transform="translate(12 18)" fill="#00080d" stroke="#00080d" stroke-width="6" stroke-linejoin="round" opacity="0.14">
+      <path d="M483 307H535Q548 307 540 322L325 540.5L540 759Q548 774 535 774H483Q476 774 469 765L273 554.5Q264 540.5 273 526.5L469 316Q476 307 483 307Z"/>
+      <path d="M875 397Q882 388 890 395L916 419Q924 426 917 435L651 739Q644 747 636 740L613 719Q606 712 613 704Z"/>
+    </g>
+    <g transform="translate(12 18)" fill="#00080d" stroke="#00080d" stroke-width="0" stroke-linejoin="round" opacity="0.30">
+      <path d="M483 307H535Q548 307 540 322L325 540.5L540 759Q548 774 535 774H483Q476 774 469 765L273 554.5Q264 540.5 273 526.5L469 316Q476 307 483 307Z"/>
+      <path d="M875 397Q882 388 890 395L916 419Q924 426 917 435L651 739Q644 747 636 740L613 719Q606 712 613 704Z"/>
+    </g>
+  </g>
+  <g id="symbol-edge-depth" transform="translate(2 4)">
+  <path d="M483 307H535Q548 307 540 322L325 540.5L540 759Q548 774 535 774H483Q476 774 469 765L273 554.5Q264 540.5 273 526.5L469 316Q476 307 483 307Z" fill="#889399"/>
+  <path d="M875 397Q882 388 890 395L916 419Q924 426 917 435L651 739Q644 747 636 740L613 719Q606 712 613 704Z" fill="#14556d"/>
+  </g>
+  <path d="M483 307H535Q548 307 540 322L325 540.5L540 759Q548 774 535 774H483Q476 774 469 765L273 554.5Q264 540.5 273 526.5L469 316Q476 307 483 307Z" fill="url(#white)" stroke="url(#white-bevel)" stroke-width="2.5" stroke-linejoin="round"/>
+  <path d="M875 397Q882 388 890 395L916 419Q924 426 917 435L651 739Q644 747 636 740L613 719Q606 712 613 704Z" fill="url(#blue)" stroke="url(#bevel)" stroke-width="2.5" stroke-linejoin="round"/>
+  <g id="upper-circle-material">
+    <ellipse cx="674" cy="476" rx="76" ry="72" fill="url(#percent-cast)"/>
+    <ellipse cx="667" cy="461" rx="55" ry="56" fill="url(#percent-contact)"/>
+    <circle cx="662" cy="454" r="51" fill="url(#percent-rim)"/>
+    <circle cx="662" cy="454" r="48.5" fill="url(#percent-face)"/>
+    <g id="circle-surface-reflections">
+      <ellipse cx="644" cy="429" rx="22" ry="16" fill="url(#surface-light)"/>
+      <ellipse cx="637" cy="471" rx="15" ry="20" fill="url(#surface-light)"/>
+      <ellipse cx="680" cy="457" rx="20" ry="28" fill="url(#surface-shade)"/>
+      <path d="M619 432 Q630 411 655 405" fill="none" stroke="url(#edge-glint)" stroke-width="1.6" stroke-linecap="round"/>
+    </g>
+  </g>
+  <g id="lower-circle-material" transform="translate(206 228)">
+    <ellipse cx="674" cy="476" rx="76" ry="72" fill="url(#percent-cast)"/>
+    <ellipse cx="667" cy="461" rx="55" ry="56" fill="url(#percent-contact)"/>
+    <circle cx="662" cy="454" r="51" fill="url(#percent-rim)"/>
+    <circle cx="662" cy="454" r="48.5" fill="url(#percent-face)"/>
+    <g id="lower-circle-surface-reflections">
+      <ellipse cx="644" cy="429" rx="22" ry="16" fill="url(#surface-light)"/>
+      <ellipse cx="637" cy="471" rx="15" ry="20" fill="url(#surface-light)"/>
+      <ellipse cx="680" cy="457" rx="20" ry="28" fill="url(#surface-shade)"/>
+      <path d="M619 432 Q630 411 655 405" fill="none" stroke="url(#edge-glint)" stroke-width="1.6" stroke-linecap="round"/>
+    </g>
+  </g>
+</svg>
