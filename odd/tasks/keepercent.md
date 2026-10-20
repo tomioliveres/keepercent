@@ -233,6 +233,19 @@ Execution order: T6.6 patterns → T6.8 shot-direction arrows → T6.9 Spanish l
   - Historical MC-6 local outcome: MC6-D1/D2/D3 completed with observed missing-API/behavioral RED and GREEN/triangulation; focused 50 tests / 12 suites, full Domain 456 / 110, macOS harness two / two, generic build and whitespace checks passed. Projection/navigation/export were structurally wired, not runtime-proven at that stage. Initial contract mirrored/read back as #4631; full mirrors and parent-owned relation judgments were pending. No writer commit, handoff mutation, simulator or remote work.
 - [ ] Backlog: filters on cards (match, delivery, approach); edit any recorded shot, not only undo the last; PDF scouting report with PDFKit; data backup/export to a file (no CloudKit on a free account); iPad landscape layout with goal/court beside the charts.
 
+## UX audit follow-ups (added 2026-10-19)
+
+Source: [design/ux-audit/report.md](../../design/ux-audit/report.md) (41 findings, F-01–F-41, with evidence and suggested fixes). Each task fixes the listed findings; verify visually per CLAUDE.md before review.
+
+- [ ] T7.1 Quick colour and leftover fixes: dark heatmap ramp + Increase Contrast (F-02, F-36), outcome button contrast (F-03), hide the T2.x scaffold behind `#if DEBUG` (F-07), report button icon (F-08).
+- [ ] T7.7 Navigation structure: `TabView` Matches / Rivals / My Club, sidebar-adaptable on iPad; matches out from under the player history; merge Own Team Roster and My club (F-28, F-29, F-33). Design with the author before building.
+- [ ] T7.2 Shot entry ergonomics: no scrolling per shot on iPhone, bottom overlay for outcome/undo/errors, step indicator, chips and header (F-01, F-06, F-10, F-11, F-12, F-13, F-30, F-35, F-38).
+- [ ] T7.3 Empty, confirmation and data states: empty teams, edit without long-press, locked rows, archive confirmation, new match sheet, rename/delete teams and matches (F-04, F-14, F-15, F-16, F-20, F-32, F-34).
+- [ ] T7.4 Dynamic Type and VoiceOver: tiles at accessibility sizes, scope selector, report preview, headings, small hit areas, and a permanent `performAccessibilityAudit()` UI test (F-05, F-09, F-18, F-19, F-37).
+- [ ] T7.5 iPad and orientation: readable widths, two-column portrait entry, landscape verification (F-17).
+- [ ] T7.6 Polish: F-21–F-27, F-31, F-39–F-41.
+- [ ] T7.8 Usability test with five handball people after T7.7 and T7.2 (plan in the report, Part 2).
+
 ## Notes
 
 - Dates in the day headings follow `docs/mvp.md` §10; the plan there is authoritative.
