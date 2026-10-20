@@ -12,6 +12,8 @@ struct TeamReportCardView: View {
     let engine: StatsEngine
     var scopeLabel: String = String(localized: "All matches")
     var perspective: TeamReportPerspective = .rival
+    // Passed explicitly so ImageRenderer matches the on-screen contrast.
+    var contrast: ColorSchemeContrast = .standard
     @Environment(\.colorScheme) private var colorScheme
 
     private var field: StatsEngine { engine.fieldShots }
@@ -70,6 +72,9 @@ struct TeamReportCardView: View {
                             }
                         }
                     }
+                    HeatmapLegend(contrast: contrast)
+                    Text("Save rate")
+                        .font(.caption2)
                 }
 
                 zoneList(title: "Where goals went in", entries: field.weakGoalZones(limit: 3)) { tally in
@@ -121,7 +126,8 @@ struct TeamReportCardView: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: 54)
-        .background(HeatmapColor.tint(for: tally, appearance: colorScheme))
+        .foregroundStyle(colorScheme == .dark && tally?.rate == nil ? Color.black : Color.primary)
+        .background(HeatmapColor.tint(for: tally, appearance: colorScheme, contrast: contrast))
         .clipShape(RoundedRectangle(cornerRadius: 6))
         .accessibilityLabel(tally == nil
             ? Text("\(zone.displayName()): no on-target shots")

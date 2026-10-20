@@ -174,12 +174,17 @@ struct ShotEntryContextPanel: View {
             Text("Goal or saved?")
                 .font(.headline)
             HStack(spacing: 12) {
-                Button("Goal") { onChooseOutcome(.goal) }
-                    .tint(Palette.goal)
-                Button("Saved") { onChooseOutcome(.saved) }
-                    .tint(Palette.saved)
+                Button { onChooseOutcome(.goal) } label: {
+                    Label("Goal", systemImage: "soccerball")
+                }
+                .tint(Palette.goal)
+                Button { onChooseOutcome(.saved) } label: {
+                    Label("Saved", systemImage: "hand.raised.fill")
+                }
+                .tint(Palette.saved)
             }
             .buttonStyle(.borderedProminent)
+            .foregroundStyle(.black)
             .font(.title3.bold())
             .frame(maxWidth: .infinity)
         }

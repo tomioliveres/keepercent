@@ -47,7 +47,7 @@ struct GoalkeeperCardView: View {
                 NavigationLink {
                     TeamReportView(team: team, playerID: playerID, scope: scope)
                 } label: {
-                    Label("Team Report", systemImage: "square.and.arrow.up")
+                    Label("Team Report", systemImage: "doc.text.magnifyingglass")
                 }
                 // No attributable scoped attempts means no useful report.
                 // Post/miss-only samples still count as data, not an empty card.
