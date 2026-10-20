@@ -61,6 +61,8 @@ Read `odd/tasks/keepercent.md` and the Engram mirror `odd/keepercent/tasks`; rec
 
 ## 3. Fix defects (one round)
 
+If the user fixed the defects in a Claude Code quick-fix session, the handoff already points to the new `sha` with `status: ready` or a newer verdict: resume from that status instead of fixing again.
+
 Read the verdict, fix each numbered defect, run `swift test` and the build, commit, set `status: ready` with the new `sha`, and send the user back to `/verify-ui`. If the second verdict still has defects, stop and ask the user whether to accept, fix again, or cut scope. Never loop on your own. If the verifier could not update the handoff, inspect its returned report and evidence but do not treat the handoff as `pass`; reconcile verification explicitly before review or closure.
 
 ## 4. Review and close
