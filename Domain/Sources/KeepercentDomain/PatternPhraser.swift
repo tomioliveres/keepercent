@@ -50,6 +50,8 @@ public enum PatternPhraser {
             )
         case .distance:
             return String(domain: "Scores from near \(count) vs far \(phrase.of(pattern.contrast))", locale: locale)
+        case .deliveryConversion:
+            return String(domain: "Standing: \(count) goals; jump: \(phrase.of(pattern.contrast)) goals", locale: locale)
         case .repeatAfterGoal:
             return String(domain: "After scoring, repeats the same zone \(count)", locale: locale)
         case .concededHeight(let height):

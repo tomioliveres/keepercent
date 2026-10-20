@@ -72,7 +72,7 @@ struct PatternsSection: View {
         case .line, .lineFromSector: return "arrow.up.right"
         case .height, .concededHeight: return "arrow.up.and.down"
         case .side, .concededSide: return "arrow.left.and.right"
-        case .deliveryHeight, .deliverySide, .approachSide, .deliverySaves: return "figure.handball"
+        case .deliveryHeight, .deliverySide, .approachSide, .deliverySaves, .deliveryConversion: return "figure.handball"
         case .sevenMeterHeight, .sevenMeterSide, .sevenMeterSaves: return "7.circle"
         case .origin: return "mappin.and.ellipse"
         case .distance: return "ruler"

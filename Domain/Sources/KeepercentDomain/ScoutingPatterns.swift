@@ -41,6 +41,8 @@ public enum ScoutingPatternKind: Equatable, Hashable, Sendable {
     case origin(CourtZone)
     /// Conversion from near (tally) vs from far (contrast).
     case distance
+    /// Field-shot goals standing (tally) vs jumping (contrast), over all attempts.
+    case deliveryConversion
     /// After a goal, how often the same shooter's next shot targets the
     /// same goal zone.
     case repeatAfterGoal
@@ -100,7 +102,7 @@ public struct ScoutingPattern: Equatable, Hashable, Sendable {
     public var strength: Double {
         let rate = tally.rate ?? 0
         switch kind {
-        case .distance, .deliverySaves:
+        case .distance, .deliverySaves, .deliveryConversion:
             return abs(rate - (contrast?.rate ?? 0))
         case .sevenMeterSaves:
             return max(rate, 1 - rate)
@@ -144,6 +146,10 @@ extension StatsEngine {
         found.append(Self.tendency(in: field, among: CourtZone.allCases, key: { Self.zone(of: $0) }) { .origin($0) })
         found.append(Self.distance(field))
         found.append(Self.repeatAfterGoal(field))
+        if let comparison = deliveryConversionComparison() {
+            found.append(ScoutingPattern(kind: .deliveryConversion,
+                                         tally: comparison.standing, contrast: comparison.jump))
+        }
         return Self.ranked(found.compactMap { $0 })
     }
 
@@ -342,6 +348,7 @@ extension ScoutingPatternKind {
         case .concededSide(let side): return [13, Self.index(side)]
         case .deliverySaves: return [14]
         case .sevenMeterSaves: return [15]
+        case .deliveryConversion: return [16]
         }
     }
 

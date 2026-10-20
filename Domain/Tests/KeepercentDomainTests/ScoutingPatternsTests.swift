@@ -306,6 +306,66 @@ struct ScoutingPatternContextTests {
 
 @Suite("Scouting patterns: comparisons and repeats")
 struct ScoutingPatternComparisonTests {
+    @Test(arguments: [true, false])
+    func deliveryConversion(standingHigher: Bool) throws {
+        let varied = (0..<8).map { index in
+            shot(outcome: (index % 4 < ((index < 4) == standingHigher ? 3 : 1)) ? .goal : .saved,
+                 delivery: index < 4 ? .standing : .jump)
+        }
+        let pattern = try #require(find(.deliveryConversion, in: shooterPatterns(varied)))
+        #expect(pattern.tally == Tally(successes: standingHigher ? 3 : 1, attempts: 4))
+        #expect(pattern.contrast == Tally(successes: standingHigher ? 1 : 3, attempts: 4))
+        #expect(pattern.conversion == nil)
+        #expect(pattern.strength == 0.5)
+        #expect(find(.deliveryConversion, in: goalkeeperPatterns(varied)) == nil)
+    }
+
+    @Test func integratedDeliveryThresholdsAndExclusions() throws {
+        func group(_ delivery: ShotDelivery, _ goals: Int, _ attempts: Int) -> [Shot] {
+            (0..<attempts).map { index in
+                let target: GoalTarget = index < goals ? inside(.top, .left)
+                    : [.inside(GoalZone(row: .middle, column: .center)), .post(.crossbarCenter), .out(.wideLeft, .middle)][index % 3]
+                let outcome: ShotOutcome = index < goals ? .goal : [.saved, .post, .out][index % 3]
+                return shot(to: target, outcome: outcome, delivery: delivery)
+            }
+        }
+        let noise = repeated(8) { shot(delivery: nil) }
+            + repeated(8) { shot(sevenMeters: true, delivery: .jump) }
+        let qualified = group(.standing, 3, 4) + group(.jump, 1, 4)
+        let finding = try #require(find(.deliveryConversion, in: shooterPatterns(qualified + noise)))
+        #expect(finding.tally == Tally(successes: 3, attempts: 4))
+        #expect(finding.contrast == Tally(successes: 1, attempts: 4))
+        for shots in [group(.standing, 3, 3) + group(.jump, 0, 4),
+                      group(.standing, 4, 4) + group(.jump, 0, 3),
+                      group(.standing, 3, 4) + group(.jump, 2, 4)] {
+            #expect(find(.deliveryConversion, in: shooterPatterns(shots + noise)) == nil)
+        }
+        let exact = group(.standing, 7, 10) + group(.jump, 4, 10)
+        #expect(find(.deliveryConversion, in: shooterPatterns(exact)) != nil)
+        let tied = ScoutingPattern(kind: .distance, tally: finding.tally, contrast: finding.contrast)
+        #expect(StatsEngine.ranked([finding, tied]) == [tied, finding])
+    }
+
+    @Test func deliveryPersonIsolationAndManualRecipe() throws {
+        let selected = Player(id: UUID(), number: 7, handedness: .right)
+        let other = Player(id: UUID(), number: 7, handedness: .right)
+        let targets = [inside(.top, .left), inside(.middle, .center), inside(.bottom, .right), inside(.top, .center)]
+        func entries(_ player: Player, inverted: Bool) -> [Shot] {
+            (0..<8).map { index in
+                shot(by: player, from: [leftBackNear, rightBackNear, centerNear, leftBackFar][index % 4],
+                     to: targets[index % 4], outcome: (index < 4) != inverted ? .goal : .saved,
+                     delivery: index < 4 ? .standing : .jump, minute: Double(index))
+            }
+        }
+        let data = entries(selected, inverted: false) + entries(other, inverted: true)
+        let patterns = StatsEngine(shots: data).shots(by: selected.id!).shooterPatterns()
+        let pattern = try #require(find(.deliveryConversion, in: patterns))
+        #expect(pattern.tally == Tally(successes: 4, attempts: 4))
+        #expect(pattern.contrast == Tally(successes: 0, attempts: 4))
+        #expect(patterns.prefix(4).contains(pattern))
+        #expect(find(.deliveryConversion, in: shooterPatterns(data)) == nil)
+    }
+
     @Test("Near vs far conversion fires on a large enough gap")
     func distanceFires() throws {
         let shots = repeated(3) { shot(from: leftBackNear) }
