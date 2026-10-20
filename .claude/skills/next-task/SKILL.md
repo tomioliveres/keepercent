@@ -12,7 +12,7 @@ metadata:
 Reply to the user in Spanish. Artifacts (code, commits, task file) stay in English.
 Project rules in `CLAUDE.md` win over anything here.
 
-**Split of work**: this runtime writes code, runs `swift test`, builds, commits and reviews. It **never boots a simulator**. UI verification follows `docs/ui-verification.md`, the project profile for the installed `verify-interface` policy: Claude Code uses `/verify-ui`; Codex desktop loads `verify-ios-simulator` and selects tools by capability. Both use the detached exact-SHA checkout and authoritative handoff. Codex must read the main checkout's `CLAUDE.md`. If running in Claude Code, ask whether to continue here, then stop.
+**Split of work**: this runtime writes code, runs `swift test`, builds, commits and reviews. It **never boots a simulator**. UI verification follows `docs/ui-verification.md`, the project profile for the installed `verify-interface` policy: verification runs only in Claude Code with `/verify-ui`, on the detached exact-SHA checkout and the authoritative handoff. If running in Claude Code, ask whether to continue here, then stop.
 
 **One task at a time.** Never start a second task while one is open.
 
@@ -25,7 +25,7 @@ task: T5.0
 status: ready | pass | defects | unverifiable
 sha: <full 40-char sha to verify>
 branch: <branch>
-updated: <ISO date> by <opencode|claude-code|codex>
+updated: <ISO date> by <opencode|claude-code>
 ## Screens
 - <-KPScreen value or navigation path> · <-KPData demo|empty>
 ## Checks
@@ -41,7 +41,7 @@ Mirror each status change to Engram topic `keepercent/verify/<task-id>` (best ef
 ## 0. Resume first
 
 List the handoff directory. If a task has an open handoff, continue it instead of starting a new one:
-- `ready` → tell the user to run `/verify-ui` in Claude Code or to follow the Codex desktop route in `docs/ui-verification.md` for the same task; stop. Do not launch another task.
+- `ready` → tell the user to run `/verify-ui` in Claude Code for the same task; stop. Do not launch another task.
 - `defects` → go to step 3.
 - `pass` → go to step 4. `unverifiable` → report missing evidence and stop; ask the user how to proceed rather than treating it as a pass.
 
@@ -57,11 +57,11 @@ Read `odd/tasks/keepercent.md` and the Engram mirror `odd/keepercent/tasks`; rec
 - Strict TDD in `Domain/` with `cd Domain && swift test`: observe RED, then GREEN, then REFACTOR. Views are not unit-tested.
 - Build the app (no simulator launch): `xcodebuild -project Keepercent.xcodeproj -scheme Keepercent -destination 'generic/platform=iOS Simulator' build`.
 - Work-unit commits, Conventional Commits.
-- Does the task change anything visible? **No** → skip to step 4. **Yes** → write the handoff with `status: ready`, the exact `sha` (`git rev-parse HEAD`), the screens to open and the checks, then tell the user to use Claude Code `/verify-ui <task-id>` or the Codex desktop route in `docs/ui-verification.md`, and **stop**.
+- Does the task change anything visible? **No** → skip to step 4. **Yes** → write the handoff with `status: ready`, the exact `sha` (`git rev-parse HEAD`), the screens to open and the checks, then tell the user to run Claude Code `/verify-ui <task-id>`, and **stop**.
 
 ## 3. Fix defects (one round)
 
-Read the verdict, fix each numbered defect, run `swift test` and the build, commit, set `status: ready` with the new `sha`, and send the user back to the chosen simulator verifier. If the second verdict still has defects, stop and ask the user whether to accept, fix again, or cut scope. Never loop on your own. If Codex could not update the handoff, inspect its returned report and evidence but do not treat the handoff as `pass`; reconcile verification explicitly before review or closure.
+Read the verdict, fix each numbered defect, run `swift test` and the build, commit, set `status: ready` with the new `sha`, and send the user back to `/verify-ui`. If the second verdict still has defects, stop and ask the user whether to accept, fix again, or cut scope. Never loop on your own. If the verifier could not update the handoff, inspect its returned report and evidence but do not treat the handoff as `pass`; reconcile verification explicitly before review or closure.
 
 ## 4. Review and close
 
