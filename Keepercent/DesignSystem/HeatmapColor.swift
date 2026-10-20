@@ -10,9 +10,11 @@ import KeepercentDomain
 enum HeatmapColor {
     /// Opaque fills keep a recorded 0% visibly blue even on a dark canvas.
     /// Gray means no attempts; neither endpoint claims a minimum sample.
+    /// In dark mode empty cells are light gray, separating them from both
+    /// rate endpoints by >=3:1. Text on these empty fills must be black.
     private static func noDataTint(for appearance: ColorScheme, contrast: ColorSchemeContrast) -> Color {
         appearance == .dark
-            ? (contrast == .increased ? Color(white: 0.10) : Color(white: 0.16))
+            ? (contrast == .increased ? Color(white: 0.94) : Color(white: 0.84))
             : (contrast == .increased ? Color(white: 0.80) : Color(red: 0.88, green: 0.89, blue: 0.91))
     }
 

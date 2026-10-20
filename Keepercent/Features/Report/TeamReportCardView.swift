@@ -126,6 +126,7 @@ struct TeamReportCardView: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: 54)
+        .foregroundStyle(colorScheme == .dark && tally?.rate == nil ? Color.black : Color.primary)
         .background(HeatmapColor.tint(for: tally, appearance: colorScheme, contrast: contrast))
         .clipShape(RoundedRectangle(cornerRadius: 6))
         .accessibilityLabel(tally == nil
