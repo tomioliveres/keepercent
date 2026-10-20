@@ -1,6 +1,6 @@
 # Keepercent UI verification profile
 
-Use the installed `verify-interface` skill for shared evidence and recovery rules, then `verify-ios-simulator` for iOS mechanics. In Codex, resolve them from the skill registry or `${CODEX_HOME:-$HOME/.codex}/skills/<name>/SKILL.md`. Claude Code may read the same installed files; if unavailable, report the missing policy rather than silently using a weaker contract.
+Use the installed `verify-interface` skill for shared evidence and recovery rules, then `verify-ios-simulator` for iOS mechanics. Both are installed under `${CODEX_HOME:-$HOME/.codex}/skills/<name>/SKILL.md`; Claude Code reads them from there. If they are unavailable, report the missing policy rather than silently using a weaker contract.
 
 ## Target and safe state
 
@@ -14,8 +14,7 @@ Use the installed `verify-interface` skill for shared evidence and recovery rule
 
 | Runtime | Execution route |
 | --- | --- |
-| Codex desktop | Load `verify-interface` and `verify-ios-simulator`; use XcodeBuildMCP where available, otherwise the authorized local `xcodebuild`/`xcrun simctl` route. Use Computer Use for visible Simulator and system surfaces when permitted. No fixed verifier model. |
-| Claude Code | `.claude/skills/verify-ui/SKILL.md` supplies its Simulator MCP adapter and observed tool workarounds. It must also load the shared policy and this profile. Its model/tool settings are local to Claude, not the global policy. |
+| Claude Code (the only verifier since 2026-10-19) | `.claude/skills/verify-ui/SKILL.md` supplies its Simulator MCP adapter and observed tool workarounds. It must also load the shared policy and this profile. |
 | OpenCode | Prepare the handoff and consume the verdict with `/next-task`; do not boot Simulator. |
 
 For the shell route, build inside the isolated checkout with `xcodebuild -project Keepercent.xcodeproj -scheme Keepercent -destination 'platform=iOS Simulator,name=<available device>' -derivedDataPath build/DerivedData build`, then install/launch that artifact through the chosen authorized adapter. Do not rebuild merely to switch interaction tools.
