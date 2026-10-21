@@ -59,7 +59,7 @@ struct RosterEditorView: View {
     @State private var isPresentingNewSessionSheet = false
     @State private var selectedSession: StoredSession?
     @State private var pendingSession: StoredSession?
-    @State private var isShowingScouting = false
+    @State private var section: TeamSection = .roster
     @State private var shooterRoute: ShooterCardRoute?
     @State private var goalkeeperRoute: GoalkeeperCardRoute?
 
@@ -84,78 +84,37 @@ struct RosterEditorView: View {
     }
 
     var body: some View {
-        Group {
-            Group {
-                switch rosterResult {
-                case .success(let roster):
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 24) {
-                            RosterGridView(
-                                players: roster.players,
-                                onSelectPlayer: { player in
-                                    // T4.3/T4.4: opens the shooter card for
-                                    // a field player, the goalkeeper card
-                                    // for a goalkeeper — the more frequent
-                                    // reason to tap a roster row. Editing
-                                    // moved to the context menu below
-                                    // (`onEditPlayer`).
-                                    guard let id = player.id else { return }
-                                    if player.isGoalkeeper {
-                                        goalkeeperRoute = GoalkeeperCardRoute(playerID: id)
-                                    } else {
-                                        shooterRoute = ShooterCardRoute(playerID: id)
-                                    }
-                                },
-                                onEditPlayer: { player in
-                                    editingPlayer = team.players.first { $0.personID == player.id }
-                                },
-                                onTapAddUnknown: {
-                                    addUnknownErrorMessage = nil
-                                    isAddingUnknown = true
-                                },
-                                isScrollable: false
-                            )
+        VStack(spacing: 0) {
+            Picker("Team Section", selection: $section) {
+                Text("Roster").tag(TeamSection.roster)
+                Text("Matches").tag(TeamSection.matches)
+                Text("Scouting").tag(TeamSection.scouting)
+            }
+            .pickerStyle(.segmented)
+            .padding()
 
-                            archivedPlayersSection
-                            facingHistorySection
-                            sessionsSection
-                        }
-                        .padding(.bottom)
-                    }
-                case .failure(let error):
-                    ContentUnavailableView {
-                        Label("Roster Data Problem", systemImage: "exclamationmark.triangle")
-                    } description: {
-                        Text("This team's roster couldn't be loaded (\(error.localizedDescription)). Recorded shots are unaffected.")
-                    }
+            switch section {
+            case .roster:
+                rosterContent
+            case .matches:
+                ScrollView { sessionsSection.padding(.vertical) }
+            case .scouting:
+                TeamScoutingView(team: team, isEmbedded: true)
+            }
+        }
+        .navigationTitle(team.name)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button { isPresentingNewSessionSheet = true } label: {
+                    Label("New Match", systemImage: "plus.circle")
                 }
             }
-            .navigationTitle(team.name)
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        isShowingScouting = true
-                    } label: {
-                        Label("Scouting", systemImage: "chart.bar.xaxis")
-                    }
-                }
-                ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        isPresentingNewSessionSheet = true
-                    } label: {
-                        Label("New Match", systemImage: "plus.circle")
-                    }
-                }
-            }
-            .navigationDestination(isPresented: $isShowingScouting) {
-                TeamScoutingView(team: team)
-            }
-            .navigationDestination(item: $shooterRoute) { route in
-                ShooterCardView(team: team, playerID: route.playerID)
-            }
-            .navigationDestination(item: $goalkeeperRoute) { route in
-                GoalkeeperCardView(team: team, playerID: route.playerID)
-            }
+        }
+        .navigationDestination(item: $shooterRoute) { route in
+            ShooterCardView(team: team, playerID: route.playerID)
+        }
+        .navigationDestination(item: $goalkeeperRoute) { route in
+            GoalkeeperCardView(team: team, playerID: route.playerID)
         }
         .sheet(item: $editingPlayer) { stored in
             let originalNumber = stored.number
@@ -204,10 +163,46 @@ struct RosterEditorView: View {
         }
     }
 
+    @ViewBuilder
+    private var rosterContent: some View {
+        switch rosterResult {
+        case .success(let roster):
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    RosterGridView(
+                        players: roster.players,
+                        onSelectPlayer: { player in
+                            guard let id = player.id else { return }
+                            if player.isGoalkeeper {
+                                goalkeeperRoute = GoalkeeperCardRoute(playerID: id)
+                            } else {
+                                shooterRoute = ShooterCardRoute(playerID: id)
+                            }
+                        },
+                        onEditPlayer: { player in
+                            editingPlayer = team.players.first { $0.personID == player.id }
+                        },
+                        onTapAddUnknown: { addUnknownErrorMessage = nil; isAddingUnknown = true },
+                        isScrollable: false
+                    )
+                    facingHistorySection
+                    archivedPlayersSection
+                }
+                .padding(.bottom)
+            }
+        case .failure(let error):
+            ContentUnavailableView {
+                Label("Roster Data Problem", systemImage: "exclamationmark.triangle")
+            } description: {
+                Text("This team's roster couldn't be loaded (\(error.localizedDescription)). Recorded shots are unaffected.")
+            }
+        }
+    }
+
     /// Team-local sessions open the same full-screen entry as global Matches.
     private var sessionsSection: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Sessions")
+            Text("Matches")
                 .font(.headline)
                 .padding(.horizontal)
 
@@ -243,15 +238,16 @@ struct RosterEditorView: View {
         VStack(alignment: .leading) {
             let archived = team.players.filter { $0.archivedAt != nil }.sorted(by: historyOrder)
             if !archived.isEmpty {
-                Text("Archived players").font(.headline)
-                ForEach(archived, id: \.persistentModelID) { player in
-                    if let id = player.personID {
-                        historyRow(player: player, destination: "Shooter") {
-                            shooterRoute = ShooterCardRoute(playerID: id)
-                        }
-                        if player.isGoalkeeper || !player.shotsFaced.isEmpty {
-                            historyRow(player: player, destination: "Goalkeeper") {
-                                goalkeeperRoute = GoalkeeperCardRoute(playerID: id)
+                DisclosureGroup("Archived players") {
+                    ForEach(archived, id: \.persistentModelID) { player in
+                        if let id = player.personID {
+                            historyRow(player: player, destination: "Shooter") {
+                                shooterRoute = ShooterCardRoute(playerID: id)
+                            }
+                            if player.isGoalkeeper || !player.shotsFaced.isEmpty {
+                                historyRow(player: player, destination: "Goalkeeper") {
+                                    goalkeeperRoute = GoalkeeperCardRoute(playerID: id)
+                                }
                             }
                         }
                     }
@@ -267,17 +263,18 @@ struct RosterEditorView: View {
                 $0.archivedAt == nil && (!$0.shotsTaken.isEmpty || !$0.shotsFaced.isEmpty)
             }.sorted(by: historyOrder)
             if !historical.isEmpty {
-                Text("Player history").font(.headline)
-                ForEach(historical, id: \.persistentModelID) { player in
-                    if let id = player.personID {
-                        if !player.shotsTaken.isEmpty {
-                            historyRow(player: player, destination: "Shooter") {
-                                shooterRoute = ShooterCardRoute(playerID: id)
+                DisclosureGroup("Player history") {
+                    ForEach(historical, id: \.persistentModelID) { player in
+                        if let id = player.personID {
+                            if !player.shotsTaken.isEmpty {
+                                historyRow(player: player, destination: "Shooter") {
+                                    shooterRoute = ShooterCardRoute(playerID: id)
+                                }
                             }
-                        }
-                        if !player.shotsFaced.isEmpty {
-                            historyRow(player: player, destination: "Goalkeeper") {
-                                goalkeeperRoute = GoalkeeperCardRoute(playerID: id)
+                            if !player.shotsFaced.isEmpty {
+                                historyRow(player: player, destination: "Goalkeeper") {
+                                    goalkeeperRoute = GoalkeeperCardRoute(playerID: id)
+                                }
                             }
                         }
                     }
@@ -395,6 +392,10 @@ private struct ShooterCardRoute: Hashable {
 
 private struct GoalkeeperCardRoute: Hashable {
     let playerID: UUID
+}
+
+private enum TeamSection {
+    case roster, matches, scouting
 }
 
 /// A UI-ready wrapper so `.alert(presenting:)` can show whatever

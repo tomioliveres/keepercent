@@ -20,6 +20,7 @@ import KeepercentDomain
 
 struct TeamScoutingView: View {
     let team: StoredRivalTeam
+    var isEmbedded = false
 
     @State private var reading: StatsReading = .effectiveness
     @State private var selection: ShotOrigin?
@@ -75,6 +76,6 @@ struct TeamScoutingView: View {
             }
             .padding()
         }
-        .navigationTitle("Scouting")
+        .navigationTitle(isEmbedded ? team.name : String(localized: "Scouting"))
     }
 }

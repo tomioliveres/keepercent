@@ -1,6 +1,20 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Roster" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Roster" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Plantilla" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Plantel" } }
+      }
+    },
+    "Team Section" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Team Section" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Sección del equipo" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Sección del equipo" } }
+      }
+    },
     "Matches" : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Matches" } },
