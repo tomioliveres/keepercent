@@ -9,8 +9,8 @@
 // prints the tapped value's code as plain text so a tap can still be
 // verified without reading the drawing.
 //
-// Since T3.1, the app's launch screen is TeamsView, not this scaffold — it
-// is reachable via the team's secondary toolbar action. The debug launch
+// The app launches AppNavigationView, not this scaffold — it
+// is reachable via the Matches debug menu. The debug launch
 // router below is separate from the scaffold and excluded from release.
 
 import SwiftUI
@@ -80,7 +80,7 @@ struct DebugLaunchView: View {
     var body: some View {
         Group {
             if configuration.screen == .teams {
-                TeamsView(seedDemoDataOnAppear: false)
+                AppNavigationView(seedDemoDataOnAppear: false)
             } else {
                 NavigationStack {
                     destination

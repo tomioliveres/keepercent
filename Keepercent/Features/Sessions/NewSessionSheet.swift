@@ -1,5 +1,5 @@
 // NewSessionSheet collects a session's kind and match date, for
-// RosterEditorView's "New Session" action (docs/mvp.md §6 item 2: "rival
+// MatchCreationSheet's "New Match" action (docs/mvp.md §6 item 2: "rival
 // and kind (live/video)"). PRESENTATIONAL per CLAUDE.md: it receives only
 // bindings and a closure, and reports intent through `onStart`. It never
 // touches SwiftData or builds a `KeepercentDomain.Session` itself — the
@@ -7,15 +7,14 @@
 // back whatever `SessionError` it threw (see SessionMessaging.swift),
 // the same division of labour NewTeamSheet/RivalTeamError use.
 //
-// The rival team itself is not a field here: a session is always started
-// from that team's own screen, so the relationship is implicit (see
-// Session.swift's header and T3.2 in odd/tasks/keepercent.md).
+// The rival has already been selected by the container, either from Matches
+// or the team's own screen. Display its name to confirm the chosen opponent.
 //
 // The match date range is `...Date.now`: the DatePicker itself can never
 // reach a future date, so `Session.init`'s "no future match date" rule is
 // unreachable through this UI, not just rejected after the fact — it
 // starts on today, per the T3.2 decision. `SessionError.matchDateInFuture`
-// is still handled end to end (see RosterEditorView.startSession), the
+// is still handled end to end (see MatchCreationSheet), the
 // same defence-in-depth `AddUnknownPlayerView` uses for its own range.
 
 import SwiftUI
@@ -31,12 +30,16 @@ struct NewSessionSheet: View {
     var ownAvailable: [Player] = []
     @Binding var includeOwn: Bool
     @Binding var ownParticipants: [Player]
+    var rivalName: String? = nil
 
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationStack {
             Form {
+                if let rivalName {
+                    Section("Rival") { Text(rivalName) }
+                }
                 MatchRosterSelection(available: available, players: $participants)
                 OwnMatchRosterSelection(teamName: ownTeamName, available: ownAvailable,
                                         included: $includeOwn, players: $ownParticipants)
@@ -60,7 +63,7 @@ struct NewSessionSheet: View {
                     Text("The date the match was actually played, not today's date — for a video session that can be earlier.")
                 }
             }
-            .navigationTitle("New Session")
+            .navigationTitle("New Match")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }

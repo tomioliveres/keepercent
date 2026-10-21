@@ -1,6 +1,90 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Matches" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Matches" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Partidos" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Partidos" } }
+      }
+    },
+    "Rivals" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Rivals" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Rivales" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Rivales" } }
+      }
+    },
+    "My Club" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "My Club" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Mi club" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Mi club" } }
+      }
+    },
+    "New Match" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "New Match" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Nuevo partido" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Nuevo partido" } }
+      }
+    },
+    "No Matches" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No Matches" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Sin partidos" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Sin partidos" } }
+      }
+    },
+    "Start a match to record shots against a rival." : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Start a match to record shots against a rival." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Inicia un partido para registrar lanzamientos contra un rival." } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Inicia un partido para registrar lanzamientos contra un rival." } }
+      }
+    },
+    "Deleted Rival" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Deleted Rival" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Rival eliminado" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Rival eliminado" } }
+      }
+    },
+    "Shot entry is unavailable because this rival was deleted." : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Shot entry is unavailable because this rival was deleted." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "No se pueden registrar lanzamientos porque este rival fue eliminado." } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "No se pueden registrar lanzamientos porque este rival fue eliminado." } }
+      }
+    },
+    "No Rivals" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No Rivals" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Sin rivales" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Sin rivales" } }
+      }
+    },
+    "Add a team in Rivals before starting a match." : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Add a team in Rivals before starting a match." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Añade un equipo en Rivales antes de iniciar un partido." } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Agrega un equipo en Rivales antes de iniciar un partido." } }
+      }
+    },
+    "Choose Rival" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Choose Rival" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Elegir rival" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Elegir rival" } }
+      }
+    },
+    "Create a rival team to add players and start scouting." : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Create a rival team to add players and start scouting." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Crea un equipo rival para añadir jugadores y comenzar a observarlo." } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Crea un equipo rival para agregar jugadores y comenzar a observarlo." } }
+      }
+    },
     "My club" : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "My club" } },

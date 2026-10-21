@@ -41,19 +41,8 @@
 //
 // ## Sessions (T3.2)
 //
-// This same screen also lists the team's sessions and starts new ones,
-// following the same validate-then-write-one-row shape as the roster
-// actions above: `startSession` builds `KeepercentDomain.Session` FIRST
-// (which owns the "no future match date" rule), and only inserts a
-// `StoredSession` if that succeeds. A session is started FROM a team's
-// screen (Session.swift's header), so the rival team is never a field the
-// user picks — `startSession` always attaches the new session to `team`.
-//
-// `path` is a `NavigationPath` local to this view, wrapped in its own
-// `NavigationStack`, so tapping a session (or finishing "Start") can push
-// straight to `SessionView` inside `TeamsView`'s existing
-// `NavigationSplitView` detail column without that view needing to know
-// about session navigation at all.
+// Session creation is shared with Matches through MatchCreationSheet.
+// Cards use the enclosing Rivals stack; shot entry covers the whole window.
 
 import SwiftUI
 import SwiftData
@@ -61,27 +50,18 @@ import KeepercentDomain
 
 struct RosterEditorView: View {
     let team: StoredRivalTeam
-    /// See `TeamsView`'s own comment on this same `@State`: this view drives
-    /// it, `TeamsView` only stores it. `path` (below) already tells this
-    /// view exactly when a session is open — it is the one place besides
-    /// `TeamsView` that decides where the user is — so reusing it as the
-    /// signal, via `.onChange(of:)`, needs no second source of truth.
-    @Binding var columnVisibility: NavigationSplitViewVisibility
     @Environment(\.modelContext) private var modelContext
-    @Query(sort: \StoredOwnTeam.createdAt) private var ownTeams: [StoredOwnTeam]
 
     @State private var editingPlayer: StoredPlayer?
     @State private var isAddingUnknown = false
     @State private var addUnknownErrorMessage: String?
     @State private var actionError: RosterActionError?
     @State private var isPresentingNewSessionSheet = false
-    @State private var newSessionKind: SessionKind = .live
-    @State private var newSessionMatchDate: Date = .now
-    @State private var newSessionErrorMessage: String?
-    @State private var newSessionParticipants: [Player] = []
-    @State private var includeOwnTeam = false
-    @State private var newSessionOwnParticipants: [Player] = []
-    @State private var path = NavigationPath()
+    @State private var selectedSession: StoredSession?
+    @State private var pendingSession: StoredSession?
+    @State private var isShowingScouting = false
+    @State private var shooterRoute: ShooterCardRoute?
+    @State private var goalkeeperRoute: GoalkeeperCardRoute?
 
     /// A fresh `Roster` built from this team's current `StoredPlayer` rows,
     /// or the error that building it hit. Building can fail if the stored
@@ -104,7 +84,7 @@ struct RosterEditorView: View {
     }
 
     var body: some View {
-        NavigationStack(path: $path) {
+        Group {
             Group {
                 switch rosterResult {
                 case .success(let roster):
@@ -121,9 +101,9 @@ struct RosterEditorView: View {
                                     // (`onEditPlayer`).
                                     guard let id = player.id else { return }
                                     if player.isGoalkeeper {
-                                        path.append(GoalkeeperCardRoute(playerID: id))
+                                        goalkeeperRoute = GoalkeeperCardRoute(playerID: id)
                                     } else {
-                                        path.append(ShooterCardRoute(playerID: id))
+                                        shooterRoute = ShooterCardRoute(playerID: id)
                                     }
                                 },
                                 onEditPlayer: { player in
@@ -154,63 +134,28 @@ struct RosterEditorView: View {
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button {
-                        path.append(ScoutingRoute())
+                        isShowingScouting = true
                     } label: {
                         Label("Scouting", systemImage: "chart.bar.xaxis")
                     }
                 }
                 ToolbarItem(placement: .primaryAction) {
                     Button {
-                        newSessionKind = .live
-                        newSessionMatchDate = .now
-                        newSessionErrorMessage = nil
-                        newSessionParticipants = team.players.filter { $0.archivedAt == nil }.map(\.domainPlayer)
-                        includeOwnTeam = ownTeams.first != nil
-                        newSessionOwnParticipants = ownTeams.first?.players.filter { $0.archivedAt == nil }.map(\.domainPlayer) ?? []
                         isPresentingNewSessionSheet = true
                     } label: {
-                        Label("New Session", systemImage: "plus.circle")
+                        Label("New Match", systemImage: "plus.circle")
                     }
                 }
             }
-            .navigationDestination(for: PersistentIdentifier.self) { sessionID in
-                if let session = team.sessions.first(where: { $0.persistentModelID == sessionID }) {
-                    SessionView(team: team, session: session)
-                } else {
-                    ContentUnavailableView(
-                        "Session Not Found",
-                        systemImage: "exclamationmark.triangle",
-                        description: Text("This session may have been removed.")
-                    )
-                }
-            }
-            // A distinct route type from `PersistentIdentifier` (sessions,
-            // above): `NavigationStack` dispatches by the pushed value's
-            // type, so this can be its own destination on the SAME `path`
-            // without touching session navigation at all.
-            .navigationDestination(for: ScoutingRoute.self) { _ in
+            .navigationDestination(isPresented: $isShowingScouting) {
                 TeamScoutingView(team: team)
             }
-            // T4.3: a distinct route type again, same reasoning as
-            // `ScoutingRoute` above, but this one carries the tapped
-            // stable person identity so the destination knows whom to narrow to.
-            .navigationDestination(for: ShooterCardRoute.self) { route in
+            .navigationDestination(item: $shooterRoute) { route in
                 ShooterCardView(team: team, playerID: route.playerID)
             }
-            // T4.4: same reasoning as `ShooterCardRoute` — a distinct route
-            // type carrying the tapped person identity, so the destination
-            // knows which goalkeeper to narrow to.
-            .navigationDestination(for: GoalkeeperCardRoute.self) { route in
+            .navigationDestination(item: $goalkeeperRoute) { route in
                 GoalkeeperCardView(team: team, playerID: route.playerID)
             }
-        }
-        // T3.3, decision ③: the team sidebar is hidden while a session is
-        // open, so the entry screen's three-column layout gets the whole
-        // iPad width. `path` is non-empty exactly when a session is pushed
-        // (the only thing ever appended to it), so it is already the
-        // signal this view needs — no separate "is a session open" flag.
-        .onChange(of: path) {
-            columnVisibility = path.isEmpty ? .automatic : .detailOnly
         }
         .sheet(item: $editingPlayer) { stored in
             let originalNumber = stored.number
@@ -248,36 +193,18 @@ struct RosterEditorView: View {
                 onAdd: { number in addUnknown(number: number) }
             )
         }
-        // Same reasoning as the `editingPlayer` sheet above: the alert is
-        // chained onto the presented `NewSessionSheet`, not onto this
-        // view, so a rejected start leaves the sheet's own kind/date
-        // picks on screen instead of SwiftUI dismissing the sheet to show
-        // the alert.
-        .sheet(isPresented: $isPresentingNewSessionSheet) {
-            NewSessionSheet(kind: $newSessionKind, matchDate: $newSessionMatchDate, onStart: startSession,
-                            available: team.players.filter { $0.archivedAt == nil }.map(\.domainPlayer),
-                             participants: $newSessionParticipants,
-                             ownTeamName: ownTeams.first?.name,
-                             ownAvailable: ownTeams.first?.players.filter { $0.archivedAt == nil }.map(\.domainPlayer) ?? [],
-                             includeOwn: $includeOwnTeam, ownParticipants: $newSessionOwnParticipants)
-                .alert(
-                    "Couldn't Start Session",
-                    isPresented: Binding(
-                        get: { newSessionErrorMessage != nil },
-                        set: { isPresented in if !isPresented { newSessionErrorMessage = nil } }
-                    )
-                ) {
-                    Button("OK", role: .cancel) { newSessionErrorMessage = nil }
-                } message: {
-                    Text(newSessionErrorMessage ?? "")
-                }
+        .sheet(isPresented: $isPresentingNewSessionSheet, onDismiss: {
+            selectedSession = pendingSession
+            pendingSession = nil
+        }) {
+            MatchCreationSheet(rival: team) { pendingSession = $0 }
+        }
+        .fullScreenCover(item: $selectedSession) { session in
+            SessionEntryCover(session: session)
         }
     }
 
-    /// The session list drawn below the roster grid (T3.2 item 4):
-    /// newest match date first, each row a plain `SessionRowView` pushed
-    /// via `path` rather than a `NavigationLink`, so the same push target
-    /// is reachable from `startSession` too.
+    /// Team-local sessions open the same full-screen entry as global Matches.
     private var sessionsSection: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("Sessions")
@@ -292,7 +219,7 @@ struct RosterEditorView: View {
                 VStack(spacing: 0) {
                     ForEach(sortedSessions, id: \.persistentModelID) { session in
                         Button {
-                            path.append(session.persistentModelID)
+                            selectedSession = session
                         } label: {
                             SessionRowView(
                                 kind: session.kind,
@@ -320,11 +247,11 @@ struct RosterEditorView: View {
                 ForEach(archived, id: \.persistentModelID) { player in
                     if let id = player.personID {
                         historyRow(player: player, destination: "Shooter") {
-                            path.append(ShooterCardRoute(playerID: id))
+                            shooterRoute = ShooterCardRoute(playerID: id)
                         }
                         if player.isGoalkeeper || !player.shotsFaced.isEmpty {
                             historyRow(player: player, destination: "Goalkeeper") {
-                                path.append(GoalkeeperCardRoute(playerID: id))
+                                goalkeeperRoute = GoalkeeperCardRoute(playerID: id)
                             }
                         }
                     }
@@ -345,12 +272,12 @@ struct RosterEditorView: View {
                     if let id = player.personID {
                         if !player.shotsTaken.isEmpty {
                             historyRow(player: player, destination: "Shooter") {
-                                path.append(ShooterCardRoute(playerID: id))
+                                shooterRoute = ShooterCardRoute(playerID: id)
                             }
                         }
                         if !player.shotsFaced.isEmpty {
                             historyRow(player: player, destination: "Goalkeeper") {
-                                path.append(GoalkeeperCardRoute(playerID: id))
+                                goalkeeperRoute = GoalkeeperCardRoute(playerID: id)
                             }
                         }
                     }
@@ -459,58 +386,13 @@ struct RosterEditorView: View {
         }
     }
 
-    /// "Start": builds `Session(kind:matchDate:today:calendar:)` FIRST —
-    /// the only place the "no future match date" rule is enforced — and
-    /// only inserts a `StoredSession` if that succeeds. `.current` and
-    /// `.now` are read here, at the SwiftUI edge, exactly once; the
-    /// domain itself never reads ambient system state (Session.swift).
-    /// On success the new session is pushed onto `path` immediately, so
-    /// starting a session opens it the same way tapping an existing one
-    /// does.
-    private func startSession() {
-        do {
-            let session = try Session(
-                kind: newSessionKind,
-                matchDate: newSessionMatchDate,
-                today: .now,
-                calendar: .current
-            )
-            let stored = StoredSession(date: session.matchDate, kindCode: session.kind.rawValue, rivalTeam: team)
-            let roster = try MatchRoster(players: newSessionParticipants)
-            stored.participants = roster.players.map(StoredMatchParticipant.init)
-            if includeOwnTeam, let ownTeam = ownTeams.first {
-                let ownRoster = try MatchRoster(players: newSessionOwnParticipants)
-                stored.ownTeam = ownTeam
-                stored.ownParticipants = ownRoster.players.map(StoredMatchParticipant.init)
-            }
-            team.sessions.append(stored)
-            modelContext.insert(stored)
-            try modelContext.save()
-            isPresentingNewSessionSheet = false
-            newSessionErrorMessage = nil
-            path.append(stored.persistentModelID)
-        } catch {
-            modelContext.rollback()
-            newSessionErrorMessage = error is RosterError ? rosterErrorMessage(error) : sessionErrorMessage(error)
-        }
-    }
 }
 
-/// A marker pushed onto `path` (T4.2) to reach `TeamScoutingView`: this
-/// screen already needs nothing more than `team`, which the destination
-/// closure captures directly, so the route carries no payload of its own —
-/// it exists only to give `.navigationDestination(for:)` a distinct type
-/// from the session push above.
-private struct ScoutingRoute: Hashable {}
-
-/// A route pushed onto `path` (T4.3) to reach `ShooterCardView` for one
-/// rival shooter, identified by stable person identity, not shirt number.
+/// Card routes retain stable person identity, never a reused shirt number.
 private struct ShooterCardRoute: Hashable {
     let playerID: UUID
 }
 
-/// A route pushed onto `path` (T4.4) to reach `GoalkeeperCardView` for one
-/// rival goalkeeper, identified by stable person identity, not shirt number.
 private struct GoalkeeperCardRoute: Hashable {
     let playerID: UUID
 }
