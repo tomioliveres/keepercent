@@ -20,6 +20,7 @@ struct ShooterGridColumn: View {
     let players: [Player]
     let selectedNumber: Int?
     let onSelect: (Int) -> Void
+    var isCompact = false
 
     /// Same minimum as `RosterGridView`'s own grid (`rosterTileMinimumDimension`,
     /// Features/Teams/PlayerTileView.swift) — this is the same tap target,
@@ -28,6 +29,54 @@ struct ShooterGridColumn: View {
     private let columns = [GridItem(.adaptive(minimum: rosterTileMinimumDimension + 20, maximum: 92), spacing: 10)]
 
     var body: some View {
+        if isCompact { compactStrip }
+        else { grid }
+    }
+
+    private var compactStrip: some View {
+        GeometryReader { proxy in
+            let tileWidth = max(44, (proxy.size.width - 6 * 6) / 7)
+            ScrollView(.horizontal) {
+                LazyHGrid(rows: [GridItem(.fixed(44)), GridItem(.fixed(44))], spacing: 6) {
+                    ForEach(orderedPlayers, id: \.number) { player in
+                        Button { onSelect(player.number) } label: {
+                            Text(verbatim: "\(player.number)")
+                                .font(.headline.monospacedDigit())
+                                .frame(width: tileWidth, height: 44)
+                                .background(selectedNumber == player.number ? Palette.brandAmber : Color(.secondarySystemBackground),
+                                            in: RoundedRectangle(cornerRadius: 8))
+                                .foregroundStyle(selectedNumber == player.number ? Palette.onBrandAmber : .primary)
+                                .overlay {
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(player.isGoalkeeper || selectedNumber == player.number ? Palette.accent : .clear,
+                                                lineWidth: 2)
+                                }
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(Text(verbatim: "#\(player.number)\(player.name.map { " \($0)" } ?? "")"))
+                        .accessibilityValue(player.isGoalkeeper ? Text("Goalkeeper") : Text(""))
+                        .accessibilityAddTraits(selectedNumber == player.number ? .isSelected : [])
+                    }
+                }
+            }
+            .scrollIndicators(.hidden)
+            .overlay {
+                if players.isEmpty {
+                    Text("No players in this match roster.").font(.caption).foregroundStyle(.secondary)
+                }
+            }
+        }
+        .frame(height: 94)
+    }
+
+    private var orderedPlayers: [Player] {
+        players.sorted {
+            if $0.isGoalkeeper != $1.isGoalkeeper { return !$0.isGoalkeeper }
+            return $0.number < $1.number
+        }
+    }
+
+    private var grid: some View {
         LazyVGrid(columns: columns, spacing: 12) {
             ForEach(players, id: \.number) { player in
                 Button {

@@ -1,234 +1,186 @@
-// ShotEntryContextPanel draws the right-hand context column of shot entry
-// (T3.3 decision ③): the sticky attacking-side toggle, the persistent
-// active rival goalkeeper picker, the optional delivery/approach chips, the
-// pending goal/saved question, an inline validation message, and the
-// last-shot card with Undo.
-//
-// PRESENTATIONAL per CLAUDE.md: every value in is a plain
-// `KeepercentDomain` value or primitive, every action out is a closure —
-// no SwiftData, no `ModelContext`. `SessionView` (the container) owns every
-// `@State` this panel reflects and every domain call its closures trigger.
-//
-// The `Binding(get:set:)` wrapping around `Picker`'s selection is the same
-// pattern `RosterEditorView` already uses for its alerts: it lets a
-// genuinely presentational view (no `@State` of its own) still drive a
-// SwiftUI control that wants a two-way binding, without promoting the
-// underlying value to a `@Binding` the container would have to expose.
-
+// Presentational controls shared by the portrait inset and landscape column.
+// SessionView owns every selection, write, feedback event and Undo identity.
 import SwiftUI
 import KeepercentDomain
 
 struct ShotEntryContextPanel: View {
     let attackingSide: AttackingSide
     let onSelectAttackingSide: (AttackingSide) -> Void
-
-    /// Only this team's goalkeepers (`Player.isGoalkeeper`), per T3.3's
-    /// decision: the active rival goalkeeper is picked from among them,
-    /// never a free number.
     let goalkeepers: [Player]
     let activeGoalkeeperNumber: Int?
     let onSelectGoalkeeper: (Int) -> Void
-
     let delivery: ShotDelivery?
     let onToggleDelivery: (ShotDelivery) -> Void
     let approach: ShotApproach?
     let onToggleApproach: (ShotApproach) -> Void
-
-    /// True once a tap on `GoalView` resolved to an inside-the-frame target
-    /// (`GoalTarget.impliedOutcome == nil`): a post or a miss never reaches
-    /// this state, since `SessionView` records those immediately.
-    let showsOutcomeQuestion: Bool
+    let progress: ShotEntryProgress
+    let selectedOutcome: ShotOutcome?
+    let target: GoalTarget?
     let onChooseOutcome: (ShotOutcome) -> Void
-
-    /// The message from `shotEntryErrorMessage`, shown inline — T3.3
-    /// explicitly asks for this INSTEAD of an alert, since shot entry is
-    /// live and rapid-fire; an alert would force a dismissal tap between
-    /// every mis-tap and the next attempt.
     let errorMessage: String?
-
-    /// `nil` until the first shot of this session is recorded, or after the
-    /// undo card's own ~2 s auto-dismiss (owned by `SessionView`, not this
-    /// view — see `LastShotCardView`'s header comment).
     let lastShotCard: LastShotCardState?
     let onUndo: () -> Void
-    var ownPlayers: [Player] = []
-    var ownPlayerID: UUID? = nil
-    var onSelectOwnPlayer: (UUID?) -> Void = { _ in }
+    let ownGoalkeepers: [Player]
+    let ownGoalkeeperID: UUID?
+    let onSelectOwnGoalkeeper: (UUID?) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Picker(
-                "Attacking Side",
-                selection: Binding(get: { attackingSide }, set: { onSelectAttackingSide($0) })
-            ) {
+        VStack(spacing: 12) {
+            participants
+            Spacer(minLength: 0)
+            feedback
+        }
+    }
+
+    /// Selection is never cleared by hiding a picker. Rival and optional own
+    /// goalkeeper associations remain separate, with their original meaning.
+    var participants: some View {
+        HStack(spacing: 8) {
+            Picker("Attacking Side", selection: Binding(
+                get: { attackingSide }, set: { onSelectAttackingSide($0) }
+            )) {
                 Text("Rival").tag(AttackingSide.rival)
                 Text("Own").tag(AttackingSide.own)
             }
             .pickerStyle(.segmented)
+            .frame(maxWidth: 180)
 
-            if attackingSide == .own { activeGoalkeeperSection }
-            ownAttributionSection
-            chipsSection
-
-            if showsOutcomeQuestion {
-                outcomeQuestion
-            }
-
-            if let errorMessage {
-                Text(errorMessage)
-                    .font(.subheadline)
-                    .foregroundStyle(Palette.error)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .transition(.opacity)
-            }
-
-            Spacer(minLength: 0)
-
-            if let lastShotCard {
-                LastShotCardView(state: lastShotCard, onUndo: onUndo)
-            }
-        }
-        .animation(.default, value: errorMessage)
-    }
-
-    // MARK: - Sections
-
-    /// "Shown at the top of the context panel" per T3.3's decision — placed
-    /// right under the attacking-side toggle, since it is the second piece
-    /// of state that persists across shots and is needed before an
-    /// own-team attack can be recorded at all.
-    private var activeGoalkeeperSection: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Active Rival Goalkeeper")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            if goalkeepers.isEmpty {
-                Text("No goalkeeper marked on this roster yet.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            } else {
-                Picker(
-                    "Active Rival Goalkeeper",
-                    selection: Binding(
-                        get: { activeGoalkeeperNumber },
-                        set: { number in if let number { onSelectGoalkeeper(number) } }
-                    )
-                ) {
+            if attackingSide == .own {
+                Picker("Active Rival Goalkeeper", selection: Binding(
+                    get: { activeGoalkeeperNumber },
+                    set: { if let number = $0 { onSelectGoalkeeper(number) } }
+                )) {
                     Text("None").tag(Int?.none)
-                    ForEach(goalkeepers, id: \.number) { goalkeeper in
-                        Text(verbatim: "#\(goalkeeper.number)\(goalkeeper.name.map { " \($0)" } ?? "")")
-                            .tag(Int?.some(goalkeeper.number))
+                    ForEach(goalkeepers, id: \.number) { player in
+                        Text(verbatim: "#\(player.number)\(player.name.map { " \($0)" } ?? "")")
+                            .tag(Int?.some(player.number))
                     }
                 }
                 .pickerStyle(.menu)
+                .labelsHidden()
+                .accessibilityLabel("Active Rival Goalkeeper")
+            } else {
+                Picker("Own Goalkeeper (optional)", selection: Binding(
+                    get: { ownGoalkeeperID }, set: { onSelectOwnGoalkeeper($0) }
+                )) {
+                    Text("None").tag(UUID?.none)
+                    ForEach(ownGoalkeepers, id: \.id) { player in
+                        Text(verbatim: "#\(player.number)\(player.name.map { " \($0)" } ?? "")")
+                            .tag(player.id)
+                    }
+                }
+                .pickerStyle(.menu)
+                .labelsHidden()
+                .accessibilityLabel("Own Goalkeeper (optional)")
             }
         }
+        .frame(minHeight: 44)
     }
 
-    private var chipsSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Delivery")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                HStack(spacing: 8) {
-                    chip("Jump", isSelected: delivery == .jump) { onToggleDelivery(.jump) }
-                    chip("Standing", isSelected: delivery == .standing) { onToggleDelivery(.standing) }
+    /// The same fixed-height surface occupies the portrait safe-area inset
+    /// and the landscape context column. Card/error transitions never resize it.
+    var feedback: some View {
+        VStack(spacing: 6) {
+            Group {
+                if let errorMessage {
+                    Text(errorMessage).foregroundStyle(Palette.error)
+                        .lineLimit(2).accessibilityLabel(errorMessage)
+                } else {
+                    steps
                 }
             }
+            .font(.caption)
+            .frame(height: 32)
 
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Approach")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                HStack(spacing: 8) {
-                    chip("From Left", isSelected: approach == .fromLeft) { onToggleApproach(.fromLeft) }
-                    chip("Straight", isSelected: approach == .straight) { onToggleApproach(.straight) }
-                    chip("From Right", isSelected: approach == .fromRight) { onToggleApproach(.fromRight) }
+            ScrollView(.horizontal) {
+                HStack(spacing: 6) {
+                    chip("Jump", accessibilityLabel: "Jump", selected: delivery == .jump) { onToggleDelivery(.jump) }
+                    chip("Standing", accessibilityLabel: "Standing", selected: delivery == .standing) { onToggleDelivery(.standing) }
+                    chip("←", accessibilityLabel: "From Left", selected: approach == .fromLeft) { onToggleApproach(.fromLeft) }
+                    chip("↑", accessibilityLabel: "Straight", selected: approach == .straight) { onToggleApproach(.straight) }
+                    chip("→", accessibilityLabel: "From Right", selected: approach == .fromRight) { onToggleApproach(.fromRight) }
                 }
+            }
+            .scrollIndicators(.hidden)
+            .frame(height: 44)
+
+            actionSlot.frame(height: 64)
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity)
+        .frame(height: 172)
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20))
+    }
+
+    private var steps: some View {
+        ScrollView(.horizontal) {
+            HStack(spacing: 8) {
+                if attackingSide == .rival { step("Shooter", .shooter) }
+                else { step("Active Rival Goalkeeper", .rivalGoalkeeper) }
+                step("Origin", .origin)
+                step("Target", .target)
+                if target != nil && target?.impliedOutcome == nil { step("Outcome", .outcome) }
             }
         }
+        .scrollIndicators(.hidden)
+        .accessibilityElement(children: .combine)
     }
 
-    private var ownAttributionSection: some View {
-        let title: LocalizedStringKey = attackingSide == .own ? "Own Shooter (optional)" : "Own Goalkeeper (optional)"
-        return VStack(alignment: .leading, spacing: 4) {
-            Text(title).font(.caption).foregroundStyle(.secondary)
-            Picker(title, selection: Binding(get: { ownPlayerID }, set: onSelectOwnPlayer)) {
-                Text("None").tag(UUID?.none)
-                ForEach(ownPlayers, id: \.id) { player in
-                    Text(verbatim: "#\(player.number)\(player.name.map { " \($0)" } ?? "")")
-                        .tag(player.id)
-                }
-            }
-            .pickerStyle(.menu)
-        }
-    }
-
-    /// "Two large buttons Goal / Saved" per T3.3's decision — full-width and
-    /// bold, since this is the one question every inside-the-frame shot
-    /// must answer before it can be recorded at all.
-    private var outcomeQuestion: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Goal or saved?")
-                .font(.headline)
-            HStack(spacing: 12) {
-                Button { onChooseOutcome(.goal) } label: {
-                    Label("Goal", systemImage: "soccerball")
-                }
-                .tint(Palette.goal)
-                Button { onChooseOutcome(.saved) } label: {
-                    Label("Saved", systemImage: "hand.raised.fill")
-                }
-                .tint(Palette.saved)
-            }
-            .buttonStyle(.borderedProminent)
-            .foregroundStyle(.black)
-            .font(.title3.bold())
-            .frame(maxWidth: .infinity)
-        }
-    }
-
-    /// A chip that toggles: tapping the already-selected chip clears it
-    /// (T3.3 decision, "tap again to clear") — `SessionView` owns that
-    /// comparison (`delivery == value ? nil : value`), this view only
-    /// reports which chip was tapped.
-    private func chip(_ title: LocalizedStringKey, isSelected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+    private func step(_ title: LocalizedStringKey, _ step: ShotEntryProgress.Step) -> some View {
+        HStack(spacing: 3) {
             Text(title)
-                .font(.subheadline.weight(isSelected ? .bold : .regular))
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(
-                    isSelected ? Palette.accent.opacity(0.22) : Color(.tertiarySystemFill),
-                    in: Capsule()
-                )
-                .overlay {
-                    Capsule().stroke(isSelected ? Palette.accent : .clear, lineWidth: 1.5)
+            if !progress.missingSteps.contains(step) {
+                Image(systemName: "checkmark").foregroundStyle(Palette.accent)
+            }
+        }
+    }
+
+    @ViewBuilder private var actionSlot: some View {
+        if let lastShotCard {
+            switch lastShotCard {
+            case .recorded(let text):
+                HStack(spacing: 8) {
+                    Text(text).font(.caption).lineLimit(3)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .accessibilityLabel(text)
+                    Button("Undo", action: onUndo)
+                        .buttonStyle(.borderedProminent).tint(Palette.destructive)
+                        .frame(minHeight: 44)
                 }
+            case .removed:
+                Text("Shot removed").foregroundStyle(.secondary)
+            }
+        } else {
+            HStack(spacing: 12) {
+                outcomeButton("Goal", .goal, symbol: "soccerball")
+                outcomeButton("Saved", .saved, symbol: "hand.raised.fill")
+            }
+            .disabled(target?.impliedOutcome != nil)
+        }
+    }
+
+    private func outcomeButton(_ title: LocalizedStringKey, _ outcome: ShotOutcome, symbol: String) -> some View {
+        Button { onChooseOutcome(outcome) } label: {
+            Label(title, systemImage: symbol).font(.headline)
+                .frame(maxWidth: .infinity, minHeight: 44)
+        }
+        .buttonStyle(.borderedProminent)
+        .tint(selectedOutcome == outcome ? Palette.brandAmber : Color(.secondarySystemFill))
+        .foregroundStyle(selectedOutcome == outcome ? Palette.onBrandAmber : .primary)
+        .accessibilityAddTraits(selectedOutcome == outcome ? .isSelected : [])
+    }
+
+    private func chip(_ title: LocalizedStringKey, accessibilityLabel: LocalizedStringKey,
+                      selected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title).font(.subheadline.weight(selected ? .bold : .regular))
+                .padding(.horizontal, 10).frame(minWidth: 44, minHeight: 44)
+                .background(selected ? Palette.brandAmber : Color(.tertiarySystemFill), in: Capsule())
+                .foregroundStyle(selected ? Palette.onBrandAmber : .primary)
+                .overlay { Capsule().stroke(selected ? Palette.accent : .clear, lineWidth: 1.5) }
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(accessibilityLabel)
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
-}
-
-#Preview("ShotEntryContextPanel") {
-    ShotEntryContextPanel(
-        attackingSide: .rival,
-        onSelectAttackingSide: { _ in },
-        goalkeepers: [Player(number: 12, name: "Sofía", isGoalkeeper: true, handedness: .right)],
-        activeGoalkeeperNumber: 12,
-        onSelectGoalkeeper: { _ in },
-        delivery: .jump,
-        onToggleDelivery: { _ in },
-        approach: nil,
-        onToggleApproach: { _ in },
-        showsOutcomeQuestion: true,
-        onChooseOutcome: { _ in },
-        errorMessage: nil,
-        lastShotCard: .recorded(text: "#7 · left back · crossbar center · POST"),
-        onUndo: {}
-    )
-    .padding()
-    .frame(width: 320)
 }

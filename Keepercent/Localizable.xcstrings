@@ -1,6 +1,41 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Historical roster" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Historical roster" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Plantilla histórica" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Plantel histórico" } }
+      }
+    },
+    "Outcome" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Outcome" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Resultado" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Resultado" } }
+      }
+    },
+    "Target" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Target" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Destino" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Destino" } }
+      }
+    },
+    "Shot recorded" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Shot recorded" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Lanzamiento registrado" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Lanzamiento registrado" } }
+      }
+    },
+    "No players in this match roster." : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No players in this match roster." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "No hay jugadores en la plantilla de este partido." } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "No hay jugadores en el plantel de este partido." } }
+      }
+    },
     "More" : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "More" } },

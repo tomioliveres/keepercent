@@ -22,6 +22,10 @@ struct GoalView: View {
     /// caller — see this file's header comment for why it is not local
     /// `@State`. `nil` draws no highlight.
     let selection: GoalTarget?
+    /// Session entry uses an accessibility-only post action; debug scaffolds
+    /// retain the supplementary button and its existing test contract.
+    let showsPostControl: Bool
+    let selectionColor: Color?
     /// A heatmap tint per goal zone (T4.2's linked view). Empty by default,
     /// which keeps ordinary shot entry byte-for-byte unchanged — this
     /// param only exists so the linked view can paint `StatsEngine`'s
@@ -51,6 +55,8 @@ struct GoalView: View {
     init(
         geometry: GoalGeometry = .standard,
         selection: GoalTarget? = nil,
+        showsPostControl: Bool = true,
+        selectionColor: Color? = nil,
         zoneTints: [GoalZone: Color] = [:],
         zoneLabels: [GoalZone: String] = [:],
         missLabels: [GoalTarget: String] = [:],
@@ -62,6 +68,8 @@ struct GoalView: View {
     ) {
         self.geometry = geometry
         self.selection = selection
+        self.showsPostControl = showsPostControl
+        self.selectionColor = selectionColor
         self.zoneTints = zoneTints
         self.zoneLabels = zoneLabels
         self.missLabels = missLabels
@@ -112,7 +120,7 @@ struct GoalView: View {
     var body: some View {
         VStack(spacing: Self.entryControlSpacing) {
             drawing
-            if isAccessibleAction {
+            if isAccessibleAction && showsPostControl {
                 leftPostTopControl
             }
         }
@@ -170,7 +178,7 @@ struct GoalView: View {
                     // only leftPostTop to the real control below the canvas;
                     // linked inert readings still expose all 27 here.
                     ForEach(GoalTarget.allCases, id: \.code) { target in
-                        if !isAccessibleAction || target != .post(.leftPostTop) {
+                        if !isAccessibleAction || !showsPostControl || target != .post(.leftPostTop) {
                             if let region = mainRegion(for: target, within: normalizedBounds(for: proxy.size)) {
                                 accessibleRegion(target, rect: pixelRect(for: region, in: proxy.size))
                             }
@@ -185,7 +193,9 @@ struct GoalView: View {
     private func accessibleRegion(_ target: GoalTarget, rect: CGRect) -> some View {
         if isAccessibleAction {
             Button(accessibilityName(for: target)) { onTargetTapped(target) }
-                .accessibilityIdentifier("\(accessibilityScope).\(target.code)")
+                .accessibilityIdentifier(target == .post(.leftPostTop) && !showsPostControl
+                    ? "goalSupplementary.\(accessibilityScope).leftPostTop"
+                    : "\(accessibilityScope).\(target.code)")
                 .accessibilityValue(accessibilitySample(for: target))
                 .frame(width: rect.width, height: rect.height)
                 .position(x: rect.midX, y: rect.midY)
@@ -579,8 +589,8 @@ struct GoalView: View {
         let paths = geometry.regions(for: selection, within: bounds).map { Path(pixelRect(for: $0, in: size)) }
         guard let first = paths.first else { return }
         let shape = paths.dropFirst().reduce(first) { $0.union($1) }
-        context.fill(shape, with: .color(HeatmapColor.selectionFill))
-        context.stroke(shape, with: .color(HeatmapColor.selectionOutline), lineWidth: 3)
+        context.fill(shape, with: .color(selectionColor?.opacity(0.3) ?? HeatmapColor.selectionFill))
+        context.stroke(shape, with: .color(selectionColor ?? HeatmapColor.selectionOutline), lineWidth: 3)
     }
 
     // MARK: - Hit-testing

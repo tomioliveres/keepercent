@@ -67,6 +67,8 @@ struct CourtView: View {
     /// caller — see this file's header comment for why it is not local
     /// `@State`. `nil` draws no highlight.
     let selection: ShotOrigin?
+    /// An entry-only override; linked readings retain their existing colours.
+    let selectionColor: Color?
     /// A heatmap tint per origin (T4.2's linked view), keyed the same way
     /// `handleTap` classifies a tap: `.zone` origins tint
     /// `geometry.shape(for:)`, `.sevenMeters` tints
@@ -107,6 +109,7 @@ struct CourtView: View {
     init(
         geometry: CourtGeometry = .standard,
         selection: ShotOrigin? = nil,
+        selectionColor: Color? = nil,
         zoneTints: [ShotOrigin: Color] = [:],
         zoneLabels: [ShotOrigin: String] = [:],
         arrows: [CourtArrow] = [],
@@ -118,6 +121,7 @@ struct CourtView: View {
     ) {
         self.geometry = geometry
         self.selection = selection
+        self.selectionColor = selectionColor
         self.zoneTints = zoneTints
         self.zoneLabels = zoneLabels
         self.arrows = arrows
@@ -516,12 +520,12 @@ struct CourtView: View {
         case .sevenMeters:
             let rect = pixelRect(for: geometry.sevenMeterMarkRegion, in: size)
             let path = Path(rect)
-            context.fill(path, with: .color(HeatmapColor.selectionFill))
-            context.stroke(path, with: .color(HeatmapColor.selectionOutline), lineWidth: 3)
+            context.fill(path, with: .color(selectionColor?.opacity(0.3) ?? HeatmapColor.selectionFill))
+            context.stroke(path, with: .color(selectionColor ?? HeatmapColor.selectionOutline), lineWidth: 3)
         case .zone(let zone):
             let path = zonePath(for: zone, in: size)
-            context.fill(path, with: .color(HeatmapColor.selectionFill))
-            context.stroke(path, with: .color(HeatmapColor.selectionOutline), lineWidth: 3)
+            context.fill(path, with: .color(selectionColor?.opacity(0.3) ?? HeatmapColor.selectionFill))
+            context.stroke(path, with: .color(selectionColor ?? HeatmapColor.selectionOutline), lineWidth: 3)
         }
     }
 

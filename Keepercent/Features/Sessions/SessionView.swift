@@ -58,8 +58,8 @@
 // compact multitasking widths fail the horizontal one. No point floors: the
 // first version required 700 pt of height, measured after the status bar,
 // navigation bar and header, and an iPad Pro 11" in landscape never reached
-// it. Everything else — iPhone in any orientation, iPad portrait — falls
-// back to `verticalLayout` inside a `ScrollView`.
+// it. Portrait entry fits the remaining height, with scrolling reserved for
+// small windows and accessibility text sizes.
 //
 // The middle column's own height split between `GoalView` and `CourtView`
 // is `middleColumnHeights(for:)` — see its doc comment for why it solves
@@ -69,7 +69,7 @@
 //
 // A toolbar button — `.primaryAction`, next to the title — opens
 // `ShotLogView` as a sheet. That is the least disruptive entry point: it
-// works identically in both `threeColumnLayout` and `verticalLayout`
+// works identically in both `threeColumnLayout` and `portraitLayout`
 // without reshaping either one, unlike adding a fourth column (there is no
 // spare width on an iPad Pro 11" — see the layout note above) or a new
 // section in `ShotEntryContextPanel` (already the panel that is fullest on
@@ -93,6 +93,7 @@ struct SessionView: View {
     @Query(sort: \StoredOwnTeam.createdAt) private var ownTeams: [StoredOwnTeam]
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.verticalSizeClass) private var verticalSizeClass
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     // Sticky / persistent across shots (T3.3 decision ②).
     @State private var attackingSide: AttackingSide = .rival
@@ -114,6 +115,8 @@ struct SessionView: View {
     @State private var lastShotCard: LastShotCardState?
     @State private var lastShotID: PersistentIdentifier?
     @State private var saveHapticTrigger = false
+    @State private var undoHapticTrigger = false
+    @State private var isShowingHistoryInfo = false
     @State private var isPresentingShotLog = false
     @State private var isPresentingMatchRoster = false
     @State private var rosterDraft: [Player] = []
@@ -132,26 +135,30 @@ struct SessionView: View {
     private var availableOwnTeam: StoredOwnTeam? { session.ownTeam ?? ownTeams.first }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            header
-
-            GeometryReader { geo in
-                Group {
-                    if isThreeColumnLayout(for: geo.size) {
-                        threeColumnLayout(availableHeight: geo.size.height)
-                    } else {
-                        ScrollView {
-                            verticalLayout
-                        }
-                    }
+        GeometryReader { geo in
+            Group {
+                if isThreeColumnLayout(for: geo.size) {
+                    threeColumnLayout(availableHeight: geo.size.height)
+                } else {
+                    portraitLayout
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
-        .padding()
+        .padding(12)
         .navigationTitle(team.name)
+        .navigationSubtitle(headerSubtitle)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            if session.historyWasBackfilled == true {
+                ToolbarItem(placement: .secondaryAction) {
+                    Button("Historical roster", systemImage: "info.circle") { isShowingHistoryInfo = true }
+                        .popover(isPresented: $isShowingHistoryInfo) {
+                            Text("Historical roster uses the player details available when this store was upgraded.")
+                                .padding()
+                        }
+                }
+            }
             ToolbarItem(placement: .primaryAction) {
                 Button {
                     rosterDraft = matchPlayers
@@ -182,6 +189,8 @@ struct SessionView: View {
                               ownLockedIDs: Set(ownMatchPlayers.compactMap(\.id)), ownIsAttached: session.ownTeam != nil)
         }
         .sensoryFeedback(.success, trigger: saveHapticTrigger)
+        .sensoryFeedback(.error, trigger: errorMessage)
+        .sensoryFeedback(.impact(weight: .light), trigger: undoHapticTrigger)
         .task(id: lastShotCard) {
             guard case .removed = lastShotCard else { return }
             try? await Task.sleep(for: .seconds(2))
@@ -202,21 +211,6 @@ struct SessionView: View {
     }
 
     // MARK: - Header
-
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(team.name)
-                .font(.title3.bold())
-            Text(headerSubtitle)
-                .font(.subheadline)
-                .foregroundStyle(.primary)
-            if session.historyWasBackfilled == true {
-                Text("Historical roster uses the player details available when this store was upgraded.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
 
     private var headerSubtitle: String {
         let kindText = session.kind.map(sessionKindLabel) ?? String(localized: "Unknown kind")
@@ -239,7 +233,7 @@ struct SessionView: View {
         HStack(alignment: .top, spacing: 24) {
             VStack(alignment: .leading, spacing: 12) {
                 Text("Shooter").font(.headline)
-                shooterContent
+                shooterContent(compact: false)
             }
             .frame(maxWidth: .infinity, alignment: .topLeading)
 
@@ -251,42 +245,54 @@ struct SessionView: View {
         }
     }
 
-    /// Portrait iPad and any iPhone orientation: everything in one
-    /// scrollable column. The order mirrors the landscape layout's
-    /// left-to-right reading order turned top-to-bottom — shooter, then the
-    /// vertical goal/court path (§5.2), then the context panel, which ends
-    /// with the last-shot card: the outcome of the flow reads last here
-    /// too, not just visually to the right.
-    private var verticalLayout: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Shooter").font(.headline)
-                shooterContent
+    /// Fit the drawings to the space left by participants, two player rows
+    /// and the constant bottom inset. Only constrained windows/text sizes scroll.
+    private var portraitLayout: some View {
+        GeometryReader { proxy in
+            let drawingHeight = proxy.size.height - 44 - 94 - 16
+            if drawingHeight >= 220 && !dynamicTypeSize.isAccessibilitySize {
+                VStack(spacing: 8) {
+                    contextPanel.participants
+                    shooterContent(compact: true)
+                    middleColumn(availableHeight: drawingHeight)
+                }
+            } else {
+                ScrollView {
+                    VStack(spacing: 8) {
+                        contextPanel.participants
+                        shooterContent(compact: true)
+                        middleColumn(availableHeight: max(300, proxy.size.width / goalOverallAspectRatio
+                            + proxy.size.width / CourtGeometry.standard.aspectRatio + middleColumnSpacing))
+                    }
+                }
             }
-
-            GoalView(selection: selectedTarget, onTargetTapped: selectTarget)
-            CourtView(selection: selectedOrigin, onOriginTapped: selectOrigin)
-
-            contextPanel
         }
-        .padding(.bottom, 24)
+        .safeAreaInset(edge: .bottom, spacing: 8) { contextPanel.feedback }
     }
 
     @ViewBuilder
-    private var shooterContent: some View {
+    private func shooterContent(compact: Bool) -> some View {
         if attackingSide == .rival {
             ShooterGridColumn(
                 players: matchPlayers,
                 selectedNumber: selectedShooterNumber,
                 onSelect: {
+                    beginEntry()
                     selectedShooterNumber = $0
                     attemptRecord()
-                }
+                },
+                isCompact: compact
             )
+            .accessibilityLabel("Shooter")
         } else {
-            Text("Own shooter is optional. The active rival goalkeeper is still required.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+            ShooterGridColumn(players: ownMatchPlayers,
+                selectedNumber: ownMatchPlayers.first { $0.id == selectedOwnShooterID }?.number,
+                onSelect: { number in
+                    beginEntry()
+                    let id = ownMatchPlayers.first { $0.number == number }?.id
+                    selectedOwnShooterID = selectedOwnShooterID == id ? nil : id
+                }, isCompact: compact)
+                .accessibilityLabel("Own Shooter (optional)")
         }
     }
 
@@ -306,33 +312,32 @@ struct SessionView: View {
     /// (docs/mvp.md §5.2) reading as one column instead of two
     /// differently-sized rectangles side by side in the middle.
     private func middleColumnHeights(for totalHeight: CGFloat) -> (goal: CGFloat, court: CGFloat) {
-        // Reserve the real supplementary post control outside the canvas.
-        // Solve equal drawing widths using only the remaining drawing space.
-        let controlHeight = GoalView.entryControlMinimumHeight + GoalView.entryControlSpacing
-        let available = max(totalHeight - middleColumnSpacing - controlHeight, 0)
+        let available = max(totalHeight - middleColumnSpacing, 0)
         let courtAspect = CourtGeometry.standard.aspectRatio
         let ratio = goalOverallAspectRatio / courtAspect
         let goalHeight = available / (1 + ratio)
-        return (goal: goalHeight + controlHeight, court: available - goalHeight)
+        return (goal: goalHeight, court: available - goalHeight)
     }
 
     private func middleColumn(availableHeight: CGFloat) -> some View {
         let heights = middleColumnHeights(for: availableHeight)
         return VStack(spacing: middleColumnSpacing) {
-            GoalView(selection: selectedTarget, onTargetTapped: selectTarget)
+            GoalView(selection: selectedTarget, showsPostControl: false, selectionColor: Palette.brandAmber,
+                     onTargetTapped: selectTarget)
                 .frame(height: heights.goal)
-            CourtView(selection: selectedOrigin, onOriginTapped: selectOrigin)
+            CourtView(selection: selectedOrigin, selectionColor: Palette.brandAmber, onOriginTapped: selectOrigin)
                 .frame(height: heights.court)
         }
     }
 
-    private var contextPanel: some View {
+    private var contextPanel: ShotEntryContextPanel {
         ShotEntryContextPanel(
             attackingSide: attackingSide,
-            onSelectAttackingSide: { attackingSide = $0 },
+            onSelectAttackingSide: { beginEntry(); attackingSide = $0 },
             goalkeepers: matchPlayers.filter(\.isGoalkeeper),
             activeGoalkeeperNumber: activeRivalGoalkeeperNumber,
             onSelectGoalkeeper: {
+                beginEntry()
                 activeRivalGoalkeeperNumber = $0
                 attemptRecord()
             },
@@ -340,20 +345,20 @@ struct SessionView: View {
             onToggleDelivery: toggleDelivery,
             approach: approach,
             onToggleApproach: toggleApproach,
-            showsOutcomeQuestion: selectedTarget != nil && selectedTarget?.impliedOutcome == nil,
+            progress: entryProgress,
+            selectedOutcome: selectedOutcome,
+            target: selectedTarget,
             onChooseOutcome: {
+                beginEntry()
                 selectedOutcome = $0
                 attemptRecord()
             },
             errorMessage: errorMessage,
             lastShotCard: lastShotCard,
             onUndo: undoLastShot,
-            ownPlayers: attackingSide == .own ? ownMatchPlayers : ownMatchPlayers.filter(\.isGoalkeeper),
-            ownPlayerID: attackingSide == .own ? selectedOwnShooterID : activeOwnGoalkeeperID,
-            onSelectOwnPlayer: { id in
-                if attackingSide == .own { selectedOwnShooterID = id }
-                else { activeOwnGoalkeeperID = id }
-            }
+            ownGoalkeepers: ownMatchPlayers.filter(\.isGoalkeeper),
+            ownGoalkeeperID: activeOwnGoalkeeperID,
+            onSelectOwnGoalkeeper: { beginEntry(); activeOwnGoalkeeperID = $0 }
         )
     }
 
@@ -376,6 +381,7 @@ struct SessionView: View {
     }
 
     private func selectOrigin(_ origin: ShotOrigin, _ point: CourtPoint?) {
+        beginEntry()
         errorMessage = nil
         selectedOrigin = origin
         switch origin {
@@ -390,6 +396,7 @@ struct SessionView: View {
     }
 
     private func selectTarget(_ target: GoalTarget) {
+        beginEntry()
         errorMessage = nil
         selectedTarget = target
         // Implied outcomes belong to the target, never to a stale explicit
@@ -401,14 +408,22 @@ struct SessionView: View {
     /// Tap-again-to-clear (T3.3 decision): the container owns the
     /// comparison, the chip only reports which value was tapped.
     private func toggleDelivery(_ value: ShotDelivery) {
+        beginEntry()
         delivery = (delivery == value) ? nil : value
     }
 
     private func toggleApproach(_ value: ShotApproach) {
+        beginEntry()
         approach = (approach == value) ? nil : value
     }
 
     // MARK: - Write path
+
+    private func beginEntry() {
+        errorMessage = nil
+        lastShotCard = nil
+        lastShotID = nil
+    }
 
     private func attemptRecord() {
         let progress = entryProgress
@@ -473,6 +488,7 @@ struct SessionView: View {
         }
 
         lastShotCard = .recorded(text: ShotSummary(shot: shot).text)
+        AccessibilityNotification.Announcement(String(localized: "Shot recorded") + ". " + ShotSummary(shot: shot).text).post()
         lastShotID = stored.persistentModelID
         saveHapticTrigger.toggle()
         resetEntryState()
@@ -549,6 +565,8 @@ struct SessionView: View {
         // independent guards against a second delete.
         self.lastShotID = nil
         lastShotCard = .removed
+        undoHapticTrigger.toggle()
+        AccessibilityNotification.Announcement(String(localized: "Shot removed")).post()
     }
 
     /// Called by `ShotLogView` after it deletes a shot (see this file's
