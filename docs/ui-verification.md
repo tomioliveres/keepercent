@@ -9,6 +9,7 @@ Use the installed `verify-interface` skill for shared evidence and recovery rule
 - Use the existing detached `../keepercent-verify` checkout for that exact SHA. Confirm it is clean, is not in use by another verifier, and is a worktree of this repository before changing its revision. Never reset or discard unrelated work. Recheck task/SHA before and after recording results.
 - Project: `Keepercent.xcodeproj`; scheme: `Keepercent`; app identifier: `dev.tomioliveres.keepercent`. Select available iOS/iPadOS 26+ targets; do not install runtimes.
 - Use `-KPScreen <screen> -KPData <demo|empty>` only when supported by the target commit. These launch flags are not proof of an isolated store: confirm the selected route uses disposable/in-memory data before interacting. Never erase or overwrite a personal store to prepare cases.
+- For T77-ORPHAN, use `-KPScreen teams -KPData orphanSession` on a supporting target. This Debug-only fixture inserts one live session at `DemoData.sessionDate`, with no rival and zero shots, into the argument-mode in-memory store; it never deletes a rival or opens a personal store. Matches should show Deleted Rival, the date/kind/zero-shot count and the unavailable-entry explanation. Tapping the row must not open shot entry. Relaunching recreates the fixture; Rivals and My Club are empty. Existing `demo`, `empty`, `demoOwnRoster` and `emptyGoalkeeper` modes are unchanged.
 
 ## Runtime adapters
 

@@ -33,6 +33,21 @@ struct KeepercentApp: App {
                 } catch {
                     fatalError("Failed to seed the own-roster debug fixture: \(error)")
                 }
+            } else if debugLaunch.data == .orphanSession {
+                // Represent the retained state after a rival is deleted, without
+                // deleting anything or opening the user's persistent store.
+                isolated.mainContext.insert(
+                    StoredSession(
+                        date: DemoData.sessionDate,
+                        kindCode: SessionKind.live.rawValue,
+                        rivalTeam: nil
+                    )
+                )
+                do {
+                    try isolated.mainContext.save()
+                } catch {
+                    fatalError("Failed to seed the orphan-session debug fixture: \(error)")
+                }
             } else if debugLaunch.data == .emptyGoalkeeper {
                 let goalkeeper = StoredPlayer(
                     number: 1, name: nil, isGoalkeeper: true, handednessCode: nil

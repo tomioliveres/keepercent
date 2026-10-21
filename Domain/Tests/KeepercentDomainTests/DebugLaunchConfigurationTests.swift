@@ -3,6 +3,13 @@ import Testing
 
 @Suite("Debug launch configuration")
 struct DebugLaunchConfigurationTests {
+    @Test("The orphan-session fixture opens Matches without falling back to demo")
+    func orphanSessionVerificationMode() {
+        let configuration = DebugLaunchConfiguration.parse(screen: nil, data: "orphanSession")
+        #expect(configuration?.screen == .teams)
+        #expect(configuration?.data.rawValue == "orphanSession")
+    }
+
     @Test("The own-roster verification mode does not fall back to rival-only demo")
     func ownRosterVerificationMode() {
         let configuration = DebugLaunchConfiguration.parse(screen: nil, data: "demoOwnRoster")
@@ -28,7 +35,7 @@ struct DebugLaunchConfigurationTests {
 
     @Test("All data modes are selectable without conflating empty stores", arguments: [
         ("demo", DebugLaunchData.demo), ("demoOwnRoster", .demoOwnRoster), ("empty", .empty),
-        ("emptyGoalkeeper", .emptyGoalkeeper)
+        ("emptyGoalkeeper", .emptyGoalkeeper), ("orphanSession", .orphanSession)
     ])
     func dataValues(raw: String, expected: DebugLaunchData) {
         #expect(DebugLaunchConfiguration.parse(screen: "teams", data: raw)?.data == expected)
