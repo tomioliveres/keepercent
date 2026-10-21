@@ -1,6 +1,13 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Set Up My Club" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Set Up My Club" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Configurar mi club" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Configurar mi club" } }
+      }
+    },
     "Roster" : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Roster" } },

@@ -22,17 +22,11 @@ struct AppNavigationView: View {
             Tab("My Club", systemImage: "shield") {
                 NavigationStack {
                     MyClubView()
-                        .toolbar {
-                            ToolbarItem(placement: .primaryAction) {
-                                Button("Own Team Roster") { isShowingOwnRoster = true }
-                            }
-                        }
                 }
             }
         }
         .tabViewStyle(.sidebarAdaptable)
         .tabBarMinimizeBehavior(.onScrollDown)
-        .sheet(isPresented: $isShowingOwnRoster) { OwnTeamRosterView() }
         .sheet(isPresented: $isShowingScaffold) {
             NavigationStack {
                 ContentView()
@@ -58,8 +52,6 @@ struct AppNavigationView: View {
             Button("OK", role: .cancel) { seedErrorMessage = nil }
         } message: { Text(seedErrorMessage ?? "") }
     }
-
-    @State private var isShowingOwnRoster = false
 
     @ToolbarContentBuilder
     private var debugMenu: some ToolbarContent {
