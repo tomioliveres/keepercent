@@ -12,10 +12,10 @@
 //
 //   1. Pick a shooter (rival attack) or rely on the active rival goalkeeper
 //      (own attack) — `selectedShooterNumber` / `activeRivalGoalkeeperNumber`.
-//   2. Tap the court -> `selectOrigin` records the raw point or the 7 m flag.
-//   3. Tap the goal -> `selectTarget`; a post/miss resolves immediately,
-//      an inside target waits for the Goal/Saved buttons.
-//   4. `attemptRecord` calls `Shot.record` FIRST (typed `ShotEntryError`,
+//   2. Choose origin, target and outcome in any order. A post/miss implies
+//      the outcome; incomplete entries remain pending in `ShotEntryProgress`.
+//   3. Every required selection checks completeness without saving a draft.
+//   4. When complete, `attemptRecord` calls `Shot.record` FIRST (typed `ShotEntryError`,
 //      exhaustively switched by `shotEntryErrorMessage`); nothing is
 //      written to SwiftData unless that succeeds.
 //   5. `persist` builds exactly ONE `StoredShot`, saves, and on success
@@ -106,6 +106,7 @@ struct SessionView: View {
     @State private var isSevenMeters = false
     @State private var selectedOrigin: ShotOrigin?
     @State private var selectedTarget: GoalTarget?
+    @State private var selectedOutcome: ShotOutcome?
     @State private var delivery: ShotDelivery?
     @State private var approach: ShotApproach?
 
@@ -196,6 +197,7 @@ struct SessionView: View {
             if newValue == .own { selectedShooterNumber = nil }
             selectedOwnShooterID = nil
             activeOwnGoalkeeperID = nil
+            attemptRecord()
         }
     }
 
@@ -276,7 +278,10 @@ struct SessionView: View {
             ShooterGridColumn(
                 players: matchPlayers,
                 selectedNumber: selectedShooterNumber,
-                onSelect: { selectedShooterNumber = $0 }
+                onSelect: {
+                    selectedShooterNumber = $0
+                    attemptRecord()
+                }
             )
         } else {
             Text("Own shooter is optional. The active rival goalkeeper is still required.")
@@ -327,13 +332,19 @@ struct SessionView: View {
             onSelectAttackingSide: { attackingSide = $0 },
             goalkeepers: matchPlayers.filter(\.isGoalkeeper),
             activeGoalkeeperNumber: activeRivalGoalkeeperNumber,
-            onSelectGoalkeeper: { activeRivalGoalkeeperNumber = $0 },
+            onSelectGoalkeeper: {
+                activeRivalGoalkeeperNumber = $0
+                attemptRecord()
+            },
             delivery: delivery,
             onToggleDelivery: toggleDelivery,
             approach: approach,
             onToggleApproach: toggleApproach,
             showsOutcomeQuestion: selectedTarget != nil && selectedTarget?.impliedOutcome == nil,
-            onChooseOutcome: { attemptRecord(outcome: $0) },
+            onChooseOutcome: {
+                selectedOutcome = $0
+                attemptRecord()
+            },
             errorMessage: errorMessage,
             lastShotCard: lastShotCard,
             onUndo: undoLastShot,
@@ -358,6 +369,12 @@ struct SessionView: View {
         return matchPlayers.first { $0.number == number }
     }
 
+    private var entryProgress: ShotEntryProgress {
+        ShotEntryProgress(attackingSide: attackingSide, shooter: selectedShooter,
+            activeRivalGoalkeeper: activeRivalGoalkeeper, originPoint: originPoint,
+            isSevenMeters: isSevenMeters, target: selectedTarget, outcome: selectedOutcome)
+    }
+
     private func selectOrigin(_ origin: ShotOrigin, _ point: CourtPoint?) {
         errorMessage = nil
         selectedOrigin = origin
@@ -369,17 +386,16 @@ struct SessionView: View {
             isSevenMeters = false
             originPoint = point
         }
+        attemptRecord()
     }
 
     private func selectTarget(_ target: GoalTarget) {
         errorMessage = nil
         selectedTarget = target
-        // A post or a miss fully resolves the outcome in one tap
-        // (`GoalTarget.impliedOutcome`); only an inside target waits for
-        // the Goal/Saved buttons in `ShotEntryContextPanel`.
-        if let implied = target.impliedOutcome {
-            attemptRecord(outcome: implied)
-        }
+        // Implied outcomes belong to the target, never to a stale explicit
+        // Goal/Saved choice when the user changes a pending target.
+        if target.impliedOutcome != nil { selectedOutcome = nil }
+        attemptRecord()
     }
 
     /// Tap-again-to-clear (T3.3 decision): the container owns the
@@ -394,8 +410,14 @@ struct SessionView: View {
 
     // MARK: - Write path
 
-    private func attemptRecord(outcome: ShotOutcome) {
-        guard let target = selectedTarget else { return }
+    private func attemptRecord() {
+        let progress = entryProgress
+        guard progress.isComplete, let target = selectedTarget,
+              let outcome = progress.resolvedOutcome else {
+            errorMessage = progress.missingSteps == [.rivalGoalkeeper]
+                ? shotEntryErrorMessage(ShotEntryError.missingRivalGoalkeeper) : nil
+            return
+        }
         errorMessage = nil
 
         let shot: Shot
@@ -466,6 +488,7 @@ struct SessionView: View {
         isSevenMeters = false
         selectedOrigin = nil
         selectedTarget = nil
+        selectedOutcome = nil
         delivery = nil
         approach = nil
     }

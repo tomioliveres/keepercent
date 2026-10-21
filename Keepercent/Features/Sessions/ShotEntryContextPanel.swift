@@ -66,7 +66,7 @@ struct ShotEntryContextPanel: View {
             }
             .pickerStyle(.segmented)
 
-            activeGoalkeeperSection
+            if attackingSide == .own { activeGoalkeeperSection }
             ownAttributionSection
             chipsSection
 
