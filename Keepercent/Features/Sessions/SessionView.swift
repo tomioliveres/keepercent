@@ -188,6 +188,8 @@ struct SessionView: View {
             lastShotCard = nil
         }
         .onChange(of: attackingSide) { _, newValue in
+            // Entry requirements change with the side; the previous error is stale.
+            errorMessage = nil
             // Own-team shots carry no shooter (`Shot.record` would drop one
             // anyway); clearing it here keeps the shooter grid's own
             // selection highlight from pointing at a stale choice.
