@@ -79,7 +79,8 @@ import KeepercentDomain
     }
 
     @Test func diskReopenPreservesScopedDeletesAndRollsBackFailedSaves() throws {
-        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("keepercent-t73-\(UUID())")
+        let temporaryRoot = try #require(ProcessInfo.processInfo.environment["TMPDIR"])
+        let directory = URL(fileURLWithPath: temporaryRoot).appendingPathComponent("keepercent-t73-\(UUID())")
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         print("T7.3 disposable store: \(directory.path)")
         let schema = Schema(KeepercentSchema.models)
