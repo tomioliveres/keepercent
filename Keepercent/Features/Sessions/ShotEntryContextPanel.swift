@@ -75,7 +75,12 @@ struct ShotEntryContextPanel: View {
             }
         }
         .frame(minHeight: 44)
+        .dynamicTypeSize(...fixedGeometryTypeSizeLimit)
     }
+
+    /// Controls drawn in fixed-height surfaces stop growing at the largest
+    /// non-accessibility size; the screen scrolls instead of truncating them.
+    private var fixedGeometryTypeSizeLimit: DynamicTypeSize { .xxxLarge }
 
     /// The same fixed-height surface occupies the portrait safe-area inset
     /// and the landscape context column. Card/error transitions never resize it.
@@ -109,6 +114,7 @@ struct ShotEntryContextPanel: View {
         .padding(10)
         .frame(maxWidth: .infinity)
         .frame(height: 172)
+        .dynamicTypeSize(...fixedGeometryTypeSizeLimit)
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20))
     }
 

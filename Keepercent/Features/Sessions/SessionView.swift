@@ -160,10 +160,12 @@ struct SessionView: View {
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
-                            .lineLimit(2)
+                            .lineLimit(3)
                             .minimumScaleFactor(0.85)
                             .fixedSize(horizontal: false, vertical: true)
                     }
+                    // The navigation bar has a fixed height: keep the header at the default size.
+                    .dynamicTypeSize(...DynamicTypeSize.large)
                     .accessibilityElement(children: .combine)
                 }
             }

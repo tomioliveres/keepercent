@@ -53,6 +53,7 @@ struct ShooterGridColumn: View {
                                 }
                         }
                         .buttonStyle(.plain)
+                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                         .accessibilityLabel(Text(verbatim: "#\(player.number)\(player.name.map { " \($0)" } ?? "")"))
                         .accessibilityValue(player.isGoalkeeper ? Text("Goalkeeper") : Text(""))
                         .accessibilityAddTraits(selectedNumber == player.number ? .isSelected : [])
