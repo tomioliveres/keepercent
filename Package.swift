@@ -14,7 +14,8 @@ let package = Package(
         .target(name: "ProductionStore", dependencies: [.product(name: "KeepercentDomain", package: "Domain")],
                 path: "Keepercent/Persistence", exclude: ["DemoDataSeeder.swift", "ScopedMatchData.swift"],
                 sources: ["StoredRivalTeam.swift", "StoredPlayer.swift", "StoredSession.swift", "StoredShot.swift",
-                           "StoredMatchParticipant.swift", "StoredOwnTeam.swift", "MatchHistoryUpgrade.swift", "KeepercentSchema.swift"]),
+                            "StoredMatchParticipant.swift", "StoredOwnTeam.swift", "MatchHistoryUpgrade.swift", "KeepercentSchema.swift",
+                            "ScoutingDataActions.swift"]),
         .testTarget(name: "StoreCompatibilityTests", dependencies: ["ProductionStore", .product(name: "KeepercentDomain", package: "Domain")],
                     path: "Tools/StoreCompatibility/Tests")
     ],

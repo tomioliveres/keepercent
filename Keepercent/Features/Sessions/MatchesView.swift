@@ -21,24 +21,7 @@ struct MatchesView: View {
                 }
             } else {
                 List(sessions) { session in
-                    if let rival = session.rivalTeam {
-                        Button { selectedSession = session } label: {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(rival.name).font(.headline)
-                                sessionRow(session)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                    } else {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Deleted Rival").font(.headline)
-                            sessionRow(session)
-                            Text("Shot entry is unavailable because this rival was deleted.")
-                                .font(.caption).foregroundStyle(.secondary)
-                        }
-                    }
+                    ManagedMatchRow(session: session) { selectedSession = session }
                 }
             }
         }
@@ -62,9 +45,6 @@ struct MatchesView: View {
         }
     }
 
-    private func sessionRow(_ session: StoredSession) -> some View {
-        SessionRowView(kind: session.kind, matchDate: session.date, shotCount: session.shots.count)
-    }
 }
 
 /// Modal navigation chrome stays outside entry, preserving its layout and writes.

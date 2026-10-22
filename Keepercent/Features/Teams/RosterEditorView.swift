@@ -213,16 +213,9 @@ struct RosterEditorView: View {
             } else {
                 VStack(spacing: 0) {
                     ForEach(sortedSessions, id: \.persistentModelID) { session in
-                        Button {
+                        ManagedMatchRow(session: session, showsRival: false) {
                             selectedSession = session
-                        } label: {
-                            SessionRowView(
-                                kind: session.kind,
-                                matchDate: session.date,
-                                shotCount: session.shots.count
-                            )
                         }
-                        .buttonStyle(.plain)
                         .padding(.horizontal)
 
                         if session.persistentModelID != sortedSessions.last?.persistentModelID {

@@ -12,6 +12,7 @@ struct NewTeamSheet: View {
     @Binding var name: String
     let errorMessage: String?
     let onCreate: () -> Void
+    var isRenaming = false
 
     @Environment(\.dismiss) private var dismiss
 
@@ -30,13 +31,13 @@ struct NewTeamSheet: View {
                     }
                 }
             }
-            .navigationTitle("New Rival Team")
+            .navigationTitle(isRenaming ? "Rename Team" : "New Rival Team")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Create", action: onCreate)
+                    Button(isRenaming ? "Save" : "Create", action: onCreate)
                 }
             }
         }
