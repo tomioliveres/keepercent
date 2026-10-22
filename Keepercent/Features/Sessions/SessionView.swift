@@ -147,9 +147,26 @@ struct SessionView: View {
         }
         .padding(12)
         .navigationTitle(team.name)
-        .navigationSubtitle(headerSubtitle)
+        .navigationSubtitle(horizontalSizeClass == .compact ? "" : headerSubtitle)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            if horizontalSizeClass == .compact {
+                // The system subtitle truncates on a phone ("En directo · 20 sept 20…"),
+                // hiding the year and the live shot count; this one may wrap.
+                ToolbarItem(placement: .principal) {
+                    VStack(spacing: 0) {
+                        Text(team.name).font(.headline).lineLimit(1)
+                        Text(headerSubtitle)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.85)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .accessibilityElement(children: .combine)
+                }
+            }
             if session.historyWasBackfilled == true {
                 ToolbarItem(placement: .secondaryAction) {
                     Button("Historical roster", systemImage: "info.circle") { isShowingHistoryInfo = true }
@@ -214,7 +231,7 @@ struct SessionView: View {
 
     private var headerSubtitle: String {
         let kindText = session.kind.map(sessionKindLabel) ?? String(localized: "Unknown kind")
-        let dateText = session.date.formatted(date: .abbreviated, time: .omitted)
+        let dateText = session.date.formatted(date: horizontalSizeClass == .compact ? .numeric : .abbreviated, time: .omitted)
         let count = session.shots.count
         return String(localized: "\(kindText) · \(dateText) · \(count) shots recorded")
     }
