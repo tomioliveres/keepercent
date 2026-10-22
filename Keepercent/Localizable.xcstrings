@@ -1,6 +1,153 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Edit Roster" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Edit Roster" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Editar plantilla" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Editar plantel" } }
+      }
+    },
+    "Done Editing" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Done Editing" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Terminar edición" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Terminar edición" } }
+      }
+    },
+    "Tap a player to edit." : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Tap a player to edit." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Toca un jugador para editarlo." } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Toca un jugador para editarlo." } }
+      }
+    },
+    "Select All" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Select All" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Seleccionar todos" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Seleccionar todos" } }
+      }
+    },
+    "Select None" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Select None" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Deseleccionar todos" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Deseleccionar todos" } }
+      }
+    },
+    "Locked" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Locked" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Bloqueado" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Bloqueado" } }
+      }
+    },
+    "Match Actions" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Match Actions" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Acciones del partido" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Acciones del partido" } }
+      }
+    },
+    "Edit shirt number for %@" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Edit shirt number for %@" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Editar dorsal de %@" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Editar número de camiseta de %@" } }
+      }
+    },
+    "Actions for %@" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Actions for %@" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Acciones de %@" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Acciones de %@" } }
+      }
+    },
+    "Already belongs to this match. Inclusion and shirt number cannot be changed." : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Already belongs to this match. Inclusion and shirt number cannot be changed." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Ya pertenece a este partido. No se pueden cambiar su inclusión ni su dorsal." } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Ya pertenece a este partido. No se pueden cambiar su inclusión ni su número de camiseta." } }
+      }
+    },
+    "Locked players already belong to this match. Their inclusion and shirt numbers cannot be changed." : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Locked players already belong to this match. Their inclusion and shirt numbers cannot be changed." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Los jugadores bloqueados ya pertenecen a este partido. No se pueden cambiar su inclusión ni sus dorsales." } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Los jugadores bloqueados ya pertenecen a este partido. No se pueden cambiar su inclusión ni sus números de camiseta." } }
+      }
+    },
+    "No players available. Add players to the club roster first." : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No players available. Add players to the club roster first." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "No hay jugadores disponibles. Añade jugadores a la plantilla del club primero." } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "No hay jugadores disponibles. Agrega jugadores al plantel del club primero." } }
+      }
+    },
+    "Rename" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Rename" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Renombrar" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Renombrar" } }
+      }
+    },
+    "Rename Team" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Rename Team" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Renombrar equipo" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Renombrar equipo" } }
+      }
+    },
+    "Delete Team" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete Team" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Eliminar equipo" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Eliminar equipo" } }
+      }
+    },
+    "Edit Match" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Edit Match" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Editar partido" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Editar partido" } }
+      }
+    },
+    "Delete Match" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete Match" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Eliminar partido" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Eliminar partido" } }
+      }
+    },
+    "Delete this match?" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete this match?" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "¿Eliminar este partido?" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "¿Eliminar este partido?" } }
+      }
+    },
+    "Delete this team?" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete this team?" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "¿Eliminar este equipo?" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "¿Eliminar este equipo?" } }
+      }
+    },
+    "This permanently deletes this match, all its recorded shots and its participant snapshots. This cannot be undone." : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "This permanently deletes this match, all its recorded shots and its participant snapshots. This cannot be undone." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Se eliminarán definitivamente este partido, todos sus lanzamientos y sus registros de participantes. Esta acción no se puede deshacer." } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Se eliminarán definitivamente este partido, todos sus lanzamientos y sus registros de participantes. Esta acción no se puede deshacer." } }
+      }
+    },
+    "This permanently deletes %@ and its club roster. Matches, recorded shots and match participant snapshots are preserved, but will show Deleted Rival. This cannot be undone." : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "This permanently deletes %@ and its club roster. Matches, recorded shots and match participant snapshots are preserved, but will show Deleted Rival. This cannot be undone." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Se eliminarán definitivamente %@ y su plantilla del club. Los partidos, lanzamientos y registros de participantes se conservarán, pero mostrarán Rival eliminado. Esta acción no se puede deshacer." } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Se eliminarán definitivamente %@ y su plantel del club. Los partidos, lanzamientos y registros de participantes se conservarán, pero mostrarán Rival eliminado. Esta acción no se puede deshacer." } }
+      }
+    },
     "Historical roster" : {
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Historical roster" } },

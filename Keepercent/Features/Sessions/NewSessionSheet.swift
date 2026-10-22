@@ -37,12 +37,6 @@ struct NewSessionSheet: View {
     var body: some View {
         NavigationStack {
             Form {
-                if let rivalName {
-                    Section("Rival") { Text(rivalName) }
-                }
-                MatchRosterSelection(available: available, players: $participants)
-                OwnMatchRosterSelection(teamName: ownTeamName, available: ownAvailable,
-                                        included: $includeOwn, players: $ownParticipants)
                 Section {
                     Picker("Kind", selection: $kind) {
                         ForEach(SessionKind.allCases, id: \.self) { kind in
@@ -62,6 +56,12 @@ struct NewSessionSheet: View {
                 } footer: {
                     Text("The date the match was actually played, not today's date — for a video session that can be earlier.")
                 }
+                if let rivalName {
+                    Section("Rival") { Text(rivalName) }
+                }
+                MatchRosterSelection(available: available, players: $participants)
+                OwnMatchRosterSelection(teamName: ownTeamName, available: ownAvailable,
+                                        included: $includeOwn, players: $ownParticipants)
             }
             .navigationTitle("New Match")
             .toolbar {

@@ -8,6 +8,8 @@ struct MatchRosterSelection: View {
     var lockedIDs: Set<UUID> = []
     var title: LocalizedStringKey = "Match roster"
     @State private var draft: MatchRosterDraft
+    @State private var editingID: UUID?
+    @State private var numberText = ""
 
     init(available: [Player], players: Binding<[Player]>, lockedIDs: Set<UUID> = [],
          title: LocalizedStringKey = "Match roster") {
@@ -20,52 +22,86 @@ struct MatchRosterSelection: View {
 
     var body: some View {
         Section {
+            if draft.choices.isEmpty {
+                Text("No players available. Add players to the club roster first.")
+                    .foregroundStyle(.secondary)
+            } else {
+                HStack {
+                    Button("Select All") { setAllIncluded(true) }
+                    Spacer()
+                    Button("Select None") { setAllIncluded(false) }
+                }
+                .buttonStyle(.borderless)
+                .disabled(draft.choices.allSatisfy { $0.id.map(lockedIDs.contains) ?? true })
+            }
             ForEach(draft.choices, id: \.id) { player in
                 if let id = player.id {
-                    let selected = draft.isSelected(id)
-                    Toggle(isOn: Binding(get: { draft.isSelected(id) }, set: { included in
-                        draft.setIncluded(included, for: id)
-                        players = draft.selectedPlayers
-                    })) {
+                    let current = draft.player(id: id) ?? player
+                    if lockedIDs.contains(id) {
                         HStack {
-                            Text(verbatim: player.name ?? "#\(player.number)")
-                            if player.isGoalkeeper { Text("Goalkeeper").font(.caption) }
+                            playerLabel(current)
+                            Spacer()
+                            Label("Locked", systemImage: "lock.fill").font(.caption)
                         }
-                    }
-                    .disabled(lockedIDs.contains(id))
-                    // Keep this row present when deselected so later tap targets
-                    // do not shift vertically. Resolve the draft by identity, not
-                    // a captured array index that removal could invalidate.
-                    HStack {
-                        Text("Shirt Number")
-                        if lockedIDs.contains(id) {
-                            Image(systemName: "lock.fill")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .accessibilityHidden(true)
-                        }
-                        Spacer()
-                        TextField("Number", value: Binding(
-                            get: { draft.player(id: id)?.number ?? player.number },
-                            set: { number in
-                                draft.setNumber(number, for: id)
+                        .accessibilityElement(children: .combine)
+                        .accessibilityHint("Already belongs to this match. Inclusion and shirt number cannot be changed.")
+                    } else {
+                        HStack {
+                            Toggle(isOn: Binding(get: { draft.isSelected(id) }, set: { included in
+                                draft.setIncluded(included, for: id)
                                 players = draft.selectedPlayers
-                            }), format: .number)
-                        .keyboardType(.numberPad)
-                        .multilineTextAlignment(.trailing)
-                        .frame(width: 80)
-                        .accessibilityLabel("Shirt Number")
+                            })) {
+                                playerLabel(current)
+                            }
+                            Button {
+                                numberText = String(current.number)
+                                editingID = id
+                            } label: {
+                                Image(systemName: "pencil").frame(minWidth: 44, minHeight: 44)
+                            }
+                            .buttonStyle(.borderless)
+                            .accessibilityLabel("Edit shirt number for \(current.name ?? "#\(current.number)")")
+                            .disabled(!draft.isSelected(id))
+                        }
                     }
-                    .disabled(!selected || lockedIDs.contains(id))
-                    .foregroundStyle(selected ? Color.primary : Color.secondary)
-                    .opacity(selected ? 1 : 0.5)
                 }
             }
         } header: {
             Text(title)
         } footer: {
             Text("Only selected players belong to this match. Later club roster edits do not change these snapshots.")
+            if !lockedIDs.isEmpty {
+                Text("Locked players already belong to this match. Their inclusion and shirt numbers cannot be changed.")
+            }
         }
+        .alert("Shirt Number", isPresented: Binding(
+            get: { editingID != nil }, set: { if !$0 { editingID = nil } }
+        ), presenting: editingID) { id in
+            TextField("Number", text: $numberText).keyboardType(.numberPad)
+            Button("Save") {
+                if let number = Int(numberText) {
+                    draft.setNumber(number, for: id)
+                    players = draft.selectedPlayers
+                }
+                editingID = nil
+            }
+            .disabled(Int(numberText) == nil)
+            Button("Cancel", role: .cancel) { editingID = nil }
+        }
+    }
+
+    private func playerLabel(_ player: Player) -> some View {
+        VStack(alignment: .leading) {
+            Text(verbatim: "#\(player.number)" + (player.name.map { " · \($0)" } ?? ""))
+            if player.isGoalkeeper { Text("Goalkeeper").font(.caption).foregroundStyle(.secondary) }
+        }
+    }
+
+    private func setAllIncluded(_ included: Bool) {
+        for player in draft.choices {
+            if let id = player.id { draft.setIncluded(included, for: id) }
+        }
+        players = draft.selectedPlayers
     }
 }
 
@@ -120,7 +156,7 @@ struct MatchRosterSheet: View {
                 OwnMatchRosterSelection(teamName: ownTeamName, available: ownAvailable,
                                         included: $includeOwn, players: $ownPlayers,
                                         lockedIDs: ownLockedIDs, isAttached: ownIsAttached)
-                if let errorMessage { Text(errorMessage).foregroundStyle(.red) }
+                if let errorMessage { Text(errorMessage).foregroundStyle(Palette.error) }
             }
             .navigationTitle("Match roster")
             .toolbar {

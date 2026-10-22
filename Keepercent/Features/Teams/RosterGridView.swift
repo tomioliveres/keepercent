@@ -6,9 +6,8 @@
 //
 // A tap opens the shooter card (T4.3): scouting a rival is the more
 // frequent reason to open a roster row than editing it, so the tap itself
-// is now `onSelectPlayer`'s job, and editing moved to a context menu
-// (long-press) via `onEditPlayer` — the roster's edit/delete actions
-// (`RosterEditorView`'s `PlayerEditorView` sheet) are otherwise unchanged.
+// is `onSelectPlayer`'s job. A visible edit mode and an accessibility action
+// expose `onEditPlayer` without requiring a long press.
 
 import SwiftUI
 import KeepercentDomain
@@ -26,6 +25,7 @@ struct RosterGridView: View {
     /// lets the grid lay out its content directly, so the screen's own
     /// outer `ScrollView` is the only one that scrolls.
     var isScrollable: Bool = true
+    @State private var isEditing = false
 
     /// Adaptive columns, each at least the roster tile's own minimum tap
     /// target, so the grid reflows from a narrow iPhone to a wide iPad
@@ -43,29 +43,40 @@ struct RosterGridView: View {
     }
 
     private var gridContent: some View {
-        LazyVGrid(columns: columns, spacing: 16) {
-            ForEach(players, id: \.number) { player in
-                Button {
-                    onSelectPlayer(player)
-                } label: {
-                    PlayerTileView(player: player)
-                }
-                .buttonStyle(.plain)
-                .contextMenu {
+        VStack(alignment: .leading) {
+            Button(isEditing ? "Done Editing" : "Edit Roster") { isEditing.toggle() }
+                .buttonStyle(.bordered)
+                .padding(.horizontal)
+            if isEditing {
+                Text("Tap a player to edit.")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .padding(.horizontal)
+            }
+            LazyVGrid(columns: columns, spacing: 16) {
+                ForEach(players, id: \.number) { player in
                     Button {
-                        onEditPlayer(player)
+                        if isEditing { onEditPlayer(player) } else { onSelectPlayer(player) }
                     } label: {
-                        Label("Edit", systemImage: "pencil")
+                        PlayerTileView(player: player)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityAction(named: "Edit") { onEditPlayer(player) }
+                    .contextMenu {
+                        Button {
+                            onEditPlayer(player)
+                        } label: {
+                            Label("Edit", systemImage: "pencil")
+                        }
                     }
                 }
-            }
 
-            Button(action: onTapAddUnknown) {
-                AddPlayerTileView()
+                Button(action: onTapAddUnknown) {
+                    AddPlayerTileView()
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
+            .padding()
         }
-        .padding()
     }
 }
 

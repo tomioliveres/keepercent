@@ -28,6 +28,16 @@ class NavigationCatalogTests(unittest.TestCase):
         )
         self.assertEqual(catalog["sourceLanguage"], "en")
         required = [
+            "Edit Roster", "Done Editing", "Tap a player to edit.",
+            "Select All", "Select None", "Locked", "Match Actions",
+            "Edit shirt number for %@", "Actions for %@",
+            "Already belongs to this match. Inclusion and shirt number cannot be changed.",
+            "Locked players already belong to this match. Their inclusion and shirt numbers cannot be changed.",
+            "No players available. Add players to the club roster first.",
+            "Rename", "Rename Team", "Delete Team", "Edit Match", "Delete Match",
+            "Delete this match?", "Delete this team?",
+            "This permanently deletes this match, all its recorded shots and its participant snapshots. This cannot be undone.",
+            "This permanently deletes %@ and its club roster. Matches, recorded shots and match participant snapshots are preserved, but will show Deleted Rival. This cannot be undone.",
             "Matches", "Rivals", "My Club", "New Match", "No Matches",
             "No Rivals", "Choose Rival", "Roster", "Team Section",
             "Set Up My Club", "Deleted Rival", "More",

@@ -98,10 +98,9 @@ struct PlayerEditorView: View {
                     .disabled(parsedNumber == nil)
                 }
             }
-            .confirmationDialog(
+            .alert(
                 "Archive this player?",
-                isPresented: $isConfirmingDelete,
-                titleVisibility: .visible
+                isPresented: $isConfirmingDelete
             ) {
                 Button("Archive Player", role: .destructive, action: onDelete)
                 Button("Cancel", role: .cancel) {}
