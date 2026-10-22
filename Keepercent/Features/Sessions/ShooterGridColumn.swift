@@ -60,11 +60,7 @@ struct ShooterGridColumn: View {
                 }
             }
             .scrollIndicators(.hidden)
-            .overlay {
-                if players.isEmpty {
-                    Text("No players in this match roster.").font(.caption).foregroundStyle(.secondary)
-                }
-            }
+            .overlay { emptyMessage }
         }
         .frame(height: 94)
     }
@@ -76,9 +72,16 @@ struct ShooterGridColumn: View {
         }
     }
 
+    @ViewBuilder
+    private var emptyMessage: some View {
+        if players.isEmpty {
+            Text("No players in this match roster.").font(.caption).foregroundStyle(.secondary)
+        }
+    }
+
     private var grid: some View {
         LazyVGrid(columns: columns, spacing: 12) {
-            ForEach(players, id: \.number) { player in
+            ForEach(orderedPlayers, id: \.number) { player in
                 Button {
                     onSelect(player.number)
                 } label: {
@@ -92,6 +95,8 @@ struct ShooterGridColumn: View {
                 .buttonStyle(.plain)
             }
         }
+        .frame(maxWidth: .infinity, minHeight: players.isEmpty ? 44 : nil, alignment: .top)
+        .overlay(alignment: .top) { emptyMessage }
     }
 }
 
