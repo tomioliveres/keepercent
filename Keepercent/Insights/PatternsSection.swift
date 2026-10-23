@@ -7,6 +7,8 @@ import SwiftUI
 import KeepercentDomain
 
 struct PatternsSection: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @ScaledMetric private var symbolWidth = 24.0
     /// Already ranked, strongest first.
     let patterns: [ScoutingPattern]
     /// How many shots the patterns were read from, so an empty list can
@@ -38,15 +40,26 @@ struct PatternsSection: View {
 
     private func row(_ pattern: ScoutingPattern) -> some View {
         let sentence = PatternPhraser.sentence(for: pattern)
-        return HStack(alignment: .firstTextBaseline, spacing: 12) {
+        return HStack(alignment: dynamicTypeSize.isAccessibilitySize ? .top : .firstTextBaseline, spacing: 12) {
             Image(systemName: symbol(for: pattern.kind))
                 .foregroundStyle(Palette.accent)
-                .frame(width: 24)
-            Text(sentence)
-            Spacer(minLength: 8)
-            Text(figure(for: pattern))
-                .foregroundStyle(.secondary)
-                .monospacedDigit()
+                .frame(width: symbolWidth)
+                .fixedSize()
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(sentence)
+                    Text(figure(for: pattern))
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                }
+                .fixedSize(horizontal: false, vertical: true)
+            } else {
+                Text(sentence)
+                Spacer(minLength: 8)
+                Text(figure(for: pattern))
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+            }
         }
         // The sentence already holds every number, so VoiceOver reads it
         // once instead of the icon, the sentence and the figure apart.

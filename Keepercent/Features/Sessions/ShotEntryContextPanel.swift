@@ -4,6 +4,7 @@ import SwiftUI
 import KeepercentDomain
 
 struct ShotEntryContextPanel: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let attackingSide: AttackingSide
     let onSelectAttackingSide: (AttackingSide) -> Void
     let goalkeepers: [Player]
@@ -35,7 +36,10 @@ struct ShotEntryContextPanel: View {
     /// Selection is never cleared by hiding a picker. Rival and optional own
     /// goalkeeper associations remain separate, with their original meaning.
     var participants: some View {
-        HStack(spacing: 8) {
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
+            : AnyLayout(HStackLayout(spacing: 8))
+        return layout {
             Picker("Attacking Side", selection: Binding(
                 get: { attackingSide }, set: { onSelectAttackingSide($0) }
             )) {
@@ -43,7 +47,7 @@ struct ShotEntryContextPanel: View {
                 Text("Own").tag(AttackingSide.own)
             }
             .pickerStyle(.segmented)
-            .frame(maxWidth: 180)
+            .frame(maxWidth: dynamicTypeSize.isAccessibilitySize ? .infinity : 180)
 
             if attackingSide == .own {
                 Picker("Active Rival Goalkeeper", selection: Binding(
@@ -75,15 +79,10 @@ struct ShotEntryContextPanel: View {
             }
         }
         .frame(minHeight: 44)
-        .dynamicTypeSize(...fixedGeometryTypeSizeLimit)
     }
 
-    /// Controls drawn in fixed-height surfaces stop growing at the largest
-    /// non-accessibility size; the screen scrolls instead of truncating them.
-    private var fixedGeometryTypeSizeLimit: DynamicTypeSize { .xxxLarge }
-
-    /// The same fixed-height surface occupies the portrait safe-area inset
-    /// and the landscape context column. Card/error transitions never resize it.
+    /// Ordinary entry keeps its bottom panel; accessibility sizes place these
+    /// controls in the screen's scroll content so text can grow without a cap.
     var feedback: some View {
         VStack(spacing: 6) {
             Group {
@@ -95,46 +94,55 @@ struct ShotEntryContextPanel: View {
                 }
             }
             .font(.caption)
-            .frame(height: 32)
+            .frame(minHeight: 44)
 
-            ScrollView(.horizontal) {
-                HStack(spacing: 6) {
-                    chip("Jump", accessibilityLabel: "Jump", selected: delivery == .jump) { onToggleDelivery(.jump) }
-                    chip("Standing", accessibilityLabel: "Standing", selected: delivery == .standing) { onToggleDelivery(.standing) }
-                    chip("←", accessibilityLabel: "From Left", selected: approach == .fromLeft) { onToggleApproach(.fromLeft) }
-                    chip("↑", accessibilityLabel: "Straight", selected: approach == .straight) { onToggleApproach(.straight) }
-                    chip("→", accessibilityLabel: "From Right", selected: approach == .fromRight) { onToggleApproach(.fromRight) }
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 6) { chips }
+            } else {
+                ScrollView(.horizontal) {
+                    HStack(spacing: 6) { chips }
                 }
+                .scrollIndicators(.hidden)
+                .frame(height: 44)
             }
-            .scrollIndicators(.hidden)
-            .frame(height: 44)
 
-            actionSlot.frame(height: 64)
+            actionSlot.frame(minHeight: 64)
         }
         .padding(10)
         .frame(maxWidth: .infinity)
-        .frame(height: 172)
-        .dynamicTypeSize(...fixedGeometryTypeSizeLimit)
+        .fixedSize(horizontal: false, vertical: true)
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20))
     }
 
+    @ViewBuilder private var chips: some View {
+        chip("Jump", accessibilityLabel: "Jump", selected: delivery == .jump) { onToggleDelivery(.jump) }
+        chip("Standing", accessibilityLabel: "Standing", selected: delivery == .standing) { onToggleDelivery(.standing) }
+        chip("←", accessibilityLabel: "From Left", selected: approach == .fromLeft) { onToggleApproach(.fromLeft) }
+        chip("↑", accessibilityLabel: "Straight", selected: approach == .straight) { onToggleApproach(.straight) }
+        chip("→", accessibilityLabel: "From Right", selected: approach == .fromRight) { onToggleApproach(.fromRight) }
+    }
+
     private var steps: some View {
-        ScrollView(.horizontal) {
-            HStack(spacing: 8) {
-                if attackingSide == .rival { step("Shooter", .shooter) }
-                else { step("Active Rival Goalkeeper", .rivalGoalkeeper) }
-                step("Origin", .origin)
-                step("Target", .target)
-                if target != nil && target?.impliedOutcome == nil { step("Outcome", .outcome) }
-            }
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 8) { stepLabels }
+            VStack(alignment: .leading, spacing: 8) { stepLabels }
         }
-        .scrollIndicators(.hidden)
         .accessibilityElement(children: .combine)
+        .frame(minHeight: 44)
+    }
+
+    @ViewBuilder private var stepLabels: some View {
+        if attackingSide == .rival { step("Shooter", .shooter) }
+        else { step("Active Rival Goalkeeper", .rivalGoalkeeper) }
+        step("Origin", .origin)
+        step("Target", .target)
+        if target != nil && target?.impliedOutcome == nil { step("Outcome", .outcome) }
     }
 
     private func step(_ title: LocalizedStringKey, _ step: ShotEntryProgress.Step) -> some View {
         HStack(spacing: 3) {
             Text(title)
+                .fixedSize(horizontal: false, vertical: true)
             if !progress.missingSteps.contains(step) {
                 Image(systemName: "checkmark").foregroundStyle(Palette.accent)
             }
@@ -157,7 +165,10 @@ struct ShotEntryContextPanel: View {
                 Text("Shot removed").foregroundStyle(.secondary)
             }
         } else {
-            HStack(spacing: 12) {
+            let layout = dynamicTypeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(spacing: 12))
+                : AnyLayout(HStackLayout(spacing: 12))
+            layout {
                 outcomeButton("Goal", .goal, symbol: "soccerball")
                 outcomeButton("Saved", .saved, symbol: "hand.raised.fill")
             }
@@ -168,6 +179,7 @@ struct ShotEntryContextPanel: View {
     private func outcomeButton(_ title: LocalizedStringKey, _ outcome: ShotOutcome, symbol: String) -> some View {
         Button { onChooseOutcome(outcome) } label: {
             Label(title, systemImage: symbol).font(.headline)
+                .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, minHeight: 44)
         }
         .buttonStyle(.borderedProminent)
@@ -180,6 +192,7 @@ struct ShotEntryContextPanel: View {
                       selected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title).font(.subheadline.weight(selected ? .bold : .regular))
+                .fixedSize()
                 .padding(.horizontal, 10).frame(minWidth: 44, minHeight: 44)
                 .background(selected ? Palette.brandAmber : Color(.tertiarySystemFill), in: Capsule())
                 .foregroundStyle(selected ? Palette.onBrandAmber : .primary)

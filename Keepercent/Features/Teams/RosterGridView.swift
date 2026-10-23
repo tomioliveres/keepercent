@@ -35,9 +35,9 @@ struct RosterGridView: View {
     private var columns: [GridItem] {
         if dynamicTypeSize.isAccessibilitySize {
             if horizontalSizeClass == .compact {
-                return Array(repeating: GridItem(.flexible(), spacing: 12), count: 2)
+                return Array(repeating: GridItem(.flexible(), spacing: 12, alignment: .top), count: 2)
             }
-            return [GridItem(.adaptive(minimum: 150, maximum: 200), spacing: 12)]
+            return [GridItem(.adaptive(minimum: 150, maximum: 200), spacing: 12, alignment: .top)]
         }
         return [GridItem(.adaptive(minimum: rosterTileMinimumDimension + 32, maximum: 110), spacing: 12)]
     }

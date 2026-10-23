@@ -9,12 +9,17 @@ struct HeatmapLegend: View {
     @Environment(\.colorSchemeContrast) private var colorSchemeContrast
 
     var body: some View {
-        HStack(spacing: 12) {
-            entry("No data", tally: nil)
-            entry("0%", tally: Tally(successes: 0, attempts: 1))
-            entry("100%", tally: Tally(successes: 1, attempts: 1))
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 12) { entries }
+            VStack(alignment: .leading, spacing: 8) { entries }
         }
         .font(.caption2)
+    }
+
+    @ViewBuilder private var entries: some View {
+        entry("No data", tally: nil)
+        entry("0%", tally: Tally(successes: 0, attempts: 1))
+        entry("100%", tally: Tally(successes: 1, attempts: 1))
     }
 
     private func entry(_ title: LocalizedStringKey, tally: Tally?) -> some View {
@@ -26,5 +31,6 @@ struct HeatmapLegend: View {
                 .accessibilityHidden(true)
             Text(title)
         }
+        .fixedSize()
     }
 }

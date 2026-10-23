@@ -89,7 +89,7 @@ struct PlayerTileView: View {
                 .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .accessibilityElement(children: .ignore)
+        .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityDescription)
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
@@ -120,7 +120,7 @@ struct AddPlayerTileView: View {
                 .foregroundStyle(.secondary)
                 .fixedSize()
         }
-        .accessibilityElement(children: .ignore)
+        .accessibilityElement(children: .combine)
         .accessibilityLabel("Add player with unknown shirt number")
         .accessibilityAddTraits(.isButton)
     }

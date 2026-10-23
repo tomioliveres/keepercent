@@ -56,7 +56,7 @@ struct ShooterCardContentView: View {
                 .font(.title2.bold())
             Text(headerStatsLine)
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.primary)
         }
     }
 
