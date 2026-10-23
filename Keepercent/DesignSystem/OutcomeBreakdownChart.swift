@@ -27,6 +27,7 @@ struct OutcomeBreakdownChart: View {
     let title: LocalizedStringKey
     let rows: [Row]
     let reading: StatsReading
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     /// The shot count a full track stands for: every shot in the chart's
     /// rows. At least 1 so an empty chart never divides by zero.
@@ -55,21 +56,33 @@ struct OutcomeBreakdownChart: View {
     }
 
     private func rowView(_ row: Row) -> some View {
-        HStack(spacing: 8) {
-            GoalGlyph(highlight: row.highlight)
-                .accessibilityHidden(true)
-            Text(row.name)
-                .font(.caption)
-                .frame(width: 52, alignment: .leading)
-            bar(for: row.breakdown)
-                .frame(height: 20)
-            Text(figure(for: row.breakdown))
-                .font(.caption.monospacedDigit())
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-                .frame(width: 96, alignment: .trailing)
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(row.name).font(.caption)
+                    bar(for: row.breakdown).frame(height: 32)
+                    Text(accessibilityLabel(for: row)).font(.caption.monospacedDigit())
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            } else {
+                HStack(spacing: 8) {
+                    GoalGlyph(highlight: row.highlight)
+                        .accessibilityHidden(true)
+                    Text(row.name)
+                        .font(.caption)
+                        .frame(width: 52, alignment: .leading)
+                    bar(for: row.breakdown)
+                        .frame(height: 20)
+                    Text(figure(for: row.breakdown))
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                        .frame(width: 96, alignment: .trailing)
+                }
+            }
         }
+        .frame(minHeight: 44)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityLabel(for: row))
     }
@@ -97,7 +110,7 @@ struct OutcomeBreakdownChart: View {
                 .fill(color)
                 .frame(width: width)
                 .overlay {
-                    if width >= 16 {
+                    if width >= 16 && !dynamicTypeSize.isAccessibilitySize {
                         Text("\(count)")
                             .font(.caption2.weight(.semibold).monospacedDigit())
                             .foregroundStyle(.black)

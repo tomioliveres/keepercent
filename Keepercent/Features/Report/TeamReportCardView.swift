@@ -60,7 +60,7 @@ struct TeamReportCardView: View {
                     .foregroundStyle(.secondary)
             } else {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Goal zones").font(.headline)
+                    SectionTitle("Goal zones")
                     Text("Goals / saves, each from recorded shots on target")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -119,13 +119,13 @@ struct TeamReportCardView: View {
         return VStack(spacing: 3) {
             Text(zone.displayName())
                 .font(.caption2)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
             Text(verbatim: tally == nil ? "—" : "\(goals) / \(saves)")
                 .font(.caption.bold().monospacedDigit())
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 54)
+        .frame(minHeight: 64)
         .foregroundStyle(colorScheme == .dark && tally?.rate == nil ? Color.black : Color.primary)
         .background(HeatmapColor.tint(for: tally, appearance: colorScheme, contrast: contrast))
         .clipShape(RoundedRectangle(cornerRadius: 6))
@@ -142,7 +142,7 @@ struct TeamReportCardView: View {
         count: @escaping (Tally) -> Text
     ) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title).font(.headline)
+            SectionTitle(title)
             if entries.isEmpty {
                 Text("None recorded").foregroundStyle(.secondary)
             } else {

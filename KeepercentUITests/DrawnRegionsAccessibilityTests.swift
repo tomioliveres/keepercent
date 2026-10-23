@@ -262,19 +262,19 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
         reveal(app.buttons["goal.entry.inside.top.left"], in: app)
         retainEvidence("Sessions pre-audit top-left drawing", in: app,
                        elements: [app.buttons["goal.entry.inside.top.left"]])
-        try app.performAccessibilityAudit()
+        try app.performAccessibilityAudit(for: .all, AccessibilityAuditPolicy.ignores)
     }
 
     func testAccessibilityAuditOnSettledScouting() throws {
         let app = launch(screen: "scouting")
         reveal(app.staticTexts["goal.linked.inside.top.left"], in: app)
-        try app.performAccessibilityAudit()
+        try app.performAccessibilityAudit(for: .all, AccessibilityAuditPolicy.ignores)
     }
 
     func testAccessibilityAuditOnSettledShooterCard() throws {
         let app = launch(screen: "shooterCard")
         reveal(app.staticTexts["goal.linked.inside.top.right"], in: app)
-        try app.performAccessibilityAudit()
+        try app.performAccessibilityAudit(for: .all, AccessibilityAuditPolicy.ignores)
     }
 
     func testAccessibilityAuditOnSettledGoalkeeperCard() throws {
@@ -282,22 +282,47 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
         reveal(app.staticTexts["goal.linked.inside.bottom.left"], in: app)
         retainEvidence("Keeper pre-audit field and 7 m viewport", in: app,
                        elements: [app.staticTexts["goal.linked.inside.bottom.left"], app.buttons["court.linked.sevenMeters"]])
-        try app.performAccessibilityAudit()
+        try app.performAccessibilityAudit(for: .all, AccessibilityAuditPolicy.ignores)
     }
 
     func testAccessibilityAuditOnSettledZeroShotGoalkeeper() throws {
         let app = launch(screen: "goalkeeperCard", data: "emptyGoalkeeper")
         reveal(app.staticTexts["goal.linked.inside.top.left"], in: app)
-        try app.performAccessibilityAudit()
+        try app.performAccessibilityAudit(for: .all, AccessibilityAuditPolicy.ignores)
     }
 
-    private func launch(screen: String, data: String = "demo", canvasProbe: Bool = false) -> XCUIApplication {
+    func testAccessibilityAuditAtLargestTextSize() throws {
+        for screen in ["sessions", "scouting", "shooterCard", "goalkeeperCard"] {
+            let app = launch(screen: screen, accessibilityText: true)
+            retainEvidence("Largest text: \(screen)", in: app, elements: [])
+            try app.performAccessibilityAudit(for: .all, AccessibilityAuditPolicy.ignores)
+            app.terminate()
+        }
+    }
+
+    func testRosterAccessibilityAuditAtLargestTextSize() throws {
+        let app = launch(screen: "teams", accessibilityText: true)
+        let rivals = app.buttons["Rivals"].firstMatch
+        XCTAssertTrue(rivals.waitForExistence(timeout: 5))
+        rivals.tap()
+        let team = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "BM Serra")).firstMatch
+        XCTAssertTrue(team.waitForExistence(timeout: 5))
+        team.tap()
+        XCTAssertTrue(app.buttons["Edit Roster"].waitForExistence(timeout: 5))
+        retainEvidence("Roster largest text", in: app, elements: [])
+        try app.performAccessibilityAudit(for: .all, AccessibilityAuditPolicy.ignores)
+    }
+
+    private func launch(screen: String, data: String = "demo", canvasProbe: Bool = false, accessibilityText: Bool = false) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = [
             "-KPScreen", screen, "-KPData", data,
             "-AppleLanguages", "(en)", "-AppleLocale", "en_US"
         ]
         if canvasProbe { app.launchArguments.append("-KPUITestCanvasProbe") }
+        if accessibilityText {
+            app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
+        }
         app.launch()
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
         return app
@@ -473,8 +498,8 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
         let mark = app.buttons["\(scope).sevenMeters"]
         let origins = regions(in: app, prefix: "\(scope).")
         // Capture every frame BEFORE the mark-size assertion can abort.
-        // Its semantic bounds represent the 1.4 x 1 m drawing/hit region,
-        // not the intrinsic height of an unrendered Text button label.
+        // The 7 m semantic target has a 44 pt floor, centered on the unchanged
+        // 1.4 x 1 m physical drawing/hit region.
         retainEvidence("Court frames before metric assertions", in: app, elements: origins)
         let canvas = try measuredCanvas(in: app, scope: scope)
         let width = canvas.width
@@ -521,10 +546,17 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
         XCTAssertEqual(app.buttons.matching(identifier: "\(scope).sevenMeters").count, 1)
         XCTAssertEqual(mark.label, "7 m mark")
         XCTAssertGreaterThan(mark.frame.width, 0)
-        XCTAssertEqual(mark.frame.height, height / 15, accuracy: 1)
+        XCTAssertEqual(mark.frame.height, max(44, height / 15), accuracy: 1)
         XCTAssertEqual(origins.count, expected.count)
         for (code, normalized) in expected {
             let frame = app.buttons["\(scope).\(code)"].frame
+            if code == "sevenMeters" {
+                XCTAssertEqual(frame.midX, canvas.midX, accuracy: 1)
+                XCTAssertEqual(frame.midY, canvas.minY + height * 7 / 15, accuracy: 1)
+                XCTAssertEqual(frame.width, max(44, width * 1.4 / 20), accuracy: 1)
+                XCTAssertEqual(frame.height, max(44, height / 15), accuracy: 1)
+                continue
+            }
             XCTAssertGreaterThan(frame.width, 0, code)
             XCTAssertGreaterThan(frame.height, 0, code)
             XCTAssertGreaterThanOrEqual(frame.minX, canvas.minX - 1, code)

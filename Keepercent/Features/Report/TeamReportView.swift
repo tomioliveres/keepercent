@@ -45,6 +45,8 @@ struct TeamReportView: View {
     @Environment(\.colorSchemeContrast) private var colorSchemeContrast
     @Environment(\.displayScale) private var displayScale
     @State private var sharedImage: Image?
+    @State private var previewHeight: CGFloat = 1
+    @State private var previewScale: CGFloat = 1
 
     private var engine: StatsEngine {
         switch team {
@@ -56,9 +58,15 @@ struct TeamReportView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
-                TeamReportCardView(goalkeeperNumber: goalkeeperNumber, engine: engine, scopeLabel: scopeLabel,
-                                   perspective: perspective, contrast: colorSchemeContrast)
-                    .frame(width: 320)
+                GeometryReader { proxy in
+                    let scale = proxy.size.width / 320
+                    reportCard
+                        .fixedSize(horizontal: false, vertical: true)
+                        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { previewHeight = $0 }
+                        .scaleEffect(scale, anchor: .topLeading)
+                }
+                .onGeometryChange(for: CGFloat.self) { $0.size.width / 320 } action: { previewScale = $0 }
+                .frame(height: previewHeight * previewScale)
 
                 if let sharedImage {
                     ShareLink(
@@ -95,14 +103,17 @@ struct TeamReportView: View {
         .onChange(of: colorSchemeContrast) { renderImage() }
     }
 
+    private var reportCard: some View {
+        TeamReportCardView(goalkeeperNumber: goalkeeperNumber, engine: engine, scopeLabel: scopeLabel,
+                           perspective: perspective, contrast: colorSchemeContrast)
+            .dynamicTypeSize(.large)
+            .environment(\.colorScheme, colorScheme)
+    }
+
     @MainActor
     private func renderImage() {
         sharedImage = nil
-        let card = TeamReportCardView(goalkeeperNumber: goalkeeperNumber, engine: engine, scopeLabel: scopeLabel,
-                                      perspective: perspective, contrast: colorSchemeContrast)
-            .frame(width: 320)
-            .environment(\.colorScheme, colorScheme)
-        let renderer = ImageRenderer(content: card)
+        let renderer = ImageRenderer(content: reportCard)
         renderer.scale = displayScale
         if let image = renderer.uiImage {
             sharedImage = Image(uiImage: image)

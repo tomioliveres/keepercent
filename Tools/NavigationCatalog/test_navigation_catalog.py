@@ -28,6 +28,7 @@ class NavigationCatalogTests(unittest.TestCase):
         )
         self.assertEqual(catalog["sourceLanguage"], "en")
         required = [
+            "Showing", "vs %@ · %@",
             "Edit Roster", "Done Editing", "Tap a player to edit.",
             "Select All", "Select None", "Locked", "Match Actions",
             "Edit shirt number for %@", "Actions for %@",

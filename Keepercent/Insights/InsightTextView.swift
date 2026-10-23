@@ -13,7 +13,7 @@ struct InsightTextView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Scouting insight").font(.headline)
+            SectionTitle("Scouting insight")
             Text(template)
                 .foregroundStyle(.secondary)
         }

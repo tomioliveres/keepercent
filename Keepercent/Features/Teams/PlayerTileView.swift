@@ -29,6 +29,7 @@ import KeepercentDomain
 let rosterTileMinimumDimension: CGFloat = 44
 
 struct PlayerTileView: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     let player: Player
     /// Shot entry marks the chosen shooter by filling the square (not the
     /// name below it) with solid brand amber; the roster grid never selects.
@@ -62,6 +63,7 @@ struct PlayerTileView: View {
                             .font(.title2.bold().monospacedDigit())
                             .foregroundStyle(isSelected ? Palette.onBrandAmber : .primary)
                             .minimumScaleFactor(0.6)
+                            .padding(.top, player.isGoalkeeper ? 24 : 4)
                             .padding(4)
                     }
                     .frame(minWidth: rosterTileMinimumDimension, minHeight: rosterTileMinimumDimension)
@@ -72,11 +74,11 @@ struct PlayerTileView: View {
                 // the distinction survives even without colour vision.
                 if player.isGoalkeeper {
                     Image(systemName: "hand.raised.fill")
-                        .font(.caption2.bold())
+                        .font(.system(size: 12, weight: .bold))
                         .padding(4)
                         .background(Palette.brandAmber, in: Circle())
                         .foregroundStyle(Palette.onBrandAmber)
-                        .offset(x: 6, y: -6)
+                        .padding(6)
                         .accessibilityHidden(true)
                 }
             }
@@ -84,7 +86,8 @@ struct PlayerTileView: View {
             Text(player.name ?? String(localized: "Unnamed"))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
-                .lineLimit(1)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityDescription)
@@ -112,9 +115,10 @@ struct AddPlayerTileView: View {
                 .frame(minWidth: rosterTileMinimumDimension, minHeight: rosterTileMinimumDimension)
                 .aspectRatio(1, contentMode: .fit)
 
-            Text("Unknown #")
+            Text("Add")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
+                .fixedSize()
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Add player with unknown shirt number")

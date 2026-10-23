@@ -161,18 +161,15 @@ struct CourtView: View {
                     Button {
                         onOriginTapped(.sevenMeters, nil)
                     } label: {
-                        // This label is synthetic, not rendered court text.
-                        // A Text label can retain its intrinsic line height
-                        // beyond the outer frame's proposal. Match the exact
-                        // drawing/hit rectangle, as the zone Path labels do;
-                        // the metric mark intentionally has no touch-size floor.
+                        // Enlarge only the semantic target. The drawing and
+                        // physical origin classifier retain their metric region.
                         Rectangle().fill(.clear)
-                            .frame(width: rect.width, height: rect.height)
+                             .frame(width: max(44, rect.width), height: max(44, rect.height))
                     }
                         .accessibilityLabel("7 m mark")
                         .accessibilityIdentifier("\(accessibilityScope).sevenMeters")
                         .accessibilityValue(accessibilitySample(for: .sevenMeters))
-                        .frame(width: rect.width, height: rect.height)
+                        .frame(width: max(44, rect.width), height: max(44, rect.height))
                         .position(x: rect.midX, y: rect.midY)
                 }
             }

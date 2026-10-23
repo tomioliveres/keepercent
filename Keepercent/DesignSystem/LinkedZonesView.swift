@@ -69,7 +69,7 @@ struct LinkedZonesView: View {
 
     private var courtColumn: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Origin").font(.headline)
+            SectionTitle("Origin")
             Picker("Court view", selection: $courtMode) {
                 ForEach(CourtMode.allCases) { mode in
                     Text(mode.title).tag(mode)
@@ -277,8 +277,7 @@ struct LinkedZonesView: View {
 
     private var goalColumn: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(reading == .effectiveness ? LocalizedStringKey("Effectiveness") : LocalizedStringKey("Save rate"))
-                .font(.headline)
+            SectionTitle(reading == .effectiveness ? LocalizedStringKey("Effectiveness") : LocalizedStringKey("Save rate"))
             GoalView(
                 zoneTints: goalTints,
                 zoneLabels: labels(from: goalEngine.goalZoneTallies(reading)),

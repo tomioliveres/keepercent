@@ -136,14 +136,13 @@ struct MyClubView: View {
             return (activeIDs.contains(id) && $0.isGoalkeeper) || !engine.shots(facingOwnGoalkeeper: id).shots.isEmpty
         }
         return VStack(alignment: .leading, spacing: 16) {
-            Text("Own player statistics across opponents")
-                .font(.headline)
+            SectionTitle("Own player statistics across opponents")
             if shooters.isEmpty && keepers.isEmpty {
                 ContentUnavailableView("No own player data", systemImage: "chart.bar.xaxis",
                     description: Text("No attributed own-player history is available yet."))
             }
             if !shooters.isEmpty {
-                Text("Shooter").font(.headline)
+                SectionTitle("Shooter")
                 ForEach(shooters, id: \.id) { player in
                     if let id = player.id {
                         Button { shooterRoute = OwnPlayerRoute(playerID: id) } label: { personLabel(player) }
@@ -152,7 +151,7 @@ struct MyClubView: View {
                 }
             }
             if !keepers.isEmpty {
-                Text("Goalkeeper").font(.headline)
+                SectionTitle("Goalkeeper")
                 ForEach(keepers, id: \.id) { player in
                     if let id = player.id {
                         Button { goalkeeperRoute = OwnPlayerRoute(playerID: id) } label: { personLabel(player) }

@@ -202,8 +202,7 @@ struct RosterEditorView: View {
     /// Team-local sessions open the same full-screen entry as global Matches.
     private var sessionsSection: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Matches")
-                .font(.headline)
+            SectionTitle("Matches")
                 .padding(.horizontal)
 
             if sortedSessions.isEmpty {

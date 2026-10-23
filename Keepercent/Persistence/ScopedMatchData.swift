@@ -56,13 +56,14 @@ enum ScopedMatchData {
     }
 
     static func options(_ team: StoredOwnTeam) -> [MatchScopeOption] {
-        sessions(team, scope: .all).enumerated().compactMap { index, session in
+        let matches = sessions(team, scope: .all).filter { $0.matchID != nil }
+        return matches.enumerated().compactMap { index, session in
             guard let id = session.matchID else { return nil }
             let opponent = session.rivalTeam?.name ?? String(localized: "Opponent unavailable")
-            let date = session.date.formatted(date: .abbreviated, time: .omitted)
+            let date = session.date.formatted(.dateTime.day().month(.abbreviated))
             let kind = session.kind.map(sessionKindLabel) ?? String(localized: "Unknown kind")
-            let match = String(localized: "\(date) · \(kind) · Match \(index + 1)")
-            return MatchScopeOption(id: id, label: "\(opponent) · \(match)")
+            let ordinal = MatchScopeLabels.needsOrdinal(for: session.date, among: matches.map(\.date)) ? index + 1 : nil
+            return MatchScopeOption(id: id, label: MatchScopeLabels.label(date: date, kind: kind, opponent: opponent, ordinal: ordinal))
         }
     }
 
@@ -97,14 +98,16 @@ enum ScopedMatchData {
     }
 
     static func options(_ team: StoredRivalTeam) -> [MatchScopeOption] {
-        team.sessions.sorted {
+        let matches = team.sessions.filter { $0.matchID != nil }.sorted {
             if $0.date != $1.date { return $0.date > $1.date }
             return ($0.matchID?.uuidString ?? "") < ($1.matchID?.uuidString ?? "")
-        }.enumerated().compactMap { index, session in
+        }
+        return matches.enumerated().compactMap { index, session in
             guard let id = session.matchID else { return nil }
-            let date = session.date.formatted(date: .abbreviated, time: .omitted)
+            let date = session.date.formatted(.dateTime.day().month(.abbreviated))
             let kind = session.kind.map(sessionKindLabel) ?? String(localized: "Unknown kind")
-            return MatchScopeOption(id: id, label: String(localized: "\(date) · \(kind) · Match \(index + 1)"))
+            let ordinal = MatchScopeLabels.needsOrdinal(for: session.date, among: matches.map(\.date)) ? index + 1 : nil
+            return MatchScopeOption(id: id, label: MatchScopeLabels.label(date: date, kind: kind, ordinal: ordinal))
         }
     }
 

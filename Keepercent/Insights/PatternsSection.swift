@@ -18,7 +18,7 @@ struct PatternsSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Patterns").font(.headline)
+            SectionTitle("Patterns")
             if patterns.isEmpty {
                 Text(emptyText).foregroundStyle(.secondary)
             } else {

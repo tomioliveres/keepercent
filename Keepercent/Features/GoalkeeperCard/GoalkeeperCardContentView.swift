@@ -103,7 +103,7 @@ struct GoalkeeperCardContentView: View {
         emptyText: LocalizedStringKey
     ) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title).font(.headline)
+            SectionTitle(title)
             if ranked.isEmpty {
                 Text(emptyText).foregroundStyle(.secondary)
             } else {

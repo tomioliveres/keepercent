@@ -251,7 +251,7 @@ struct SessionView: View {
     private func threeColumnLayout(availableHeight: CGFloat) -> some View {
         HStack(alignment: .top, spacing: 24) {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Shooter").font(.headline)
+                SectionTitle("Shooter")
                 shooterContent(compact: false)
             }
             .frame(maxWidth: .infinity, alignment: .topLeading)
