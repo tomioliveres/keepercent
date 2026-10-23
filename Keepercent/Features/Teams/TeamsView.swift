@@ -42,6 +42,8 @@ struct TeamsView: View {
                     } actions: {
                         Button("New Team", action: beginCreatingTeam)
                             .buttonStyle(.borderedProminent)
+                            .tint(Palette.brandAmber)
+                            .foregroundStyle(Palette.onBrandAmber)
                     }
                 }
             }

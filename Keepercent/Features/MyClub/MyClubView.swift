@@ -39,6 +39,8 @@ struct MyClubView: View {
                 } actions: {
                     Button("Set Up My Club") { editName() }
                         .buttonStyle(.borderedProminent)
+                        .tint(Palette.brandAmber)
+                        .foregroundStyle(Palette.onBrandAmber)
                 }
             }
         }

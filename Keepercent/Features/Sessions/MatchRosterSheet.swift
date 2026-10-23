@@ -69,9 +69,12 @@ struct MatchRosterSelection: View {
         } header: {
             Text(title)
         } footer: {
-            Text("Only selected players belong to this match. Later club roster edits do not change these snapshots.")
-            if !lockedIDs.isEmpty {
-                Text("Locked players already belong to this match. Their inclusion and shirt numbers cannot be changed.")
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Only selected players belong to this match. Later club roster edits do not change these snapshots.")
+                if !lockedIDs.isEmpty {
+                    Label("Locked players already belong to this match. Their inclusion and shirt numbers cannot be changed.",
+                          systemImage: "lock.fill")
+                }
             }
         }
         .alert("Shirt Number", isPresented: Binding(

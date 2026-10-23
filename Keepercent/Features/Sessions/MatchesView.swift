@@ -18,6 +18,8 @@ struct MatchesView: View {
                 } actions: {
                     Button("New Match") { isCreatingMatch = true }
                         .buttonStyle(.borderedProminent)
+                        .tint(Palette.brandAmber)
+                        .foregroundStyle(Palette.onBrandAmber)
                 }
             } else {
                 List(sessions) { session in
