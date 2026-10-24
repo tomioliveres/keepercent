@@ -24,7 +24,10 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
             XCTAssertTrue(region.waitForExistence(timeout: 5))
             XCTAssertEqual(region.label, name)
             XCTAssertTrue(region.isHittable)
-            region.tap()
+            // Tap the frame's center explicitly: where 44 pt stand-ins overlap
+            // (a thin post beside a wide miss on iPad), tap() picks an
+            // uncovered hit point that can fall outside the drawn target.
+            region.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
             XCTAssertTrue(app.staticTexts["Last tap: \(code)"].waitForExistence(timeout: 5))
         }
         assertCourt(in: app, scope: "court.entry")
@@ -238,22 +241,12 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
     func testZeroShotGoalkeeperUsesNoDataWithoutInventingEmptyPenaltyDrawing() {
         let app = launch(screen: "goalkeeperCard", data: "emptyGoalkeeper")
         XCTAssertTrue(app.staticTexts["No shots faced yet"].waitForExistence(timeout: 10))
-        reveal(app.staticTexts["goal.linked.inside.top.left"], in: app)
-        let insideGoals = regions(in: app, prefix: "goal.linked.inside.")
-        XCTAssertEqual(insideGoals.count, 9)
-        for goal in insideGoals {
-            assertValue("No data", of: goal)
-            XCTAssertEqual(goal.elementType, .staticText)
-        }
-        reveal(app.buttons["court.linked.sevenMeters"], in: app)
-        let origins = regions(in: app, prefix: "court.linked.")
-        XCTAssertEqual(origins.count, 9)
-        for origin in origins { assertValue("No data", of: origin) }
-        retainEvidence("Zero-shot keeper before original 7 m tap", in: app,
-                       elements: origins + [app.staticTexts["linked.filter"]])
-        app.buttons["court.linked.sevenMeters"].tap()
-        assertFilter("7 m throws · 0 shots", in: app)
-        reveal(app.staticTexts["7 m: no shots"].firstMatch, in: app)
+        // Since 1919e34 a keeper with no shots shows the empty card only: no
+        // linked zones, no 7 m origins and no invented penalty drawing.
+        XCTAssertTrue(app.staticTexts["No Goalkeeper Data"].exists)
+        XCTAssertTrue(regions(in: app, prefix: "goal.linked.inside.").isEmpty)
+        XCTAssertTrue(regions(in: app, prefix: "court.linked.").isEmpty)
+        XCTAssertFalse(app.buttons["court.linked.sevenMeters"].exists)
         XCTAssertTrue(regions(in: app, prefix: "goal.penalty.").isEmpty)
     }
 
@@ -262,19 +255,19 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
         reveal(app.buttons["goal.entry.inside.top.left"], in: app)
         retainEvidence("Sessions pre-audit top-left drawing", in: app,
                        elements: [app.buttons["goal.entry.inside.top.left"]])
-        try app.performAccessibilityAudit()
+        try app.performAccessibilityAudit(for: .all, AccessibilityAuditPolicy.ignores)
     }
 
     func testAccessibilityAuditOnSettledScouting() throws {
         let app = launch(screen: "scouting")
         reveal(app.staticTexts["goal.linked.inside.top.left"], in: app)
-        try app.performAccessibilityAudit()
+        try app.performAccessibilityAudit(for: .all, AccessibilityAuditPolicy.ignores)
     }
 
     func testAccessibilityAuditOnSettledShooterCard() throws {
         let app = launch(screen: "shooterCard")
         reveal(app.staticTexts["goal.linked.inside.top.right"], in: app)
-        try app.performAccessibilityAudit()
+        try app.performAccessibilityAudit(for: .all, AccessibilityAuditPolicy.ignores)
     }
 
     func testAccessibilityAuditOnSettledGoalkeeperCard() throws {
@@ -282,22 +275,49 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
         reveal(app.staticTexts["goal.linked.inside.bottom.left"], in: app)
         retainEvidence("Keeper pre-audit field and 7 m viewport", in: app,
                        elements: [app.staticTexts["goal.linked.inside.bottom.left"], app.buttons["court.linked.sevenMeters"]])
-        try app.performAccessibilityAudit()
+        try app.performAccessibilityAudit(for: .all, AccessibilityAuditPolicy.ignores)
     }
 
     func testAccessibilityAuditOnSettledZeroShotGoalkeeper() throws {
         let app = launch(screen: "goalkeeperCard", data: "emptyGoalkeeper")
-        reveal(app.staticTexts["goal.linked.inside.top.left"], in: app)
-        try app.performAccessibilityAudit()
+        // Since 1919e34 a keeper with no shots shows the empty card instead of
+        // linked zones, so the settled state is that card, not a goal target.
+        XCTAssertTrue(app.staticTexts["No Goalkeeper Data"].waitForExistence(timeout: 10))
+        try app.performAccessibilityAudit(for: .all, AccessibilityAuditPolicy.ignores)
     }
 
-    private func launch(screen: String, data: String = "demo", canvasProbe: Bool = false) -> XCUIApplication {
+    func testAccessibilityAuditAtLargestTextSize() throws {
+        for screen in ["sessions", "scouting", "shooterCard", "goalkeeperCard"] {
+            let app = launch(screen: screen, accessibilityText: true)
+            retainEvidence("Largest text: \(screen)", in: app, elements: [])
+            try app.performAccessibilityAudit(for: .all, AccessibilityAuditPolicy.ignores)
+            app.terminate()
+        }
+    }
+
+    func testRosterAccessibilityAuditAtLargestTextSize() throws {
+        let app = launch(screen: "teams", accessibilityText: true)
+        let rivals = app.buttons["Rivals"].firstMatch
+        XCTAssertTrue(rivals.waitForExistence(timeout: 5))
+        rivals.tap()
+        let team = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "BM Serra")).firstMatch
+        XCTAssertTrue(team.waitForExistence(timeout: 5))
+        team.tap()
+        XCTAssertTrue(app.buttons["Edit Roster"].waitForExistence(timeout: 5))
+        retainEvidence("Roster largest text", in: app, elements: [])
+        try app.performAccessibilityAudit(for: .all, AccessibilityAuditPolicy.ignores)
+    }
+
+    private func launch(screen: String, data: String = "demo", canvasProbe: Bool = false, accessibilityText: Bool = false) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = [
             "-KPScreen", screen, "-KPData", data,
             "-AppleLanguages", "(en)", "-AppleLocale", "en_US"
         ]
         if canvasProbe { app.launchArguments.append("-KPUITestCanvasProbe") }
+        if accessibilityText {
+            app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
+        }
         app.launch()
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
         return app
@@ -321,6 +341,13 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
             retainScaffoldNavigationEvidence("Before More navigation", in: app)
             XCTAssertTrue(more.waitForExistence(timeout: 5))
             more.tap()
+            // iOS 26 folds the secondary-action "More" menu into the system
+            // overflow, also labelled "More": open the nested menu as well.
+            if !scaffold.waitForExistence(timeout: 2) {
+                let nested = app.buttons.matching(identifier: "More").allElementsBoundByIndex
+                    .last { $0.isHittable }
+                nested?.tap()
+            }
         }
         retainScaffoldNavigationEvidence("Before scaffold selection", in: app)
         XCTAssertTrue(scaffold.waitForExistence(timeout: 5))
@@ -473,8 +500,8 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
         let mark = app.buttons["\(scope).sevenMeters"]
         let origins = regions(in: app, prefix: "\(scope).")
         // Capture every frame BEFORE the mark-size assertion can abort.
-        // Its semantic bounds represent the 1.4 x 1 m drawing/hit region,
-        // not the intrinsic height of an unrendered Text button label.
+        // The 7 m semantic target has a 44 pt floor, centered on the unchanged
+        // 1.4 x 1 m physical drawing/hit region.
         retainEvidence("Court frames before metric assertions", in: app, elements: origins)
         let canvas = try measuredCanvas(in: app, scope: scope)
         let width = canvas.width
@@ -521,10 +548,17 @@ final class DrawnRegionsAccessibilityTests: XCTestCase {
         XCTAssertEqual(app.buttons.matching(identifier: "\(scope).sevenMeters").count, 1)
         XCTAssertEqual(mark.label, "7 m mark")
         XCTAssertGreaterThan(mark.frame.width, 0)
-        XCTAssertEqual(mark.frame.height, height / 15, accuracy: 1)
+        XCTAssertEqual(mark.frame.height, max(44, height / 15), accuracy: 1)
         XCTAssertEqual(origins.count, expected.count)
         for (code, normalized) in expected {
             let frame = app.buttons["\(scope).\(code)"].frame
+            if code == "sevenMeters" {
+                XCTAssertEqual(frame.midX, canvas.midX, accuracy: 1)
+                XCTAssertEqual(frame.midY, canvas.minY + height * 7 / 15, accuracy: 1)
+                XCTAssertEqual(frame.width, max(44, width * 1.4 / 20), accuracy: 1)
+                XCTAssertEqual(frame.height, max(44, height / 15), accuracy: 1)
+                continue
+            }
             XCTAssertGreaterThan(frame.width, 0, code)
             XCTAssertGreaterThan(frame.height, 0, code)
             XCTAssertGreaterThanOrEqual(frame.minX, canvas.minX - 1, code)

@@ -56,7 +56,7 @@ struct ShooterCardContentView: View {
                 .font(.title2.bold())
             Text(headerStatsLine)
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.primary)
         }
     }
 
@@ -80,7 +80,7 @@ struct ShooterCardContentView: View {
 
     private var whereTheyScoreSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Where they score").font(.headline)
+            SectionTitle("Where they score")
 
             // Goal zones read `fieldShots`, like the goal heatmap above: 7 m
             // stays apart (docs/mvp.md §6). Origins keep 7 m, where it is its
@@ -128,7 +128,7 @@ struct ShooterCardContentView: View {
     /// `LinkedZonesView`'s 7 m caption already documents).
     private var shotShapeSection: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Shot shape").font(.headline)
+            SectionTitle("Shot shape")
             Text(lineSplitText)
             Text(dominantHeightText)
         }

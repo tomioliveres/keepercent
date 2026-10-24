@@ -10,6 +10,7 @@ struct MatchRosterSelection: View {
     @State private var draft: MatchRosterDraft
     @State private var editingID: UUID?
     @State private var numberText = ""
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     init(available: [Player], players: Binding<[Player]>, lockedIDs: Set<UUID> = [],
          title: LocalizedStringKey = "Match roster") {
@@ -38,15 +39,15 @@ struct MatchRosterSelection: View {
                 if let id = player.id {
                     let current = draft.player(id: id) ?? player
                     if lockedIDs.contains(id) {
-                        HStack {
+                        rowLayout {
                             playerLabel(current)
-                            Spacer()
+                            if !dynamicTypeSize.isAccessibilitySize { Spacer() }
                             Label("Locked", systemImage: "lock.fill").font(.caption)
                         }
                         .accessibilityElement(children: .combine)
                         .accessibilityHint("Already belongs to this match. Inclusion and shirt number cannot be changed.")
                     } else {
-                        HStack {
+                        rowLayout {
                             Toggle(isOn: Binding(get: { draft.isSelected(id) }, set: { included in
                                 draft.setIncluded(included, for: id)
                                 players = draft.selectedPlayers
@@ -91,6 +92,14 @@ struct MatchRosterSelection: View {
             .disabled(Int(numberText) == nil)
             Button("Cancel", role: .cancel) { editingID = nil }
         }
+    }
+
+    /// Accessibility sizes stack the trailing control under the label so the
+    /// label keeps the full row width instead of wrapping mid-word.
+    private var rowLayout: AnyLayout {
+        dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4))
+            : AnyLayout(HStackLayout())
     }
 
     private func playerLabel(_ player: Player) -> some View {

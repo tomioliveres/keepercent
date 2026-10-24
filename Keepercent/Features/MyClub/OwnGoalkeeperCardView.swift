@@ -17,7 +17,7 @@ struct OwnGoalkeeperCardView: View {
                     GoalkeeperCardContentView(player: player, engine: engine).id(scope)
                 } else {
                     ContentUnavailableView("No Goalkeeper Data", systemImage: "chart.bar.xaxis",
-                                           description: Text("No shots faced yet"))
+                                           description: Text("No shots faced yet").foregroundStyle(.primary))
                 }
             }
             .padding()

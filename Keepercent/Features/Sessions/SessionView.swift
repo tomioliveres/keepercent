@@ -136,21 +136,31 @@ struct SessionView: View {
 
     var body: some View {
         GeometryReader { geo in
-            Group {
-                if isThreeColumnLayout(for: geo.size) {
-                    threeColumnLayout(availableHeight: geo.size.height)
-                } else {
-                    portraitLayout
+            VStack(spacing: 8) {
+                if dynamicTypeSize.isAccessibilitySize {
+                    Text(headerSubtitle)
+                        .font(.caption)
+                        .foregroundStyle(.primary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                GeometryReader { content in
+                    Group {
+                        if isThreeColumnLayout(for: geo.size) {
+                            threeColumnLayout(availableHeight: content.size.height)
+                        } else {
+                            portraitLayout
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .padding(12)
         .navigationTitle(team.name)
-        .navigationSubtitle(horizontalSizeClass == .compact ? "" : headerSubtitle)
+        .navigationSubtitle(horizontalSizeClass == .compact || dynamicTypeSize.isAccessibilitySize ? "" : headerSubtitle)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            if horizontalSizeClass == .compact {
+            if horizontalSizeClass == .compact && !dynamicTypeSize.isAccessibilitySize {
                 // The system subtitle truncates on a phone ("En directo · 20 sept 20…"),
                 // hiding the year and the live shot count; this one may wrap.
                 ToolbarItem(placement: .principal) {
@@ -158,7 +168,7 @@ struct SessionView: View {
                         Text(team.name).font(.headline).lineLimit(1)
                         Text(headerSubtitle)
                             .font(.caption2)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(.primary)
                             .multilineTextAlignment(.center)
                             .lineLimit(3)
                             .minimumScaleFactor(0.85)
@@ -251,7 +261,7 @@ struct SessionView: View {
     private func threeColumnLayout(availableHeight: CGFloat) -> some View {
         HStack(alignment: .top, spacing: 24) {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Shooter").font(.headline)
+                SectionTitle("Shooter")
                 shooterContent(compact: false)
             }
             .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -259,8 +269,13 @@ struct SessionView: View {
             middleColumn(availableHeight: availableHeight)
                 .frame(maxWidth: .infinity, alignment: .top)
 
-            contextPanel
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            if dynamicTypeSize.isAccessibilitySize {
+                ScrollView { contextPanel }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            } else {
+                contextPanel
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            }
         }
     }
 
@@ -282,11 +297,17 @@ struct SessionView: View {
                         shooterContent(compact: true)
                         middleColumn(availableHeight: max(300, proxy.size.width / goalOverallAspectRatio
                             + proxy.size.width / CourtGeometry.standard.aspectRatio + middleColumnSpacing))
+                        if dynamicTypeSize.isAccessibilitySize {
+                            contextPanel.feedback
+                        }
                     }
+                    .frame(maxWidth: .infinity)
                 }
             }
         }
-        .safeAreaInset(edge: .bottom, spacing: 8) { contextPanel.feedback }
+        .safeAreaInset(edge: .bottom, spacing: dynamicTypeSize.isAccessibilitySize ? 0 : 8) {
+            if !dynamicTypeSize.isAccessibilitySize { contextPanel.feedback }
+        }
     }
 
     @ViewBuilder
@@ -351,6 +372,7 @@ struct SessionView: View {
 
     private var contextPanel: ShotEntryContextPanel {
         ShotEntryContextPanel(
+            dynamicTypeSize: dynamicTypeSize,
             attackingSide: attackingSide,
             onSelectAttackingSide: { beginEntry(); attackingSide = $0 },
             goalkeepers: matchPlayers.filter(\.isGoalkeeper),

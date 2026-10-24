@@ -26,11 +26,21 @@ struct RosterGridView: View {
     /// outer `ScrollView` is the only one that scrolls.
     var isScrollable: Bool = true
     @State private var isEditing = false
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     /// Adaptive columns, each at least the roster tile's own minimum tap
     /// target, so the grid reflows from a narrow iPhone to a wide iPad
     /// split-view pane without ever shrinking a tile below 44x44.
-    private let columns = [GridItem(.adaptive(minimum: rosterTileMinimumDimension + 32, maximum: 110), spacing: 12)]
+    private var columns: [GridItem] {
+        if dynamicTypeSize.isAccessibilitySize {
+            if horizontalSizeClass == .compact {
+                return Array(repeating: GridItem(.flexible(), spacing: 12, alignment: .top), count: 2)
+            }
+            return [GridItem(.adaptive(minimum: 150, maximum: 200), spacing: 12, alignment: .top)]
+        }
+        return [GridItem(.adaptive(minimum: rosterTileMinimumDimension + 32, maximum: 110), spacing: 12)]
+    }
 
     var body: some View {
         if isScrollable {

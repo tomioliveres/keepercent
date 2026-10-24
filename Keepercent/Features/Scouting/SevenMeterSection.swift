@@ -12,7 +12,7 @@ struct SevenMeterSection: View {
     var body: some View {
         let sample = engine.sevenMeterShots
         VStack(alignment: .leading, spacing: 8) {
-            Text("7 m throws").font(.headline)
+            SectionTitle("7 m throws")
             if sample.shots.isEmpty {
                 Text("7 m: no shots")
                     .foregroundStyle(.secondary)

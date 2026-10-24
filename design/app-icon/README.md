@@ -1,13 +1,21 @@
 # Final layered app icon
 
-The production source is [`Keepercent/AppIcon.icon`](../../Keepercent/AppIcon.icon), an editable native Icon Composer package with three independent SVG planes. It is integrated and closed at the user's request on 2026-10-15.
+The production source is [`Keepercent/AppIcon.icon`](../../Keepercent/AppIcon.icon), an editable native Icon Composer package with three independent SVG planes. It was first integrated on 2026-10-15 and revised for Liquid Glass on 2026-10-23.
 
 ## Final artwork
 
-- The white chevron has symmetric arm geometry and matching depth/shadow outlines.
-- Both percentage dots use the same material treatment, preserving their positions and radii.
+- The composition is unchanged: goal with striped posts, net, white chevron and percentage sign, and the court with the 6 m, 7 m and 9 m lines.
+- The white chevron has symmetric arm geometry.
+- The percentage sign is 12 % larger and uses a brighter cyan; both dots carry handball seams.
 - The 7 m mark is centered at x=627 on the 1254-unit artwork canvas.
-- The approved goal, net, court, palette, and native layer configuration are retained. No flat PNG replaces the layered asset.
+- No flat PNG replaces the layered asset.
+
+## Liquid Glass revision (2026-10-23)
+
+- **Background:** a deep navy arena with a soft top spotlight replaces the near-black crowd; the crowd texture stays at 40 % strength.
+- **Court:** the goal-area band uses the court's blue family instead of grey teal; the 4 m mark is removed (it stacked with the 7 m mark into an "="); the 7 m mark is wider; a soft contact shadow and faint post reflections ground the goal on a glossy floor.
+- **Symbols layer:** baked cast shadows and depth outlines are removed, and the layer has `glass` and `specular` on, so Icon Composer draws depth once instead of twice.
+- **Tinted and Clear appearances:** the symbols fill white, the goal drops to 55 % opacity and the court to 35 %, so the chevron and percentage sign stay legible ([native renders](integration/evidence/glass-revision-appearances.png): Default, Dark, Tinted, Clear).
 
 ## Verification
 

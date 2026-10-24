@@ -192,12 +192,20 @@ struct GoalView: View {
     @ViewBuilder
     private func accessibleRegion(_ target: GoalTarget, rect: CGRect) -> some View {
         if isAccessibleAction {
-            Button(accessibilityName(for: target)) { onTargetTapped(target) }
+            Button { onTargetTapped(target) } label: {
+                // A clear label, as in CourtView: the canvas already draws the
+                // target, so no invisible text exists to be clipped or low-contrast.
+                Rectangle().fill(.clear)
+                    .frame(width: max(44, rect.width), height: max(44, rect.height))
+            }
+                .accessibilityLabel(accessibilityName(for: target))
                 .accessibilityIdentifier(target == .post(.leftPostTop) && !showsPostControl
                     ? "goalSupplementary.\(accessibilityScope).leftPostTop"
                     : "\(accessibilityScope).\(target.code)")
                 .accessibilityValue(accessibilitySample(for: target))
-                .frame(width: rect.width, height: rect.height)
+                // Semantic activation stays on the same target; physical
+                // taps still use the unmodified canvas classifier.
+                .frame(width: max(44, rect.width), height: max(44, rect.height))
                 .position(x: rect.midX, y: rect.midY)
         } else {
             Text(accessibilityName(for: target))

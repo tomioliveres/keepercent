@@ -12,13 +12,19 @@ struct SessionRowView: View {
     let kind: SessionKind?
     let matchDate: Date
     let shotCount: Int
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var kindText: String {
         kind.map(sessionKindLabel) ?? String(localized: "Unknown kind")
     }
 
     var body: some View {
-        HStack {
+        // At accessibility sizes the count drops below the date so every
+        // column keeps the full row width and words never break mid-word.
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4))
+            : AnyLayout(HStackLayout())
+        return layout {
             VStack(alignment: .leading, spacing: 2) {
                 Text(kindText)
                     .font(.headline)
@@ -26,13 +32,15 @@ struct SessionRowView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
-            Spacer()
-            Text("\(shotCount) shots")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            Image(systemName: "chevron.right")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
+            if !dynamicTypeSize.isAccessibilitySize { Spacer() }
+            HStack {
+                Text("\(shotCount) shots")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
         }
         .contentShape(Rectangle())
         .padding(.vertical, 8)

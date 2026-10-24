@@ -5012,6 +5012,20 @@
         }
       }
     },
+    "Showing" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Showing" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Mostrando" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "Mostrando" } }
+      }
+    },
+    "vs %@ · %@" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "vs %1$@ · %2$@" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "vs %1$@ · %2$@" } },
+        "es-419" : { "stringUnit" : { "state" : "translated", "value" : "vs %1$@ · %2$@" } }
+      }
+    },
     "Scouting" : {
       "localizations" : {
         "es" : {

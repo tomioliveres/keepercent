@@ -21,15 +21,25 @@ struct ShooterGridColumn: View {
     let selectedNumber: Int?
     let onSelect: (Int) -> Void
     var isCompact = false
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     /// Same minimum as `RosterGridView`'s own grid (`rosterTileMinimumDimension`,
     /// Features/Teams/PlayerTileView.swift) — this is the same tap target,
     /// just without the "+" tile — capped a little tighter so more of a
     /// roster fits in one third of an iPad's width without scrolling.
-    private let columns = [GridItem(.adaptive(minimum: rosterTileMinimumDimension + 20, maximum: 92), spacing: 10)]
+    private var columns: [GridItem] {
+        if dynamicTypeSize.isAccessibilitySize {
+            if horizontalSizeClass == .compact {
+                return Array(repeating: GridItem(.flexible(), spacing: 10, alignment: .top), count: 2)
+            }
+            return [GridItem(.adaptive(minimum: 150, maximum: 200), spacing: 10, alignment: .top)]
+        }
+        return [GridItem(.adaptive(minimum: rosterTileMinimumDimension + 20, maximum: 92), spacing: 10)]
+    }
 
     var body: some View {
-        if isCompact { compactStrip }
+        if isCompact && !dynamicTypeSize.isAccessibilitySize { compactStrip }
         else { grid }
     }
 
