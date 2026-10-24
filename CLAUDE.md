@@ -41,15 +41,32 @@ Functionality · code quality and cleanliness · creativity · correct use of na
 - Feature-first folder structure. Reuse one linked-view component for both the shooter and the goalkeeper cards.
 - **Container / presentational views**: `@Query` is confined to container views; presentational views only draw domain structs they receive, never touch SwiftData directly.
 - **`StatsEngine` never receives a `ModelContext`**: it takes domain structs, so every statistic stays testable without a simulator.
-- **Testing policy**: TDD is strict on `Domain/` (`swift test`, RED → GREEN → REFACTOR); views are verified by UI tests, snapshot tests (once introduced) and simulator screenshots. `Tools/Overnight/check.sh` is the single gate: Domain tests plus the app and UI-test run on a simulator.
+- **Testing policy**: TDD is strict on `Domain/` (`swift test`, RED → GREEN → REFACTOR); views are covered by permanent UI flow tests, accessibility audits and snapshot tests (once introduced), plus simulator screenshots. Tests are regression suites that run on every task, never one-off checks.
+- **`Tools/check.sh` is the single gate for every workflow**: `--build-only` (Domain tests, app build, UI-test compilation; no simulator) while implementing, and `--simulator <udid>` (every Domain and UI test) before a task closes. A task closes only with the full gate green or with each remaining failure recorded as expected with its cause.
 - **One review per task, at close**: when a task touches `Domain/` or `Keepercent/Persistence/`, run `codex exec -s read-only` over `git diff <task base>...HEAD` before closing; visual-only tasks rely on the gate and simulator checks. Fix confirmed defects in the same task branch.
 - **Closure lives in the task branch**: the last commit of `task/<id>` (or `auto/<id>`) checks the task off with its commits, checks, verification and review. Docs not tied to a task (study log, `docs/mvp.md`) may go straight to `main` as `docs:` commits.
 - Conventional Commits. Code, comments, UI copy and documentation in English.
 
-## Workflow (everything in Claude Code, since 2026-10-23)
+## Workflows (pick one per task)
 
-- **One task at a time.** OpenCode and the cross-runtime handoff are retired.
-- **`/auto-task`** (`.claude/skills/auto-task/SKILL.md`) implements, tests, self-verifies in the simulator, fixes, reviews and closes one task end to end without asking. It runs interactively or unattended.
-- **Unattended runs**: `Tools/Overnight/run.sh` (see [docs/overnight.md](docs/overnight.md)) chains the tasks marked `auto` in [odd/overnight/queue.md](odd/overnight/queue.md) on an integration branch `overnight/<date>`, in its own worktree and simulator, and pushes that branch after each finished task. It never touches `main`: the author reviews the run report and fast-forwards `main` in the morning.
-- **Model self-verification is not author verification.** Screenshots judged by the model are recorded as `self-verified`; `/verify-ui` remains available for an independent exact-SHA check when the author wants one. A missing visual capability yields `unverifiable`, not `pass`.
-- Tasks that need the author's judgement (usability sessions, publishing, new visual direction, product decisions) are never marked `auto`.
+**One task at a time**, whatever the workflow. All three share the same conventions: a task branch from `main`, strict TDD in `Domain/`, the `Tools/check.sh` gate, closure in the task branch, and the review rule above.
+
+| Workflow | When | How |
+| --- | --- | --- |
+| **A. Step by step (OpenCode + Claude Code)** | The author is present, wants to go one step at a time, or the task needs their judgement. Uses both runtimes' models. | OpenCode `/next-task` implements and gates with `--build-only`; Claude Code `/verify-ui` runs the full gate and the exact-SHA visual check; OpenCode closes. |
+| **B. One task end to end (Claude Code)** | The author is around but does not want to relay between runtimes. | Claude Code `/auto-task <task-id>` implements, runs the full gate, self-verifies in the simulator, fixes, reviews and closes without asking. |
+| **C. Unattended chain (overnight)** | The author is away and has spare quota. | `Tools/Overnight/run.sh` runs workflow B for each task marked `auto` in [odd/overnight/queue.md](odd/overnight/queue.md) on `overnight/<date>`; see [docs/overnight.md](docs/overnight.md). |
+
+### Workflow A details
+
+- **Route by size**: quick, mostly visual or copy changes (and small defects reported by `/verify-ui`) may be done directly in a Claude Code Sonnet session on the task branch; Domain logic, data and persistence, navigation or structural changes and multi-step features go to OpenCode `/next-task` (`.claude/skills/next-task/SKILL.md`). OpenCode never boots a simulator.
+- **Defect fixes from a verdict**: the author picks where they are fixed. A quick fix in Claude Code commits on the task's branch and sets the handoff back to `ready` with the new `sha`; `/verify-ui` re-checks only the affected cases; OpenCode then closes the task.
+- **Simulator verification runs only in Claude Code**: `/verify-ui` (`.claude/skills/verify-ui/SKILL.md`) follows the [Keepercent profile](docs/ui-verification.md), works on the isolated exact-SHA checkout `../keepercent-verify`, and never edits source, commits, merges or pushes.
+- The handoff lives in `$(git rev-parse --git-common-dir)/handoff/<task-id>.md` (inside `.git/`, never committed). A missing visual capability yields `unverifiable`, not `pass`.
+- UI verification happens **before** review.
+
+### Workflows B and C details
+
+- **Model self-verification is not author verification.** Screenshots judged by the model are recorded as `self-verified`; the author can still run `/verify-ui` for an independent exact-SHA check.
+- Workflow C never touches `main`: it pushes only `overnight/<date>`, and the author reviews the run report and fast-forwards `main`.
+- Tasks that need the author's judgement (usability sessions, publishing, new visual direction, product decisions, real stores) are never marked `auto`; run them with workflow A.

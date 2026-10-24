@@ -46,7 +46,7 @@ The driver exports these; when run interactively, derive them as noted.
 
 ## 3. Gate
 
-Run `Tools/Overnight/check.sh "$KP_SIMULATOR" "$KP_RUN_DIR"`. It runs Domain tests, then builds and runs the app's UI tests on the simulator, and prints a short summary plus the log paths. Read the `.log` tails and the `xcresult` summary it prints for failures; do not paste whole logs.
+Run `Tools/check.sh --simulator "$KP_SIMULATOR" --out "$KP_RUN_DIR/check"`. It runs Domain tests, then builds and runs the app's UI tests on the simulator, and prints a short summary plus the log paths. Read the `.log` tails and the `xcresult` summary it prints for failures; do not paste whole logs.
 
 ## 4. Self-verify visible changes
 

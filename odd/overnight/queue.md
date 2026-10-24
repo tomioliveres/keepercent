@@ -11,7 +11,7 @@ A task is ticked by `/auto-task` in its close commit. Each **Acceptance** list i
 - [ ] T7.9 · auto · opus — UI test suite green
   - Context: in T7.2's r3 run 4 UI tests passed and 13 failed; three navigation/reveal failures reproduced at baseline, ten audit failures match historical T6.1-A symptoms. T7.4 adds `AccessibilityAuditPolicy` and audits at the largest text size.
   - Acceptance:
-    1. The full UI test target runs on the dedicated iPhone simulator through `Tools/Overnight/check.sh` with zero unexpected failures.
+    1. The full UI test target runs on the dedicated iPhone simulator through `Tools/check.sh` with zero unexpected failures.
     2. Each failure is diagnosed to a cause (app defect, test defect, or a known false positive of drawing-only elements) and fixed at that cause. App defects are fixed in the app, not hidden in the test.
     3. Any remaining expected failure uses `XCTExpectFailure` with the cause in its message, and is listed in the close line. Blanket audit suppression is not allowed: `AccessibilityAuditPolicy` may only ignore `.textClipped`/`.contrast` on drawing identifiers.
     4. Split the scheme's tests into an `.xctestplan` with two configurations: `Smoke` (navigation and behavior) and `Audits` (accessibility audits), both run by default.
@@ -46,7 +46,7 @@ A task is ticked by `/auto-task` in its close commit. Each **Acceptance** list i
     1. A unit test target for the app that snapshots `GoalView`, `CourtView`, `LinkedZonesView`, the shooter and goalkeeper card contents, the shot-entry context panel and the shared report image.
     2. Matrix per view: iPhone and iPad widths × light and dark × text sizes `.large`, `.accessibility3` and `.accessibility5` × `demo`, empty and `stress` data where the view takes data.
     3. References are recorded once, every reference image is read and judged against the standard visual checks before it is committed; defects are fixed in the view first. Snapshots pin the simulator device and OS in the test and document how to re-record.
-    4. Snapshots run in `Tools/Overnight/check.sh`.
+    4. Snapshots run in `Tools/check.sh`.
 
 ## Held for the author
 

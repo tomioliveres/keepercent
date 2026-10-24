@@ -11,7 +11,7 @@ metadata:
 
 Reply to the user in Spanish. This is the Claude Code adapter, not the global policy. First load `docs/ui-verification.md`, the installed `verify-interface` skill, its evidence reference, and the iOS adapter as resolved there. Keep this adapter's tool-specific workarounds local. If the Claude Simulator MCP is unavailable, use a permitted Computer Use route only if supported by this runtime and the profile; otherwise return `unverifiable` with missing capability.
 
-**Read-only on code.** This skill never edits source, never commits, never merges. Defects go back to the implementing Claude Code session (`/auto-task` or an interactive one) through the handoff file (see `CLAUDE.md`, Workflow). This skill is now optional: an independent exact-SHA check the author asks for on top of `/auto-task`'s self-verification.
+**Read-only on code.** This skill never edits source, never commits, never merges. Defects go back to the implementer through the handoff file: OpenCode, or a separate Claude Code quick-fix session when the user chooses it (see `CLAUDE.md`, Workflow A). In workflows B and C this skill is optional: an independent exact-SHA check the author asks for on top of `/auto-task`'s self-verification.
 
 ## 1. Pick the handoff
 
@@ -30,7 +30,7 @@ Before either command, check that the verification checkout is clean, belongs to
 
 Use one foreground verifier with the shared policy, project profile, exact handoff screens/checks, and prior case ledger. Execute directly when capable unless the calling workflow requires an independent verifier; if delegation is required, use the runtime's configured verifier without forcing a model. Apply the shared incremental rules before this procedure; the full matrix below is for initial/full runs, not a demand to repeat unchanged evidenced cases:
 
-1. Build: `xcodebuild -project Keepercent.xcodeproj -scheme Keepercent -destination 'platform=iOS Simulator,name=<device>' -derivedDataPath build/DerivedData build` inside `../keepercent-verify`.
+1. Full gate, which also builds the app: `Tools/check.sh --simulator <udid> --out build/check/<task-id>` inside `../keepercent-verify`. Every failing Domain or UI test is a defect in the verdict (or `expected` when the test marks it with `XCTExpectFailure` and its cause). The built app is in `build/DerivedData/Build/Products/Debug-iphonesimulator/`.
 2. Devices in sequence, **one booted at a time**: an iPhone first, then an iPad (`xcrun simctl list devices available` to pick names; shut the iPhone down before booting the iPad).
 3. For each device: `simctl ui booted appearance light`, then `dark`.
 4. Reach each screen:
@@ -49,4 +49,4 @@ Use one foreground verifier with the shared policy, project profile, exact hando
 
 Update only the handoff status, actual actor timestamp, and `## Verdict` with the shared case ledger, pending cases, and preserved history. Recheck the exact task/SHA before writing and read it back afterward. Mirror best effort to `keepercent/verify/<task-id>`; a failed file write/readback cannot produce a passing handoff. Do not change the handoff's target or checks.
 
-Tell the user in two or three lines: the verdict, the worst defect if any, and the next step: *"Volvé a la sesión que implementó la tarea para corregir o cerrar"*. Leave the worktree in place for the next run.
+Tell the user in two or three lines: the verdict, the worst defect if any, and the next step: *"Volvé a OpenCode y corré `/next-task`"* (or, outside workflow A, to the session that implemented the task). Leave the worktree in place for the next run.

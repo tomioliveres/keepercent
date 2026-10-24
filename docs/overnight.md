@@ -1,6 +1,6 @@
 # Unattended runs
 
-`Tools/Overnight/run.sh` lets Claude Code work through queued tasks while the author is away. Each task runs `/auto-task` in a fresh headless session: implement, gate, self-verify in the simulator, fix (three rounds at most), review, close.
+`Tools/Overnight/run.sh` is workflow C in `CLAUDE.md`: Claude Code works through queued tasks while the author is away. Workflows A (OpenCode `/next-task` + Claude Code `/verify-ui`) and B (`/auto-task` one task at a time) stay available for attended work. Each task runs `/auto-task` in a fresh headless session: implement, gate, self-verify in the simulator, fix (three rounds at most), review, close.
 
 ## Before the first run
 

@@ -8,7 +8,7 @@
       "Bash(xcodebuild:*)",
       "Bash(xcrun simctl:*)",
       "Bash(xcrun xcresulttool:*)",
-      "Bash(Tools/Overnight/check.sh:*)",
+      "Bash(Tools/check.sh:*)",
       "Bash(codex exec -s read-only:*)",
       "Bash(git status:*)",
       "Bash(git diff:*)",
