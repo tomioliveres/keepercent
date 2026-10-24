@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Edit",
+      "Write",
+      "Bash(swift test:*)",
+      "Bash(swift build:*)",
+      "Bash(xcodebuild:*)",
+      "Bash(xcrun simctl:*)",
+      "Bash(xcrun xcresulttool:*)",
+      "Bash(Tools/Overnight/check.sh:*)",
+      "Bash(codex exec -s read-only:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git switch:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(git branch --show-current)",
+      "Bash(mkdir:*)",
+      "Bash(sleep:*)"
+    ],
+    "deny": [
+      "Bash(git push:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git clean:*)",
+      "Bash(git worktree:*)",
+      "Bash(git checkout main:*)",
+      "Bash(git switch main:*)",
+      "Bash(git merge:*)",
+      "Bash(git rebase:*)",
+      "Bash(gh:*)",
+      "Bash(gentle-ai:*)",
+      "Bash(xcrun simctl erase:*)",
+      "Bash(xcrun simctl delete:*)",
+      "Bash(rm -rf:*)"
+    ]
+  }
+}

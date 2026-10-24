@@ -16,7 +16,7 @@ Use the installed `verify-interface` skill for shared evidence and recovery rule
 | Runtime | Execution route |
 | --- | --- |
 | Claude Code (the only verifier since 2026-10-19) | `.claude/skills/verify-ui/SKILL.md` supplies its Simulator MCP adapter and observed tool workarounds. It must also load the shared policy and this profile. |
-| OpenCode | Prepare the handoff and consume the verdict with `/next-task`; do not boot Simulator. |
+| `/auto-task` (Claude Code, since 2026-10-23) | Self-verifies with `xcrun simctl` screenshots on its dedicated simulator and records them as `self-verified`; it does not use the handoff. |
 
 For the shell route, build inside the isolated checkout with `xcodebuild -project Keepercent.xcodeproj -scheme Keepercent -destination 'platform=iOS Simulator,name=<available device>' -derivedDataPath build/DerivedData build`, then install/launch that artifact through the chosen authorized adapter. Do not rebuild merely to switch interaction tools.
 

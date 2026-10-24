@@ -29,7 +29,8 @@ Functionality · code quality and cleanliness · creativity · correct use of na
 
 - No deadlines and no daily progress posts. Prioritize what the author will use or enjoy.
 - Keep process proportional: weigh the cost of verification rounds and review ceremony against the value of the task.
-- One review per task slice unless native assessment is high; accept scoped functional test outcomes without demanding assertion-by-assertion evidence. Record incomplete verification and accepted debt explicitly.
+- One review per task, at task close; accept scoped functional test outcomes without demanding assertion-by-assertion evidence. Record incomplete verification and accepted debt explicitly.
+- **Lightweight process profile (since 2026-10-23)**: receipt-driven review (`gentle-ai review`) is disabled for this clone; the ledger holds one line per task; Engram does not mirror versioned files (git is the source of truth) and keeps decisions only.
 
 ## Engineering conventions
 
@@ -40,19 +41,15 @@ Functionality · code quality and cleanliness · creativity · correct use of na
 - Feature-first folder structure. Reuse one linked-view component for both the shooter and the goalkeeper cards.
 - **Container / presentational views**: `@Query` is confined to container views; presentational views only draw domain structs they receive, never touch SwiftData directly.
 - **`StatsEngine` never receives a `ModelContext`**: it takes domain structs, so every statistic stays testable without a simulator.
-- **Testing policy**: TDD is strict on `Domain/` (`swift test`, RED → GREEN → REFACTOR); views are verified visually, not unit-tested.
-- **Review one slice per task, not one per commit**: after a work-unit commit run `gentle-ai review assess --base-ref <last reviewed boundary> --committed-only --json` and record the tier. On **medium**, let the slice accumulate and open the review once, at task close, from that same boundary. Always pass `--base-ref` explicitly: without it the preflight re-drags already-acknowledged work into the candidate, and on a clean tree it refuses outright. Risk is decided by the assessment, never by judgement. The candidate is a PR slice or a work-unit commit, never a TODO checkbox.
-- **Once a review is acknowledged, the tree freezes until the next task starts**: the candidate's identity follows the working tree, so every commit after an acknowledgement buys another blocking prompt for work the assessor itself reports as `under_budget`. Task N's review outcome is written as the first commit of task N+1, and that review's advisory findings are applied there too — never as a follow-up commit on the just-acknowledged tree.
+- **Testing policy**: TDD is strict on `Domain/` (`swift test`, RED → GREEN → REFACTOR); views are verified by UI tests, snapshot tests (once introduced) and simulator screenshots. `Tools/Overnight/check.sh` is the single gate: Domain tests plus the app and UI-test run on a simulator.
+- **One review per task, at close**: when a task touches `Domain/` or `Keepercent/Persistence/`, run `codex exec -s read-only` over `git diff <task base>...HEAD` before closing; visual-only tasks rely on the gate and simulator checks. Fix confirmed defects in the same task branch.
+- **Closure lives in the task branch**: the last commit of `task/<id>` (or `auto/<id>`) checks the task off with its commits, checks, verification and review. Docs not tied to a task (study log, `docs/mvp.md`) may go straight to `main` as `docs:` commits.
 - Conventional Commits. Code, comments, UI copy and documentation in English.
 
-## Workflow split (who implements, who verifies)
+## Workflow (everything in Claude Code, since 2026-10-23)
 
-- **One task at a time.**
-- **Route implementation by size** (since 2026-10-19; when unsure, use OpenCode):
-  - **Quick, simple tasks → Claude Code**, in a Sonnet session: one understood change that is mostly visual or copy (colours, spacing, labels, small layout fixes, polish such as T7.6) and small visual defects reported by `/verify-ui`. Same conventions as OpenCode: a task branch from `main` (or the task's existing branch when fixing its defects), strict TDD in `Domain/` if logic changes, generic simulator build, Conventional Commits, ledger check-off and the RDD assessment from Engineering conventions. The session may check its own visual change in the simulator.
-  - **Complex or long tasks → OpenCode** `/next-task` (`.claude/skills/next-task/SKILL.md`): Domain logic, data and persistence, navigation or structural changes, multi-step features. It implements with TDD, runs `swift test`, builds, commits, reviews and closes. It never boots a simulator.
-- **Defect fixes from a verdict**: the user picks where they are fixed. A quick fix in Claude Code commits on the task's branch, sets the handoff back to `ready` with the new `sha`, and `/verify-ui` re-checks only the affected cases; OpenCode then closes the task as usual.
-- **Simulator verification runs only in Claude Code** (since 2026-10-19): `/verify-ui` (`.claude/skills/verify-ui/SKILL.md`) follows the installed `verify-interface` policy and the [Keepercent profile](docs/ui-verification.md), uses the isolated exact-SHA target and the shared case ledger, and never edits source, commits, merges or pushes.
-- The handoff lives in `$(git rev-parse --git-common-dir)/handoff/<task-id>.md` (inside `.git/`, never committed), mirrored to Engram `keepercent/verify/<task-id>`.
-- The verifier writes `updated: <ISO date> by claude-code` only when it can write the authoritative handoff. If it cannot write it, it reports the evidence to OpenCode without claiming a passing handoff. A missing visual capability yields `unverifiable`, not `pass`.
-- UI verification happens **before** the RDD review, so a fix never lands on an acknowledged tree.
+- **One task at a time.** OpenCode and the cross-runtime handoff are retired.
+- **`/auto-task`** (`.claude/skills/auto-task/SKILL.md`) implements, tests, self-verifies in the simulator, fixes, reviews and closes one task end to end without asking. It runs interactively or unattended.
+- **Unattended runs**: `Tools/Overnight/run.sh` (see [docs/overnight.md](docs/overnight.md)) chains the tasks marked `auto` in [odd/overnight/queue.md](odd/overnight/queue.md) on an integration branch `overnight/<date>`, in its own worktree and simulator, and pushes that branch after each finished task. It never touches `main`: the author reviews the run report and fast-forwards `main` in the morning.
+- **Model self-verification is not author verification.** Screenshots judged by the model are recorded as `self-verified`; `/verify-ui` remains available for an independent exact-SHA check when the author wants one. A missing visual capability yields `unverifiable`, not `pass`.
+- Tasks that need the author's judgement (usability sessions, publishing, new visual direction, product decisions) are never marked `auto`.

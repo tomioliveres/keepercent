@@ -11,7 +11,7 @@ metadata:
 
 Reply to the user in Spanish. This is the Claude Code adapter, not the global policy. First load `docs/ui-verification.md`, the installed `verify-interface` skill, its evidence reference, and the iOS adapter as resolved there. Keep this adapter's tool-specific workarounds local. If the Claude Simulator MCP is unavailable, use a permitted Computer Use route only if supported by this runtime and the profile; otherwise return `unverifiable` with missing capability.
 
-**Read-only on code.** This skill never edits source, never commits, never merges. Defects go back to the implementer through the handoff file: OpenCode, or a separate Claude Code quick-fix session when the user chooses it (see `CLAUDE.md`, Workflow split).
+**Read-only on code.** This skill never edits source, never commits, never merges. Defects go back to the implementing Claude Code session (`/auto-task` or an interactive one) through the handoff file (see `CLAUDE.md`, Workflow). This skill is now optional: an independent exact-SHA check the author asks for on top of `/auto-task`'s self-verification.
 
 ## 1. Pick the handoff
 
@@ -24,7 +24,7 @@ git -C <repo> worktree add --detach ../keepercent-verify <sha>   # first time
 git -C ../keepercent-verify checkout --detach <sha>              # later runs
 ```
 
-Before either command, check that the verification checkout is clean, belongs to this repository, and is not in use; never discard unrelated state. Never build from the main checkout: OpenCode may be editing it. Confirm the launch route uses disposable data.
+Before either command, check that the verification checkout is clean, belongs to this repository, and is not in use; never discard unrelated state. Never build from the main checkout: another session may be editing it. Confirm the launch route uses disposable data.
 
 ## 3. Launch ONE verifier
 
@@ -49,4 +49,4 @@ Use one foreground verifier with the shared policy, project profile, exact hando
 
 Update only the handoff status, actual actor timestamp, and `## Verdict` with the shared case ledger, pending cases, and preserved history. Recheck the exact task/SHA before writing and read it back afterward. Mirror best effort to `keepercent/verify/<task-id>`; a failed file write/readback cannot produce a passing handoff. Do not change the handoff's target or checks.
 
-Tell the user in two or three lines: the verdict, the worst defect if any, and the next step: *"Volvé a OpenCode y corré `/next-task`"*. Leave the worktree in place for the next run.
+Tell the user in two or three lines: the verdict, the worst defect if any, and the next step: *"Volvé a la sesión que implementó la tarea para corregir o cerrar"*. Leave the worktree in place for the next run.

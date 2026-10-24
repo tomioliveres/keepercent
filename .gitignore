@@ -31,3 +31,7 @@ reference/
 
 # Skill registry cache (local tooling)
 .atl/
+
+# Local scratch and large third-party design references
+tmp/
+design/app-icon/reference-native/
