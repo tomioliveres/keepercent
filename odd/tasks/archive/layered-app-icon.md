@@ -4,7 +4,7 @@
 
 The final centered package is integrated byte-for-byte in `Keepercent/AppIcon.icon`. T1 and T2 are complete under the user's explicitly narrowed final verification scope: prior installed Light/Dark proof plus structural/native-preview checks for the sole 7 m x-coordinate adjustment; no repeated build or Simulator. The closing Conventional Commit contains this file and the finalized package (locate it with `git log -1 -- Keepercent/AppIcon.icon`). Exact commit identity is recorded in the session handoff/memory after creation. No push or merge.
 
-The [final evidence record](../../design/app-icon/integration/evidence/final-verification.md) is authoritative. Everything below is the preserved historical log; earlier blocked, pending, or next-step statements describe past states and are superseded by this closure. Historical references to experiments and absolute local paths are not additional shipped assets.
+The [final evidence record](../../../design/app-icon/integration/evidence/final-verification.md) is authoritative. Everything below is the preserved historical log; earlier blocked, pending, or next-step statements describe past states and are superseded by this closure. Historical references to experiments and absolute local paths are not additional shipped assets.
 
 ## Objective
 Prepare and integrate a genuine layered Apple-platform icon faithful to the approved Keepercent preview.

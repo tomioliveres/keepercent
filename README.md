@@ -33,7 +33,7 @@ Synthetic demo data, showing selected portions of the screens rather than comple
 
 **Linked-card interaction:** select a court-origin filter, then tap the same zone again to clear it.
 
-Captured from `e377111e6b533f89812abb84faac346c84037ba3` on iPhone 17 / iOS 26.1, portrait, light appearance, English (`en_US`). [Capture details and verification limits](odd/tasks/readme-foundations.md#rf-3-asset-provenance-and-verification).
+Captured from `e377111e6b533f89812abb84faac346c84037ba3` on iPhone 17 / iOS 26.1, portrait, light appearance, English (`en_US`). [Capture details and verification limits](odd/tasks/archive/readme-foundations.md#rf-3-asset-provenance-and-verification).
 
 ## Quick start
 
@@ -92,4 +92,4 @@ This README describes the integrated match/club app, not just the original hacka
 
 The polish/accessibility task is closed with limited verification and recorded debt, not a full accessibility pass. Broader visual coverage and manual VoiceOver acceptance remain incomplete. No complete UI acceptance or App Store readiness is claimed. Public screenshots and a short interaction GIF are available above.
 
-See the [original product plan](docs/mvp.md) for historical intent and the [task ledger](odd/tasks/keepercent.md) for current progress. The [README foundations task](odd/tasks/readme-foundations.md) records this bounded documentation update and its verification.
+See the [original product plan](docs/mvp.md) for historical intent and the [task ledger](odd/tasks/keepercent.md) for current progress. The [README foundations task](odd/tasks/archive/readme-foundations.md) records this bounded documentation update and its verification.
