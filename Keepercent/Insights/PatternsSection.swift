@@ -22,7 +22,7 @@ struct PatternsSection: View {
         VStack(alignment: .leading, spacing: 8) {
             SectionTitle("Patterns")
             if patterns.isEmpty {
-                Text(emptyText).foregroundStyle(.secondary)
+                Text(emptyText).foregroundStyle(.primary)
             } else {
                 ForEach(Array(patterns.prefix(Self.limit).enumerated()), id: \.offset) { _, pattern in
                     row(pattern)
@@ -49,7 +49,7 @@ struct PatternsSection: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(sentence)
                     Text(figure(for: pattern))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.primary)
                         .monospacedDigit()
                 }
                 .fixedSize(horizontal: false, vertical: true)
@@ -57,7 +57,7 @@ struct PatternsSection: View {
                 Text(sentence)
                 Spacer(minLength: 8)
                 Text(figure(for: pattern))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.primary)
                     .monospacedDigit()
             }
         }

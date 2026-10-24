@@ -4,7 +4,10 @@ import SwiftUI
 import KeepercentDomain
 
 struct ShotEntryContextPanel: View {
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    /// Passed in rather than read from `@Environment`: SessionView also places
+    /// `participants` and `feedback` on their own, and a panel that is never
+    /// installed as a view would only ever read the default text size.
+    let dynamicTypeSize: DynamicTypeSize
     let attackingSide: AttackingSide
     let onSelectAttackingSide: (AttackingSide) -> Void
     let goalkeepers: [Player]
@@ -51,7 +54,9 @@ struct ShotEntryContextPanel: View {
 
             if dynamicTypeSize.isAccessibilitySize {
                 Menu {
-                    goalkeeperPicker
+                    // Inline, so the choices open directly instead of one
+                    // nested submenu below this menu.
+                    goalkeeperPicker.pickerStyle(.inline)
                 } label: {
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
                         goalkeeperSelection
@@ -71,7 +76,7 @@ struct ShotEntryContextPanel: View {
                     ? Text("Active Rival Goalkeeper") : Text("Own Goalkeeper (optional)"))
                 .accessibilityValue(goalkeeperSelection)
             } else {
-                goalkeeperPicker
+                goalkeeperPicker.pickerStyle(.menu)
             }
         }
         .frame(minHeight: 44)
@@ -100,7 +105,6 @@ struct ShotEntryContextPanel: View {
                         .tag(Int?.some(player.number))
                 }
             }
-            .pickerStyle(.menu)
             .labelsHidden()
             .accessibilityLabel("Active Rival Goalkeeper")
         } else {
@@ -113,7 +117,6 @@ struct ShotEntryContextPanel: View {
                         .tag(player.id)
                 }
             }
-            .pickerStyle(.menu)
             .labelsHidden()
             .accessibilityLabel("Own Goalkeeper (optional)")
         }
@@ -152,6 +155,9 @@ struct ShotEntryContextPanel: View {
         .padding(10)
         .frame(maxWidth: .infinity)
         .fixedSize(horizontal: false, vertical: true)
+        // The panel can float over the court drawing: an opaque base keeps
+        // its labels' contrast independent of whatever lies underneath.
+        .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 20))
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20))
     }
 

@@ -84,9 +84,11 @@ struct PlayerTileView: View {
             }
 
             Text(player.name ?? String(localized: "Unnamed"))
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
+                .font(.caption)
+                .foregroundStyle(.primary)
+                // Accessibility sizes never truncate a name; the wider tiles
+                // keep ordinary names to two lines.
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .accessibilityElement(children: .combine)
@@ -116,7 +118,7 @@ struct AddPlayerTileView: View {
                 .aspectRatio(1, contentMode: .fit)
 
             Text("Add")
-                .font(.caption2)
+                .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize()
         }

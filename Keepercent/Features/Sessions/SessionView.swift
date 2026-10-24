@@ -372,6 +372,7 @@ struct SessionView: View {
 
     private var contextPanel: ShotEntryContextPanel {
         ShotEntryContextPanel(
+            dynamicTypeSize: dynamicTypeSize,
             attackingSide: attackingSide,
             onSelectAttackingSide: { beginEntry(); attackingSide = $0 },
             goalkeepers: matchPlayers.filter(\.isGoalkeeper),

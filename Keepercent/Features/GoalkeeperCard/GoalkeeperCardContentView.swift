@@ -34,7 +34,7 @@ struct GoalkeeperCardContentView: View {
             header
             if engine.shots.isEmpty {
                 ContentUnavailableView("No Goalkeeper Data", systemImage: "chart.bar.xaxis",
-                                       description: Text("No shots faced yet"))
+                                       description: Text("No shots faced yet").foregroundStyle(.primary))
             } else {
                 InsightTextView(facts: .goalkeeper(
                     overall: engine.saveRate,
@@ -59,7 +59,7 @@ struct GoalkeeperCardContentView: View {
             if !engine.shots.isEmpty {
                 Text(headerStatsLine)
                     .font(.subheadline)
-                    .foregroundStyle(engine.saveRate.attempts == 0 ? Color.primary : Color.secondary)
+                    .foregroundStyle(.primary)
             }
         }
     }
