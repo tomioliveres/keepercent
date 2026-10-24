@@ -29,7 +29,8 @@ Functionality · code quality and cleanliness · creativity · correct use of na
 
 - No deadlines and no daily progress posts. Prioritize what the author will use or enjoy.
 - Keep process proportional: weigh the cost of verification rounds and review ceremony against the value of the task.
-- One review per task slice unless native assessment is high; accept scoped functional test outcomes without demanding assertion-by-assertion evidence. Record incomplete verification and accepted debt explicitly.
+- One review per task, at task close; accept scoped functional test outcomes without demanding assertion-by-assertion evidence. Record incomplete verification and accepted debt explicitly.
+- **Lightweight process profile (since 2026-10-23)**: receipt-driven review (`gentle-ai review`) is disabled for this clone; the ledger holds one line per task; Engram does not mirror versioned files (git is the source of truth) and keeps decisions only.
 
 ## Engineering conventions
 
@@ -40,19 +41,32 @@ Functionality · code quality and cleanliness · creativity · correct use of na
 - Feature-first folder structure. Reuse one linked-view component for both the shooter and the goalkeeper cards.
 - **Container / presentational views**: `@Query` is confined to container views; presentational views only draw domain structs they receive, never touch SwiftData directly.
 - **`StatsEngine` never receives a `ModelContext`**: it takes domain structs, so every statistic stays testable without a simulator.
-- **Testing policy**: TDD is strict on `Domain/` (`swift test`, RED → GREEN → REFACTOR); views are verified visually, not unit-tested.
-- **Review one slice per task, not one per commit**: after a work-unit commit run `gentle-ai review assess --base-ref <last reviewed boundary> --committed-only --json` and record the tier. On **medium**, let the slice accumulate and open the review once, at task close, from that same boundary. Always pass `--base-ref` explicitly: without it the preflight re-drags already-acknowledged work into the candidate, and on a clean tree it refuses outright. Risk is decided by the assessment, never by judgement. The candidate is a PR slice or a work-unit commit, never a TODO checkbox.
-- **Once a review is acknowledged, the tree freezes until the next task starts**: the candidate's identity follows the working tree, so every commit after an acknowledgement buys another blocking prompt for work the assessor itself reports as `under_budget`. Task N's review outcome is written as the first commit of task N+1, and that review's advisory findings are applied there too — never as a follow-up commit on the just-acknowledged tree.
+- **Testing policy**: TDD is strict on `Domain/` (`swift test`, RED → GREEN → REFACTOR); views are covered by permanent UI flow tests, accessibility audits and snapshot tests (once introduced), plus simulator screenshots. Tests are regression suites that run on every task, never one-off checks.
+- **`Tools/check.sh` is the single gate for every workflow**: `--build-only` (Domain tests, app build, UI-test compilation; no simulator) while implementing, and `--simulator <udid>` (every Domain and UI test) before a task closes. A task closes only with the full gate green or with each remaining failure recorded as expected with its cause.
+- **One review per task, at close**: when a task touches `Domain/` or `Keepercent/Persistence/`, run `codex exec -s read-only` over `git diff <task base>...HEAD` before closing; visual-only tasks rely on the gate and simulator checks. Fix confirmed defects in the same task branch.
+- **Closure lives in the task branch**: the last commit of `task/<id>` (or `auto/<id>`) checks the task off with its commits, checks, verification and review. Docs not tied to a task (study log, `docs/mvp.md`) may go straight to `main` as `docs:` commits.
 - Conventional Commits. Code, comments, UI copy and documentation in English.
 
-## Workflow split (who implements, who verifies)
+## Workflows (pick one per task)
 
-- **One task at a time.**
-- **Route implementation by size** (since 2026-10-19; when unsure, use OpenCode):
-  - **Quick, simple tasks → Claude Code**, in a Sonnet session: one understood change that is mostly visual or copy (colours, spacing, labels, small layout fixes, polish such as T7.6) and small visual defects reported by `/verify-ui`. Same conventions as OpenCode: a task branch from `main` (or the task's existing branch when fixing its defects), strict TDD in `Domain/` if logic changes, generic simulator build, Conventional Commits, ledger check-off and the RDD assessment from Engineering conventions. The session may check its own visual change in the simulator.
-  - **Complex or long tasks → OpenCode** `/next-task` (`.claude/skills/next-task/SKILL.md`): Domain logic, data and persistence, navigation or structural changes, multi-step features. It implements with TDD, runs `swift test`, builds, commits, reviews and closes. It never boots a simulator.
-- **Defect fixes from a verdict**: the user picks where they are fixed. A quick fix in Claude Code commits on the task's branch, sets the handoff back to `ready` with the new `sha`, and `/verify-ui` re-checks only the affected cases; OpenCode then closes the task as usual.
-- **Simulator verification runs only in Claude Code** (since 2026-10-19): `/verify-ui` (`.claude/skills/verify-ui/SKILL.md`) follows the installed `verify-interface` policy and the [Keepercent profile](docs/ui-verification.md), uses the isolated exact-SHA target and the shared case ledger, and never edits source, commits, merges or pushes.
-- The handoff lives in `$(git rev-parse --git-common-dir)/handoff/<task-id>.md` (inside `.git/`, never committed), mirrored to Engram `keepercent/verify/<task-id>`.
-- The verifier writes `updated: <ISO date> by claude-code` only when it can write the authoritative handoff. If it cannot write it, it reports the evidence to OpenCode without claiming a passing handoff. A missing visual capability yields `unverifiable`, not `pass`.
-- UI verification happens **before** the RDD review, so a fix never lands on an acknowledged tree.
+**One task at a time**, whatever the workflow. All three share the same conventions: a task branch from `main`, strict TDD in `Domain/`, the `Tools/check.sh` gate, closure in the task branch, and the review rule above.
+
+| Workflow | When | How |
+| --- | --- | --- |
+| **A. Step by step (OpenCode + Claude Code)** | The author is present, wants to go one step at a time, or the task needs their judgement. Uses both runtimes' models. | OpenCode `/next-task` implements and gates with `--build-only`; Claude Code `/verify-ui` runs the full gate and the exact-SHA visual check; OpenCode closes. |
+| **B. One task end to end (Claude Code)** | The author is around but does not want to relay between runtimes. | Claude Code `/auto-task <task-id>` implements, runs the full gate, self-verifies in the simulator, fixes, reviews and closes without asking. |
+| **C. Unattended chain (overnight)** | The author is away and has spare quota. | `Tools/Overnight/run.sh` runs workflow B for each task marked `auto` in [odd/overnight/queue.md](odd/overnight/queue.md) on `overnight/<date>`; see [docs/overnight.md](docs/overnight.md). |
+
+### Workflow A details
+
+- **Route by size**: quick, mostly visual or copy changes (and small defects reported by `/verify-ui`) may be done directly in a Claude Code Sonnet session on the task branch; Domain logic, data and persistence, navigation or structural changes and multi-step features go to OpenCode `/next-task` (`.claude/skills/next-task/SKILL.md`). OpenCode never boots a simulator.
+- **Defect fixes from a verdict**: the author picks where they are fixed. A quick fix in Claude Code commits on the task's branch and sets the handoff back to `ready` with the new `sha`; `/verify-ui` re-checks only the affected cases; OpenCode then closes the task.
+- **Simulator verification runs only in Claude Code**: `/verify-ui` (`.claude/skills/verify-ui/SKILL.md`) follows the [Keepercent profile](docs/ui-verification.md), works on the isolated exact-SHA checkout `../keepercent-verify`, and never edits source, commits, merges or pushes.
+- The handoff lives in `$(git rev-parse --git-common-dir)/handoff/<task-id>.md` (inside `.git/`, never committed). A missing visual capability yields `unverifiable`, not `pass`.
+- UI verification happens **before** review.
+
+### Workflows B and C details
+
+- **Model self-verification is not author verification.** Screenshots judged by the model are recorded as `self-verified`; the author can still run `/verify-ui` for an independent exact-SHA check.
+- Workflow C never touches `main`: it pushes only `overnight/<date>`, and the author reviews the run report and fast-forwards `main`.
+- Tasks that need the author's judgement (usability sessions, publishing, new visual direction, product decisions, real stores) are never marked `auto`; run them with workflow A.
