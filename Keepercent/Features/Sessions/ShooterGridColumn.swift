@@ -31,9 +31,9 @@ struct ShooterGridColumn: View {
     private var columns: [GridItem] {
         if dynamicTypeSize.isAccessibilitySize {
             if horizontalSizeClass == .compact {
-                return Array(repeating: GridItem(.flexible(), spacing: 10), count: 2)
+                return Array(repeating: GridItem(.flexible(), spacing: 10, alignment: .top), count: 2)
             }
-            return [GridItem(.adaptive(minimum: 150, maximum: 200), spacing: 10)]
+            return [GridItem(.adaptive(minimum: 150, maximum: 200), spacing: 10, alignment: .top)]
         }
         return [GridItem(.adaptive(minimum: rosterTileMinimumDimension + 20, maximum: 92), spacing: 10)]
     }

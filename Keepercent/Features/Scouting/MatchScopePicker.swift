@@ -32,7 +32,7 @@ struct MatchScopePicker: View {
         } label: {
             HStack(alignment: .center) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Showing").font(.caption).foregroundStyle(.secondary)
+                    Text("Showing").font(.caption).foregroundStyle(Color.primary)
                     Text(selectedLabel).multilineTextAlignment(.leading)
                         .fixedSize(horizontal: false, vertical: true)
                 }

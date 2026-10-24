@@ -301,6 +301,7 @@ struct SessionView: View {
                             contextPanel.feedback
                         }
                     }
+                    .frame(maxWidth: .infinity)
                 }
             }
         }

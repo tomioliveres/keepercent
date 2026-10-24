@@ -49,36 +49,74 @@ struct ShotEntryContextPanel: View {
             .pickerStyle(.segmented)
             .frame(maxWidth: dynamicTypeSize.isAccessibilitySize ? .infinity : 180)
 
-            if attackingSide == .own {
-                Picker("Active Rival Goalkeeper", selection: Binding(
-                    get: { activeGoalkeeperNumber },
-                    set: { if let number = $0 { onSelectGoalkeeper(number) } }
-                )) {
-                    Text("None").tag(Int?.none)
-                    ForEach(goalkeepers, id: \.number) { player in
-                        Text(verbatim: "#\(player.number)\(player.name.map { " \($0)" } ?? "")")
-                            .tag(Int?.some(player.number))
+            if dynamicTypeSize.isAccessibilitySize {
+                Menu {
+                    goalkeeperPicker
+                } label: {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        goalkeeperSelection
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        Image(systemName: "chevron.up.chevron.down")
+                            .fixedSize()
                     }
+                    .padding(10)
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .contentShape(Rectangle())
                 }
-                .pickerStyle(.menu)
-                .labelsHidden()
-                .accessibilityLabel("Active Rival Goalkeeper")
+                .buttonStyle(.plain)
+                .fixedSize(horizontal: false, vertical: true)
+                .background(Color(.secondarySystemFill), in: RoundedRectangle(cornerRadius: 12))
+                .accessibilityLabel(attackingSide == .own
+                    ? Text("Active Rival Goalkeeper") : Text("Own Goalkeeper (optional)"))
+                .accessibilityValue(goalkeeperSelection)
             } else {
-                Picker("Own Goalkeeper (optional)", selection: Binding(
-                    get: { ownGoalkeeperID }, set: { onSelectOwnGoalkeeper($0) }
-                )) {
-                    Text("None").tag(UUID?.none)
-                    ForEach(ownGoalkeepers, id: \.id) { player in
-                        Text(verbatim: "#\(player.number)\(player.name.map { " \($0)" } ?? "")")
-                            .tag(player.id)
-                    }
-                }
-                .pickerStyle(.menu)
-                .labelsHidden()
-                .accessibilityLabel("Own Goalkeeper (optional)")
+                goalkeeperPicker
             }
         }
         .frame(minHeight: 44)
+        .fixedSize(horizontal: false, vertical: dynamicTypeSize.isAccessibilitySize)
+    }
+
+    private var goalkeeperSelection: Text {
+        let player = attackingSide == .own
+            ? goalkeepers.first { $0.number == activeGoalkeeperNumber }
+            : ownGoalkeepers.first { $0.id == ownGoalkeeperID }
+        if let player {
+            return Text(verbatim: "#\(player.number)\(player.name.map { " \($0)" } ?? "")")
+        }
+        return Text("None")
+    }
+
+    @ViewBuilder private var goalkeeperPicker: some View {
+        if attackingSide == .own {
+            Picker("Active Rival Goalkeeper", selection: Binding(
+                get: { activeGoalkeeperNumber },
+                set: { if let number = $0 { onSelectGoalkeeper(number) } }
+            )) {
+                Text("None").tag(Int?.none)
+                ForEach(goalkeepers, id: \.number) { player in
+                    Text(verbatim: "#\(player.number)\(player.name.map { " \($0)" } ?? "")")
+                        .tag(Int?.some(player.number))
+                }
+            }
+            .pickerStyle(.menu)
+            .labelsHidden()
+            .accessibilityLabel("Active Rival Goalkeeper")
+        } else {
+            Picker("Own Goalkeeper (optional)", selection: Binding(
+                get: { ownGoalkeeperID }, set: { onSelectOwnGoalkeeper($0) }
+            )) {
+                Text("None").tag(UUID?.none)
+                ForEach(ownGoalkeepers, id: \.id) { player in
+                    Text(verbatim: "#\(player.number)\(player.name.map { " \($0)" } ?? "")")
+                        .tag(player.id)
+                }
+            }
+            .pickerStyle(.menu)
+            .labelsHidden()
+            .accessibilityLabel("Own Goalkeeper (optional)")
+        }
     }
 
     /// Ordinary entry keeps its bottom panel; accessibility sizes place these
@@ -88,7 +126,9 @@ struct ShotEntryContextPanel: View {
             Group {
                 if let errorMessage {
                     Text(errorMessage).foregroundStyle(Palette.error)
-                        .lineLimit(2).accessibilityLabel(errorMessage)
+                        .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
+                        .fixedSize(horizontal: false, vertical: dynamicTypeSize.isAccessibilitySize)
+                        .accessibilityLabel(errorMessage)
                 } else {
                     steps
                 }
@@ -98,6 +138,7 @@ struct ShotEntryContextPanel: View {
 
             if dynamicTypeSize.isAccessibilitySize {
                 VStack(alignment: .leading, spacing: 6) { chips }
+                    .frame(maxWidth: .infinity, alignment: .leading)
             } else {
                 ScrollView(.horizontal) {
                     HStack(spacing: 6) { chips }
@@ -150,11 +191,32 @@ struct ShotEntryContextPanel: View {
     }
 
     @ViewBuilder private var actionSlot: some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            // Keep the action controls in place when feedback appears. The
+            // summary grows below them instead of replacing their scroll target.
+            VStack(alignment: .leading, spacing: 12) {
+                outcomeActions
+                lastShotFeedback
+            }
+            .frame(maxWidth: .infinity)
+        } else if lastShotCard != nil {
+            lastShotFeedback
+        } else {
+            outcomeActions
+        }
+    }
+
+    @ViewBuilder private var lastShotFeedback: some View {
         if let lastShotCard {
             switch lastShotCard {
             case .recorded(let text):
-                HStack(spacing: 8) {
-                    Text(text).font(.caption).lineLimit(3)
+                let layout = dynamicTypeSize.isAccessibilitySize
+                    ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
+                    : AnyLayout(HStackLayout(spacing: 8))
+                layout {
+                    Text(text).font(.caption)
+                        .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 3)
+                        .fixedSize(horizontal: false, vertical: dynamicTypeSize.isAccessibilitySize)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .accessibilityLabel(text)
                     Button("Undo", action: onUndo)
@@ -164,23 +226,39 @@ struct ShotEntryContextPanel: View {
             case .removed:
                 Text("Shot removed").foregroundStyle(.secondary)
             }
-        } else {
-            let layout = dynamicTypeSize.isAccessibilitySize
-                ? AnyLayout(VStackLayout(spacing: 12))
-                : AnyLayout(HStackLayout(spacing: 12))
-            layout {
-                outcomeButton("Goal", .goal, symbol: "soccerball")
-                outcomeButton("Saved", .saved, symbol: "hand.raised.fill")
-            }
-            .disabled(target?.impliedOutcome != nil)
         }
+    }
+
+    private var outcomeActions: some View {
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(spacing: 12))
+            : AnyLayout(HStackLayout(spacing: 12))
+        return layout {
+            outcomeButton("Goal", .goal, symbol: "soccerball")
+            outcomeButton("Saved", .saved, symbol: "hand.raised.fill")
+        }
+        .frame(maxWidth: .infinity)
+        .disabled(target?.impliedOutcome != nil)
     }
 
     private func outcomeButton(_ title: LocalizedStringKey, _ outcome: ShotOutcome, symbol: String) -> some View {
         Button { onChooseOutcome(outcome) } label: {
-            Label(title, systemImage: symbol).font(.headline)
+            if dynamicTypeSize.isAccessibilitySize {
+                HStack(spacing: 8) {
+                    Image(systemName: symbol).fixedSize()
+                    Text(title)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity)
+                        .layoutPriority(1)
+                }
+                .font(.headline)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, minHeight: 44)
+            } else {
+                Label(title, systemImage: symbol).font(.headline)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, minHeight: 44)
+            }
         }
         .buttonStyle(.borderedProminent)
         .tint(selectedOutcome == outcome ? Palette.brandAmber : Color(.secondarySystemFill))
@@ -192,8 +270,10 @@ struct ShotEntryContextPanel: View {
                       selected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title).font(.subheadline.weight(selected ? .bold : .regular))
-                .fixedSize()
-                .padding(.horizontal, 10).frame(minWidth: 44, minHeight: 44)
+                .fixedSize(horizontal: !dynamicTypeSize.isAccessibilitySize, vertical: true)
+                .padding(.horizontal, 10)
+                .padding(.vertical, dynamicTypeSize.isAccessibilitySize ? 8 : 0)
+                .frame(minWidth: 44, minHeight: 44)
                 .background(selected ? Palette.brandAmber : Color(.tertiarySystemFill), in: Capsule())
                 .foregroundStyle(selected ? Palette.onBrandAmber : .primary)
                 .overlay { Capsule().stroke(selected ? Palette.accent : .clear, lineWidth: 1.5) }

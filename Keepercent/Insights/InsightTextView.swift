@@ -15,7 +15,7 @@ struct InsightTextView: View {
         VStack(alignment: .leading, spacing: 4) {
             SectionTitle("Scouting insight")
             Text(template)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.primary)
         }
     }
 }
