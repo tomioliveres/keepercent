@@ -7,7 +7,7 @@
 // THEY score"), this card names where the shooter is dangerous with a
 // ranking by goal COUNT, not by rate (`StatsEngine.topGoalZones`/
 // `topOrigins`): a 1/1 zone never outranks a real 4/5 pattern just because
-// its rate looks better — see odd/tasks/keepercent.md's T4.3 entry.
+// its rate looks better — see odd/tasks/archive/keepercent-2026-10-24.md's T4.3 entry.
 //
 // docs/mvp.md §5.3 defines no minimum-sample rule, so — same as
 // `HeatmapColor` and the header stats below — a shooter with zero

@@ -8,7 +8,7 @@
 // where the goalkeeper is weak and strong with two rankings by COUNT, not
 // by rate (`StatsEngine.weakGoalZones`/`strongGoalZones`) — a 1/1 zone
 // never outranks a real conceded/save pattern just because its rate looks
-// better. See odd/tasks/keepercent.md's T4.4 entry.
+// better. See odd/tasks/archive/keepercent-2026-10-24.md's T4.4 entry.
 //
 // docs/mvp.md §5.3 defines no minimum-sample rule, so a goalkeeper with no
 // shots faced reads as "no shots yet", never as a 0% card.

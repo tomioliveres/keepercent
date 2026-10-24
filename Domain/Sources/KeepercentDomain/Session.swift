@@ -3,7 +3,7 @@
 // not the entry date: a live session is recorded during the match so the
 // two coincide, but video scouting happens days after the match was played,
 // from footage reviewed later. See docs/mvp.md §5's `Session (date, kind,
-// opponent)` and T3.2 in odd/tasks/keepercent.md for the decision this
+// opponent)` and T3.2 in odd/tasks/archive/keepercent-2026-10-24.md for the decision this
 // codifies.
 //
 // The active rival goalkeeper is deliberately NOT a session field: she can

@@ -9,11 +9,11 @@ A task is ticked by `/auto-task` in its close commit. Each **Acceptance** list i
 ## Test hardening (requested 2026-10-23: "que se lleve a casos máximos, extremos la prueba … que sea súper completa")
 
 - [ ] T7.9 · auto · opus — UI test suite green
-  - Context: in T7.2's r3 run 4 UI tests passed and 13 failed; three navigation/reveal failures reproduced at baseline, ten audit failures match historical T6.1-A symptoms. T7.4 adds `AccessibilityAuditPolicy` and audits at the largest text size.
+  - The author's spec in `odd/tasks/keepercent.md` (T7.9, including the T7.4 accepted debt) is authoritative; this entry only makes it executable unattended.
   - Acceptance:
     1. The full UI test target runs on the dedicated iPhone simulator through `Tools/check.sh` with zero unexpected failures.
-    2. Each failure is diagnosed to a cause (app defect, test defect, or a known false positive of drawing-only elements) and fixed at that cause. App defects are fixed in the app, not hidden in the test.
-    3. Any remaining expected failure uses `XCTExpectFailure` with the cause in its message, and is listed in the close line. Blanket audit suppression is not allowed: `AccessibilityAuditPolicy` may only ignore `.textClipped`/`.contrast` on drawing identifiers.
+    2. Each failure is classified as stale test, real defect or environment. Stale tests are fixed. **No product behaviour change**: each real defect becomes a new `manual` task line in `odd/tasks/keepercent.md` (and this queue), and its test is marked `XCTExpectFailure` naming that task, for the author to approve a fix later.
+    3. Every expected failure or skip carries its reason in code and in the T7.9 ledger entry, as the author's spec requires. Blanket audit suppression is not allowed: `AccessibilityAuditPolicy` may only ignore `.textClipped`/`.contrast` on drawing identifiers.
     4. Split the scheme's tests into an `.xctestplan` with two configurations: `Smoke` (navigation and behavior) and `Audits` (accessibility audits), both run by default.
 
 - [ ] T7.10 · auto · sonnet — Domain edge cases to the limit
