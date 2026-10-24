@@ -60,7 +60,7 @@ enum ScopedMatchData {
         return matches.enumerated().compactMap { index, session in
             guard let id = session.matchID else { return nil }
             let opponent = session.rivalTeam?.name ?? String(localized: "Opponent unavailable")
-            let date = session.date.formatted(.dateTime.day().month(.abbreviated))
+            let date = MatchScopeLabels.dateText(for: session.date, among: matches.map(\.date))
             let kind = session.kind.map(sessionKindLabel) ?? String(localized: "Unknown kind")
             let ordinal = MatchScopeLabels.needsOrdinal(for: session.date, among: matches.map(\.date)) ? index + 1 : nil
             return MatchScopeOption(id: id, label: MatchScopeLabels.label(date: date, kind: kind, opponent: opponent, ordinal: ordinal))
@@ -104,7 +104,7 @@ enum ScopedMatchData {
         }
         return matches.enumerated().compactMap { index, session in
             guard let id = session.matchID else { return nil }
-            let date = session.date.formatted(.dateTime.day().month(.abbreviated))
+            let date = MatchScopeLabels.dateText(for: session.date, among: matches.map(\.date))
             let kind = session.kind.map(sessionKindLabel) ?? String(localized: "Unknown kind")
             let ordinal = MatchScopeLabels.needsOrdinal(for: session.date, among: matches.map(\.date)) ? index + 1 : nil
             return MatchScopeOption(id: id, label: MatchScopeLabels.label(date: date, kind: kind, ordinal: ordinal))

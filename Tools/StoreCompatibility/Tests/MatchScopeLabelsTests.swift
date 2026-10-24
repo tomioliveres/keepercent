@@ -16,4 +16,18 @@ struct MatchScopeLabelsTests {
         #expect(MatchScopeLabels.label(date: "20 Sep", kind: "League", opponent: "BM Serra", ordinal: nil)
             == "vs BM Serra · 20 Sep · League")
     }
+
+    @Test func yearOnlyWhenSameDayAndMonthCollideAcrossYears() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "America/Los_Angeles")!
+        let sep2026 = calendar.date(from: DateComponents(year: 2026, month: 9, day: 20, hour: 0, minute: 1))!
+        let sep2025 = calendar.date(from: DateComponents(year: 2025, month: 9, day: 20, hour: 23, minute: 59))!
+        let sep2026Late = calendar.date(from: DateComponents(year: 2026, month: 9, day: 20, hour: 23, minute: 59))!
+        let oct2026 = calendar.date(from: DateComponents(year: 2026, month: 10, day: 20))!
+        #expect(MatchScopeLabels.needsYear(for: sep2026, among: [sep2026, sep2025], calendar: calendar))
+        #expect(MatchScopeLabels.needsYear(for: sep2025, among: [sep2026, sep2025], calendar: calendar))
+        #expect(!MatchScopeLabels.needsYear(for: sep2026, among: [sep2026, sep2026Late], calendar: calendar))
+        #expect(!MatchScopeLabels.needsYear(for: sep2026, among: [sep2026, oct2026], calendar: calendar))
+        #expect(!MatchScopeLabels.needsYear(for: sep2026, among: [sep2026], calendar: calendar))
+    }
 }
