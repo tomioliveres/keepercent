@@ -9,6 +9,7 @@ struct ManagedMatchRow: View {
     var showsRival = true
     let onOpen: () -> Void
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var isEditing = false
     @State private var isDeleting = false
     @State private var kind: SessionKind = .live
@@ -16,7 +17,10 @@ struct ManagedMatchRow: View {
     @State private var errorMessage: String?
 
     var body: some View {
-        HStack {
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 0))
+            : AnyLayout(HStackLayout())
+        return layout {
             if session.rivalTeam != nil {
                 Button(action: onOpen) { summary }
                     .buttonStyle(.plain)
