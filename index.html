@@ -1,0 +1,959 @@
+<title>Bitácora de Keepercent</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+  :root {
+    --ground: #F2F4F7;
+    --surface: #FFFFFF;
+    --surface-sunk: #E8ECF2;
+    --ink: #101A26;
+    --ink-soft: #4A5769;
+    --line: #D3DAE4;
+    --court: #1C5C9E;
+    --court-soft: #C9DCEF;
+    --frame: #D9452F;
+    --net: #8C9AAD;
+    --good: #1F7A5A;
+    --shadow: 0 1px 2px rgba(16, 26, 38, .06), 0 8px 24px rgba(16, 26, 38, .05);
+
+    --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    --font-body: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0C131C;
+      --surface: #141E2A;
+      --surface-sunk: #0A1119;
+      --ink: #EAF0F7;
+      --ink-soft: #9DAEC2;
+      --line: #263447;
+      --court: #4D9BE0;
+      --court-soft: #1B3550;
+      --frame: #FF7259;
+      --net: #55677D;
+      --good: #5FC79C;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .3);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #0C131C;
+    --surface: #141E2A;
+    --surface-sunk: #0A1119;
+    --ink: #EAF0F7;
+    --ink-soft: #9DAEC2;
+    --line: #263447;
+    --court: #4D9BE0;
+    --court-soft: #1B3550;
+    --frame: #FF7259;
+    --net: #55677D;
+    --good: #5FC79C;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .3);
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 17px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 780px;
+    margin-inline: auto;
+    padding-inline: 20px;
+    padding-block: 0 72px;
+  }
+
+  header.masthead {
+    padding-block: 56px 32px;
+    border-bottom: 3px solid var(--ink);
+  }
+
+  .eyebrow {
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--court);
+    margin: 0 0 14px;
+  }
+
+  h1 {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(38px, 8vw, 62px);
+    line-height: .98;
+    letter-spacing: -.02em;
+    margin: 0 0 18px;
+    text-wrap: balance;
+  }
+
+  .lede { font-size: 19px; color: var(--ink-soft); margin: 0; max-width: 60ch; }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 10px;
+    margin-top: 24px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+  .meta span {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 3px 11px;
+    background: var(--surface);
+  }
+
+  section { padding-block: 44px 0; }
+
+  h2 {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(24px, 4.5vw, 32px);
+    letter-spacing: -.015em;
+    line-height: 1.12;
+    margin: 0 0 6px;
+    text-wrap: balance;
+  }
+  h2 .num {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--frame);
+    display: block;
+    margin-bottom: 8px;
+    letter-spacing: .08em;
+  }
+
+  h3 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 19px;
+    letter-spacing: -.005em;
+    margin: 34px 0 8px;
+  }
+
+  p { margin: 0 0 16px; }
+  strong { font-weight: 600; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 22px;
+    box-shadow: var(--shadow);
+    margin: 22px 0;
+  }
+
+  figure { margin: 26px 0; }
+  figure svg { display: block; width: 100%; height: auto; max-width: 100%; }
+  figcaption {
+    font-family: var(--font-display);
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-top: 10px;
+    line-height: 1.5;
+  }
+
+  pre {
+    font-family: var(--font-mono);
+    font-size: 13.5px;
+    line-height: 1.6;
+    background: var(--surface-sunk);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--court);
+    border-radius: 6px;
+    padding: 16px;
+    overflow-x: auto;
+    margin: 18px 0;
+  }
+  code { font-family: var(--font-mono); font-size: .88em; }
+  p code, li code, td code {
+    background: var(--surface-sunk);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 1px 5px;
+  }
+  .c-key { color: var(--frame); font-weight: 600; }
+  .c-com { color: var(--net); }
+  .c-type { color: var(--court); font-weight: 600; }
+
+  .tablewrap { overflow-x: auto; margin: 20px 0; }
+  table { border-collapse: collapse; width: 100%; font-size: 15px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th {
+    font-family: var(--font-display);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: var(--ink-soft);
+    border-bottom: 2px solid var(--ink);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.term { font-family: var(--font-mono); font-size: 13px; color: var(--court); white-space: nowrap; }
+
+  ul.clean { margin: 0 0 16px; padding-left: 20px; }
+  ul.clean li { margin-bottom: 8px; }
+
+  .pill {
+    display: inline-block;
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    padding: 2px 9px;
+    border-radius: 999px;
+    border: 1px solid currentColor;
+  }
+  .pill.done { color: var(--good); }
+  .pill.now { color: var(--frame); }
+  .pill.todo { color: var(--ink-soft); }
+
+  .day {
+    display: grid;
+    grid-template-columns: 92px 1fr;
+    gap: 16px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--line);
+    align-items: start;
+  }
+  .day:last-child { border-bottom: none; }
+  .day .when {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-soft);
+    padding-top: 3px;
+  }
+  .day .what { font-size: 15.5px; }
+  .day .what b { font-family: var(--font-display); font-weight: 600; display: block; margin-bottom: 2px; }
+
+  .why {
+    border-left: 3px solid var(--frame);
+    padding: 2px 0 2px 16px;
+    margin: 18px 0;
+    color: var(--ink-soft);
+    font-size: 16px;
+  }
+  .why b { color: var(--ink); font-family: var(--font-display); font-weight: 600; }
+
+  @media (max-width: 460px) {
+    body { font-size: 16px; }
+    .day { grid-template-columns: 1fr; gap: 4px; }
+    .card { padding: 16px; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="eyebrow">Bitácora técnica · ACoding Hackathon 2026</p>
+    <h1>Keepercent</h1>
+    <p class="lede">Cómo se construye una app de scouting de lanzamientos para arqueros de handball, decisión por decisión, desde los primeros principios.</p>
+    <div class="meta">
+      <span>Swift + SwiftUI · 100% nativo</span>
+      <span>iOS 26</span>
+      <span>Entrega: viernes 25/9</span>
+      <span>Última actualización: día 4 · análisis completo: estadísticas, vista enlazada, fichas del tirador y del arquero</span>
+    </div>
+  </header>
+
+  <section>
+    <h2><span class="num">01</span>Qué problema resuelve</h2>
+    <p>Un arquero de handball estudia a los rivales antes de cada partido: quién lanza, desde dónde, hacia qué parte del arco y cómo termina la jugada. Hoy eso se hace con apps pensadas para entrenadores que llevan la estadística completa del partido.</p>
+    <p>Esas apps tienen un punto ciego. Cuando la pelota pega en el marco, registran un único evento: <em>“palo”</em>. Para un arquero eso es tirar información a la basura, porque no es lo mismo el travesaño que el palo izquierdo abajo. Son dos lecturas distintas de la misma jugada.</p>
+
+    <div class="why">
+      <b>El diferencial de Keepercent.</b> Registrar el marco en nueve segmentos, analizar también al arquero rival para decirle al equipo dónde conviene tirar, y funcionar sin cuenta, sin internet y sin pagar nada.
+    </div>
+
+    <h3>Los dos momentos de uso</h3>
+    <p>Los dos cargan datos al <strong>mismo perfil del rival</strong>, así el conocimiento se acumula en lugar de dispersarse.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Momento</th><th>Cómo se usa</th><th>Qué exige</th></tr></thead>
+        <tbody>
+          <tr><td><strong>En vivo</strong></td><td>Desde el banco, durante el partido</td><td>Velocidad: 3 o 4 toques por lanzamiento</td></tr>
+          <tr><td><strong>Con video</strong></td><td>El día previo, mirando el video en otra pantalla y pausando</td><td>El mismo flujo, con tiempo para los detalles opcionales</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>La app no reproduce video. Esa decisión saca una pantalla entera del alcance y no le quita nada al uso real.</p>
+  </section>
+
+  <section>
+    <h2><span class="num">02</span>El arco, en nueve por nueve por tres</h2>
+    <p>Todo el modelo de datos nace de una pregunta: <strong>¿dónde terminó la pelota?</strong> Y hay exactamente tres respuestas posibles, que no se superponen y no dejan huecos.</p>
+
+    <figure>
+      <svg viewBox="0 0 680 420" role="img" aria-label="Diagrama del arco dividido en grilla de 3 por 3, nueve segmentos de marco y tres direcciones de tiro afuera">
+        <rect x="0" y="0" width="680" height="420" fill="none"/>
+
+        <!-- afuera: flechas -->
+        <text x="36" y="28" font-family="IBM Plex Mono, monospace" font-size="13" fill="var(--net)">afuera</text>
+        <path d="M60 46 L60 120" stroke="var(--net)" stroke-width="2" stroke-dasharray="5 5" fill="none"/>
+        <path d="M54 112 L60 122 L66 112 Z" fill="var(--net)"/>
+        <text x="300" y="28" font-family="IBM Plex Mono, monospace" font-size="13" fill="var(--net)" text-anchor="middle">over · por arriba</text>
+        <path d="M300 40 L300 74" stroke="var(--net)" stroke-width="2" stroke-dasharray="5 5" fill="none"/>
+        <path d="M294 66 L300 76 L306 66 Z" fill="var(--net)"/>
+        <text x="600" y="28" font-family="IBM Plex Mono, monospace" font-size="13" fill="var(--net)" text-anchor="end">afuera</text>
+
+        <!-- marco -->
+        <rect x="90" y="80" width="420" height="250" fill="none" stroke="var(--frame)" stroke-width="14"/>
+        <!-- red -->
+        <rect x="97" y="87" width="406" height="236" fill="var(--court-soft)" opacity=".35"/>
+        <!-- grilla 3x3 -->
+        <g stroke="var(--net)" stroke-width="1.5">
+          <line x1="232" y1="87" x2="232" y2="323"/>
+          <line x1="368" y1="87" x2="368" y2="323"/>
+          <line x1="97" y1="166" x2="503" y2="166"/>
+          <line x1="97" y1="245" x2="503" y2="245"/>
+        </g>
+        <!-- etiquetas grilla -->
+        <g font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--ink-soft)" text-anchor="middle">
+          <text x="164" y="132">arriba</text><text x="164" y="146">izq.</text>
+          <text x="300" y="132">arriba</text><text x="300" y="146">centro</text>
+          <text x="436" y="132">arriba</text><text x="436" y="146">der.</text>
+          <text x="164" y="211">medio</text><text x="164" y="225">izq.</text>
+          <text x="300" y="211">medio</text><text x="300" y="225">centro</text>
+          <text x="436" y="211">medio</text><text x="436" y="225">der.</text>
+          <text x="164" y="290">abajo</text><text x="164" y="304">izq.</text>
+          <text x="300" y="290">abajo</text><text x="300" y="304">centro</text>
+          <text x="436" y="290">abajo</text><text x="436" y="304">der.</text>
+        </g>
+
+        <!-- segmentos del marco marcados -->
+        <g stroke="var(--court)" stroke-width="14" stroke-linecap="butt">
+          <line x1="90" y1="87" x2="90" y2="160"/>
+        </g>
+        <text x="72" y="80" font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--court)" text-anchor="end">palo izq.</text>
+        <text x="72" y="96" font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--court)" text-anchor="end">arriba</text>
+
+        <g stroke="var(--court)" stroke-width="14">
+          <line x1="235" y1="80" x2="365" y2="80"/>
+        </g>
+        <text x="300" y="62" font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--court)" text-anchor="middle">travesaño centro</text>
+
+        <!-- leyenda derecha -->
+        <g font-family="IBM Plex Mono, monospace" font-size="13">
+          <rect x="546" y="96" width="14" height="14" fill="var(--court-soft)" opacity=".7" stroke="var(--net)"/>
+          <text x="568" y="108" fill="var(--ink-soft)">9 zonas</text>
+          <text x="568" y="126" fill="var(--ink-soft)">adentro</text>
+
+          <rect x="546" y="156" width="14" height="14" fill="var(--court)"/>
+          <text x="568" y="168" fill="var(--ink-soft)">9 segmentos</text>
+          <text x="568" y="186" fill="var(--ink-soft)">del marco</text>
+
+          <rect x="546" y="216" width="14" height="14" fill="var(--net)"/>
+          <text x="568" y="228" fill="var(--ink-soft)">3 direcciones</text>
+          <text x="568" y="246" fill="var(--ink-soft)">afuera</text>
+
+          <text x="546" y="300" fill="var(--frame)" font-weight="600">21 destinos</text>
+          <text x="546" y="318" fill="var(--ink-soft)">posibles</text>
+        </g>
+      </svg>
+      <figcaption><strong>El arco siempre se ve desde la perspectiva del tirador.</strong> Su izquierda es la derecha del arquero. La cancha se dibuja con el arco arriba, así el origen y el destino comparten la misma referencia y nunca hay que invertir nada mentalmente.</figcaption>
+    </figure>
+
+    <h3>Por qué esto se llama un «enum con valores asociados»</h3>
+    <p>En Swift, un <code>enum</code> es una lista cerrada de posibilidades. Lo potente acá es que cada posibilidad puede <strong>llevar su propio dato adentro</strong>:</p>
+<pre><span class="c-key">enum</span> <span class="c-type">GoalTarget</span> {
+    <span class="c-key">case</span> inside(<span class="c-type">GoalZone</span>)     <span class="c-com">// adentro: qué celda de la grilla</span>
+    <span class="c-key">case</span> post(<span class="c-type">PostSegment</span>)    <span class="c-com">// en el marco: qué segmento</span>
+    <span class="c-key">case</span> out(<span class="c-type">MissDirection</span>)  <span class="c-com">// afuera: hacia dónde</span>
+}</pre>
+    <p>Un tiro adentro necesita saber la celda; uno al palo necesita el segmento; uno afuera, la dirección. Son datos distintos para casos distintos, y el tipo lo refleja tal cual.</p>
+
+    <div class="why">
+      <b>Lo que te regala el compilador.</b> Cada vez que el código pregunta “¿qué pasó con este tiro?”, Swift te obliga a responder los tres casos. Si mañana agregamos un cuarto, el compilador marca <strong>todos</strong> los lugares que quedaron incompletos. Los errores aparecen al compilar, no en el banco en pleno partido.
+    </div>
+
+    <h3>Nueve zonas que no se pueden desincronizar</h3>
+    <p>La grilla podría haberse escrito como un enum de nueve casos sueltos. No se hizo, y el motivo es práctico:</p>
+<pre><span class="c-key">struct</span> <span class="c-type">GoalZone</span> {
+    <span class="c-key">let</span> row: <span class="c-type">GoalRow</span>        <span class="c-com">// arriba · medio · abajo</span>
+    <span class="c-key">let</span> column: <span class="c-type">GoalColumn</span>  <span class="c-com">// izquierda · centro · derecha</span>
+}</pre>
+    <p>Las nueve zonas <strong>se derivan</strong> de 3 filas × 3 columnas; no hay una lista escrita a mano que pueda quedar vieja. Y para calcular si un lanzamiento fue cruzado alcanza con mirar <code>column</code>; para saber si fue arriba o abajo, <code>row</code>. Con nueve casos sueltos, cada cuenta sería un <code>switch</code> de nueve líneas.</p>
+  </section>
+
+  <section>
+    <h2><span class="num">03</span>La cancha: ángulo y distancia</h2>
+    <p>El origen del lanzamiento no se guarda como “zona”, sino como el <strong>punto exacto</strong> donde tocaste, en coordenadas de 0 a 1. La zona se calcula a partir de ese punto.</p>
+
+    <figure>
+      <svg viewBox="0 0 680 430" role="img" aria-label="Diagrama de media cancha de handball con el área de 6 metros, la línea de 9 metros, la marca de 7 metros y cinco sectores radiales">
+        <!-- piso -->
+        <rect x="40" y="30" width="600" height="396" fill="var(--surface-sunk)"/>
+        <!-- area de 6 m: dos cuartos de circulo con centro en los postes, unidos por un tramo recto -->
+        <path d="M115 30 A180 180 0 0 0 295 210 L385 210 A180 180 0 0 0 565 30 Z"
+              fill="var(--court)" fill-opacity="0.3" stroke="var(--court)" stroke-width="3"/>
+        <!-- linea de 9 m, misma forma, trazo discontinuo -->
+        <path d="M25 30 A270 270 0 0 0 295 300 L385 300 A270 270 0 0 0 655 30"
+              fill="none" stroke="var(--net)" stroke-width="2.5" stroke-dasharray="11 8"/>
+        <!-- lineas laterales y de fondo -->
+        <path d="M40 30 L640 30" stroke="var(--ink-soft)" stroke-width="2.5" fill="none"/>
+        <path d="M40 30 L40 426 M640 30 L640 426" stroke="var(--ink-soft)" stroke-width="2" fill="none"/>
+        <!-- sectores radiales desde el centro del arco -->
+        <g stroke="var(--net)" stroke-width="1.6">
+          <line x1="340" y1="30" x2="203" y2="406"/>
+          <line x1="340" y1="30" x2="477" y2="406"/>
+          <line x1="340" y1="30" x2="12" y2="259"/>
+          <line x1="340" y1="30" x2="668" y2="259"/>
+        </g>
+        <!-- arco -->
+        <rect x="295" y="19" width="90" height="11" fill="var(--frame)"/>
+        <text x="340" y="14" font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--frame)" text-anchor="middle">arco · 3 m</text>
+        <!-- marca de 7 m -->
+        <line x1="322" y1="240" x2="358" y2="240" stroke="var(--frame)" stroke-width="4"/>
+        <text x="340" y="262" font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--frame)" text-anchor="middle">7 m</text>
+        <!-- etiquetas -->
+        <g font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--ink-soft)" text-anchor="middle">
+          <text x="340" y="120" fill="var(--court)">área de 6 m</text>
+          <text x="612" y="196">línea</text><text x="612" y="211">de 9 m</text>
+          <text x="105" y="330">extremo</text><text x="105" y="345">izquierdo</text>
+          <text x="240" y="392">lateral</text><text x="240" y="407">izquierdo</text>
+          <text x="340" y="360">central</text>
+          <text x="440" y="392">lateral</text><text x="440" y="407">derecho</text>
+          <text x="575" y="330">extremo</text><text x="575" y="345">derecho</text>
+        </g>
+        <!-- anotacion polar -->
+        <circle cx="340" cy="30" r="5" fill="var(--frame)"/>
+        <line x1="340" y1="30" x2="470" y2="286" stroke="var(--frame)" stroke-width="2"/>
+        <circle cx="470" cy="286" r="6" fill="var(--frame)"/>
+        <g font-family="IBM Plex Mono, monospace" font-size="12">
+          <text x="486" y="300" fill="var(--frame)">toque</text>
+          <text x="486" y="316" fill="var(--ink-soft)">ángulo → sector</text>
+          <text x="486" y="332" fill="var(--ink-soft)">distancia → cerca o lejos</text>
+        </g>
+      </svg>
+      <figcaption><strong>Cinco sectores en abanico × dos profundidades = diez zonas</strong>, más la marca de 7 m, que es su propia zona táctil. El área de 6 m y la línea de 9 m no son semicírculos: son dos cuartos de círculo con centro en cada poste, unidos por un tramo recto. Como los sectores salen desde el arco, la zona se deduce con el ángulo y la distancia al centro del arco: geometría pura, fácil de testear.</figcaption>
+    </figure>
+
+    <div class="why">
+      <b>El detalle que cambia todo: desde dónde se mide.</b> El <strong>sector</strong> se mide como ángulo desde el centro del arco, y el medio campo se parte en cinco sectores de 36°, con los cortes en ±18° y ±54°. Pero la <strong>profundidad</strong> no se mide desde el centro del arco, sino desde <strong>la boca del arco</strong>, es decir el segmento de 3 m entre los postes. ¿Por qué? Porque la línea de 9 m es, justamente, el conjunto de puntos que están a 9 m de ese segmento: por eso se dibuja como dos cuartos de círculo unidos por una recta. Si midiéramos desde el centro, la frontera sería un círculo, y un tiro que a ojo cae claramente fuera de la línea de 9 m cerca del poste quedaría clasificado como cercano. El dibujo y el cálculo tienen que contar la misma historia.
+    </div>
+
+    <div class="why">
+      <b>Por qué guardar el punto y no la zona.</b> Si mañana cambiamos cómo se dividen los sectores, los datos viejos siguen sirviendo: se recalculan. Si guardáramos solo la zona, cada cambio de criterio tiraría a la basura todos los partidos ya cargados.
+    </div>
+
+    <h3>La línea de 9 m no se dibuja: se camina</h3>
+    <p>Dibujar la línea de 9 m parece un problema aparte de clasificar un toque como cercano o lejano, pero es <strong>la misma cuenta</strong>. La línea se genera muestreando, punto por punto y cada un grado aproximadamente, la misma función <code>distanceToGoalMouth</code> que <code>depth(at:)</code> usa para decidir si un toque cayó cerca o lejos — dos cuartos de círculo sobre los postes unidos por un tramo recto, nunca un semicírculo. Por construcción, la línea dibujada <strong>es</strong> el borde que se está clasificando, y el test lo comprueba tal cual: cada punto muestreado está exactamente a 9 m del arco.</p>
+    <p>El muestreo parejo, sin embargo, dejó un defecto que solo aparece al correr la app: las tres curvas que arman la línea son <strong>piezas distintas</strong>, unidas en tres codos —la esquina de la cancha, el punto donde la línea de 9 m sale de la cancha y el empalme entre el tramo recto y el arco del poste—, y ningún codo cae exacto sobre un múltiplo de un grado. Muestrear más fino no lo arregla: el error de un codo no depende del tamaño del paso, así que reducirlo a la mitad no reduce el hueco a la mitad. Los tres codos ahora entran como <strong>vértices exactos</strong> del polígono, no como muestras; dentro de cada tramo, que sí es una curva continua, el muestreo parejo alcanza. Lo que queda es un error irreducible entre la cuerda y el arco real —medido en <strong>0,36 mm</strong>—, que el test perdona explícitamente en la curva de 9 m y en ningún otro lugar.</p>
+    <div class="why">
+      <b>La lección general.</b> Una función definida por partes no se aproxima mejor solo afinando el muestreo: el error se concentra en los codos, y ahí es constante sin importar cuántos puntos más se agreguen. Un codo se resuelve poniéndolo como vértice, no muestreándolo con más resolución.
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="num">04</span>Un toque que ya sabe el resultado</h2>
+    <p>La app se usa en el banco, con el partido en movimiento. Cada toque de más es un lanzamiento que se pierde. Por eso el destino <strong>resuelve el resultado por sí mismo</strong> siempre que puede.</p>
+
+    <figure>
+      <svg viewBox="0 0 680 220" role="img" aria-label="Flujo de carga de un lanzamiento en cuatro pasos">
+        <g font-family="Archivo, sans-serif" font-size="14">
+          <rect x="8" y="60" width="140" height="56" rx="8" fill="var(--surface)" stroke="var(--line)"/>
+          <text x="78" y="84" fill="var(--ink)" text-anchor="middle" font-weight="600">1 · jugador</text>
+          <text x="78" y="102" fill="var(--ink-soft)" text-anchor="middle" font-size="12">número del rival</text>
+
+          <path d="M152 88 L178 88" stroke="var(--net)" stroke-width="2"/>
+          <path d="M172 82 L182 88 L172 94 Z" fill="var(--net)"/>
+
+          <rect x="186" y="60" width="140" height="56" rx="8" fill="var(--surface)" stroke="var(--line)"/>
+          <text x="256" y="84" fill="var(--ink)" text-anchor="middle" font-weight="600">2 · cancha</text>
+          <text x="256" y="102" fill="var(--ink-soft)" text-anchor="middle" font-size="12">origen o marca de 7 m</text>
+
+          <path d="M330 88 L356 88" stroke="var(--net)" stroke-width="2"/>
+          <path d="M350 82 L360 88 L350 94 Z" fill="var(--net)"/>
+
+          <rect x="364" y="60" width="140" height="56" rx="8" fill="var(--surface)" stroke="var(--line)"/>
+          <text x="434" y="84" fill="var(--ink)" text-anchor="middle" font-weight="600">3 · arco</text>
+          <text x="434" y="102" fill="var(--ink-soft)" text-anchor="middle" font-size="12">destino</text>
+
+          <path d="M508 88 L534 88" stroke="var(--frame)" stroke-width="2"/>
+          <path d="M528 82 L538 88 L528 94 Z" fill="var(--frame)"/>
+
+          <rect x="542" y="36" width="130" height="48" rx="8" fill="var(--surface)" stroke="var(--frame)" stroke-width="2"/>
+          <text x="607" y="56" fill="var(--frame)" text-anchor="middle" font-weight="600">palo o afuera</text>
+          <text x="607" y="73" fill="var(--ink-soft)" text-anchor="middle" font-size="12">listo, sin preguntar</text>
+
+          <rect x="542" y="104" width="130" height="58" rx="8" fill="var(--surface)" stroke="var(--line)"/>
+          <text x="607" y="124" fill="var(--ink)" text-anchor="middle" font-weight="600">adentro</text>
+          <text x="607" y="141" fill="var(--ink-soft)" text-anchor="middle" font-size="12">4 · ¿gol o</text>
+          <text x="607" y="156" fill="var(--ink-soft)" text-anchor="middle" font-size="12">atajada?</text>
+        </g>
+      </svg>
+      <figcaption>Tocar el marco o afuera cierra la carga en tres toques. Solo el tiro que entró al arco necesita la cuarta pregunta.</figcaption>
+    </figure>
+
+    <p>Esa regla no vive en la pantalla, vive en el modelo:</p>
+<pre><span class="c-key">var</span> impliedOutcome: <span class="c-type">ShotOutcome</span>? {
+    <span class="c-key">case</span> .inside: <span class="c-key">nil</span>    <span class="c-com">// falta preguntar: ¿gol o atajada?</span>
+    <span class="c-key">case</span> .post:   .post   <span class="c-com">// resuelto</span>
+    <span class="c-key">case</span> .out:    .out    <span class="c-com">// resuelto</span>
+}</pre>
+    <p>El signo de pregunta en <code>ShotOutcome?</code> significa “esto puede no tener valor”. Es un <strong>opcional</strong>, y acá expresa literalmente una duda pendiente. Swift no te deja usar ese valor sin antes decidir qué hacer cuando no está, así que es imposible olvidarse de preguntar.</p>
+  </section>
+
+  <section>
+    <h2><span class="num">05</span>El puente con la base de datos</h2>
+    <p>SwiftData, la base de datos de Apple, guarda tipos simples: textos, números, fechas. No sabe guardar un enum que lleva datos adentro. La solución es un <strong>código de texto estable</strong>:</p>
+<pre>target.code           <span class="c-com">// "post.crossbarCenter"</span>
+<span class="c-type">GoalTarget</span>(code:)     <span class="c-com">// vuelve al enum, o nil si el texto está roto</span></pre>
+    <p>Adentro de la app se trabaja con el tipo rico, que el compilador controla. En el disco queda un texto legible. Y los tests verifican que <strong>los 21 destinos posibles</strong> van y vuelven intactos, y que un texto inventado devuelve <code>nil</code> en lugar de romper la app.</p>
+
+    <div class="why">
+      <b>Principio general.</b> Guardá lo primitivo, exponé lo rico. La base de datos se lleva lo simple; el dominio se queda con los tipos que evitan errores.
+    </div>
+
+    <h3>Los tipos <code>@Model</code>, y por qué el mapeo no vive ahí</h3>
+    <p>Cada entidad persistida —equipo rival, jugador, sesión, lanzamiento— tiene su tipo <code>@Model</code> en <code>Persistence/</code>, y guarda exactamente lo mismo que <code>GoalTarget</code>: valores primitivos. Un <code>StoredShot</code> no guarda un <code>GoalTarget</code> ni un <code>Player</code>; guarda los códigos de texto y los números de los que esos tipos se reconstruyen.</p>
+    <p>La decodificación —<code>Shot.init?(attackingSideCode:...)</code>, <code>Player.init(...handednessCode:)</code>— no vive en <code>Persistence/</code>: vive en <code>Domain/</code>, al lado de <code>GoalTarget.init?(code:)</code>. La razón es concreta, no una preferencia estética: el proyecto de Xcode tiene un solo target, la app, y ningún target de tests. Todo lo que necesita quedar bajo test tiene que poder correr con <code>swift test</code>, sin simulador. Si la decodificación viviera en <code>Persistence/</code>, que sí importa SwiftData, no habría forma de testearla. Viviendo en <code>Domain/</code>, se testea igual que cualquier otra regla del dominio.</p>
+
+    <h3>El detalle de SwiftData que hay que conocer: el inverso explícito</h3>
+    <p>Un hallazgo técnico de hoy, verificado contra la documentación de Apple antes de darlo por bueno: en SwiftData, una regla de borrado solo llega a las filas que referencian un registro cuando el <code>@Relationship</code> declara un <strong>inverso</strong> explícito. Sin ese inverso, borrar el equipo rival no pone en <code>nil</code> la referencia del jugador —SwiftData no sabe que la relación también corre en el otro sentido, y el nullify simplemente no ocurre.</p>
+    <div class="why">
+      <b>Por qué se verificó antes de aceptarlo.</b> Un sub-agente había afirmado que el nullify funcionaba sin declarar el inverso. No era cierto, y quedó confirmado contra la documentación de Apple, no contra la palabra de quien lo escribió. Es la misma regla que deja la sección 07: un hallazgo se verifica contra la fuente, no se obedece.
+    </div>
+
+    <h3>Escribir sin dejar una fila a mitad de camino</h3>
+    <p>Toda escritura desde una vista sigue la misma forma, sea agregar un jugador, editarlo, borrarlo o iniciar una sesión: primero se reconstruye el valor del dominio a partir de las filas guardadas, y se corre la operación del dominio —que puede lanzar— <strong>contra ese valor completo</strong>, nunca contra la fila sola. Si lanza, SwiftData no se toca. Si no lanza, se aplica exactamente <strong>una fila</strong>, la que esa acción ya sabe que cambió; nunca se compara el antes y el después de todo el plantel ni se reemplaza la relación entera.</p>
+<pre><span class="c-key">let</span> roster = <span class="c-key">try</span> <span class="c-type">Roster</span>(players: team.players.map(\.domainPlayer))
+<span class="c-key">try</span> roster.remove(number: n, recordedShotCount: stored.shotsTaken.count)  <span class="c-com">// valida primero</span>
+context.delete(stored)                                                 <span class="c-com">// una sola fila</span>
+<span class="c-key">do</span> { <span class="c-key">try</span> context.save() }
+<span class="c-key">catch</span> { context.rollback(); message = error.localizedDescription } <span class="c-com">// no deja la fila a mitad de camino</span></pre>
+    <p>El <code>rollback()</code> importa tanto como la validación: sin él, un <code>save()</code> que falla —el disco lleno, por ejemplo, algo que pasó de verdad en esta máquina— deja la fila agregada en memoria mostrada en pantalla junto al mensaje que dice que no se guardó.</p>
+    <div class="why">
+      <b>Por qué validar contra el todo y escribir solo la parte.</b> Validar contra el objeto completo es lo único que puede ver una regla como “no se puede borrar un jugador con tiros registrados”, que depende de más que la fila que cambia. Escribir solo esa fila es lo que evita que una acción sobre un jugador le mueva el pelo a los demás —borrar y reinsertar el plantel entero habría reescrito las relaciones de <code>shotsTaken</code>/<code>shotsFaced</code> de todos los demás jugadores, el mismo resultado de tiros huérfanos que esta regla existe para evitar.
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="num">06</span>Arquitectura: quién puede conocer a quién</h2>
+
+    <h3>El problema de fondo</h3>
+    <p>Un programa crece agregando archivos, y cualquier archivo puede llamar a cualquier otro. Con 20 archivos eso todavía se maneja a mano. Con 200, cambiar uno rompe tres que no tenían nada que ver. La arquitectura no es estética ni una lista de patrones de moda: responde una sola pregunta — <strong>¿quién tiene permitido conocer a quién?</strong> Las carpetas, los protocolos, los paquetes separados, todo lo que sigue en esta sección es consecuencia de esa respuesta, no un fin en sí mismo.</p>
+
+    <h3>La regla de dependencia</h3>
+    <p>Las dependencias apuntan hacia adentro. Lo estable no puede depender de lo volátil. Las reglas del handball — un tiro al ángulo superior izquierdo, un lanzamiento desde el lateral izquierdo — son hechos que no cambian aunque mañana Apple rediseñe SwiftUI de punta a punta. La pantalla es volátil: cambia con cada versión del sistema y con cada decisión de diseño. Las reglas del juego son estables: existían antes que la app y le van a sobrevivir. Por eso la pantalla conoce las reglas del juego, y nunca al revés.</p>
+
+    <h3>Por qué <code>Domain/</code> es un paquete Swift aparte</h3>
+    <p>Si el dominio importara SwiftUI, contestar una pregunta tan simple como “¿esto fue un tiro cruzado?” en un test obligaría a levantar una pantalla completa para poder correrlo. Al ser un paquete separado, sin un solo import de interfaz, <code>swift test</code> corre en segundos y sin simulador.</p>
+    <p>Y esto no es disciplina ni buenas intenciones: es el compilador. Metan una vista adentro de <code>Domain/</code> y el proyecto directamente no compila — no hace falta que nadie lo note en una revisión, ni que quede escrito en un documento que alguien puede no leer. Una regla que hace cumplir una máquina vale más que una regla escrita.</p>
+
+    <h3>Screaming Architecture: las carpetas gritan qué hace la app</h3>
+<pre>App/
+<span class="c-type">Domain/</span>            <span class="c-com">// Swift puro. Cero imports. Todo testeado.</span>
+  GoalTarget, CourtZone, ShotClassification, StatsEngine
+Persistence/       <span class="c-com">// SwiftData: @Model + mapeo a valores del dominio</span>
+Features/
+  Teams/  Sessions/  ShotEntry/
+  ShooterCard/  GoalkeeperCard/  Report/
+Insights/          <span class="c-com">// protocolo InsightWriter</span>
+  FoundationModelsInsightWriter   <span class="c-com">// modelo en el dispositivo</span>
+  TemplateInsightWriter           <span class="c-com">// respaldo determinístico</span>
+DesignSystem/      <span class="c-com">// CourtView, GoalView, HeatmapCell, colores</span></pre>
+    <p>Miren los nombres de las carpetas: <code>ShotEntry</code>, <code>ShooterCard</code>, <code>GoalkeeperCard</code>. Gritan qué <strong>hace</strong> la app — cargar un lanzamiento, mostrar la ficha de un tirador, mostrar la ficha de un arquero — no de qué framework está hecha. Compárenlo con la estructura clásica <code>Models/ Views/ Controllers/</code>: al abrir esas carpetas no se aprende nada del negocio, solo que alguien eligió MVC. La estructura de Keepercent copia la forma del problema real, no el patrón técnico que lo resuelve.</p>
+
+    <h3>Puertos y adaptadores</h3>
+    <p><code>InsightWriter</code> es un puerto: la app declara “necesito que alguien convierta estos hechos ya calculados en una frase”, sin saber ni importarle quién lo hace. Dos adaptadores cumplen ese contrato: <code>FoundationModelsInsightWriter</code>, que usa el modelo de lenguaje del dispositivo, y <code>TemplateInsightWriter</code>, que arma la frase con una plantilla fija, sin ninguna IA de por medio.</p>
+    <div class="why">
+      <b>La ganancia concreta.</b> Sin este puerto, cada pantalla que necesita un texto tendría su propio <code>if disponible { IA } else { plantilla }</code> repetido. Con el puerto, ese cambio ocurre en un solo lugar: se elige el adaptador una vez, y el resto de la app llama a <code>InsightWriter</code> sin enterarse de cuál de los dos le está contestando.
+    </div>
+
+    <h3>Contenedor y presentación <span class="pill now">decisión de hoy</span></h3>
+    <p>Hoy se sumó una segunda distinción, adentro de <code>Features/</code>: dos tipos de vista.</p>
+    <ul class="clean">
+      <li>Una vista <strong>contenedora</strong> sabe de dónde vienen los datos: usa <code>@Query</code> de SwiftData para leerlos de la base.</li>
+      <li>Una vista <strong>de presentación</strong> recibe structs del dominio ya armados y solo los dibuja. No tiene forma de saber si esos datos vinieron de la base real o los inventó una preview.</li>
+    </ul>
+    <div class="why">
+      <b>La ganancia concreta.</b> Las previews de SwiftUI renderizan al instante con datos de prueba, sin tocar la base ni esperar ninguna consulta. Y el código que dibuja — el más delicado, con el hit-testing del arco y la cancha — se puede ejercitar sin que haya una base de datos de por medio.
+    </div>
+
+    <h3>Por qué no hay una capa de repositorio sobre SwiftData <span class="pill now">decisión de hoy</span></h3>
+    <p><code>@Query</code> ya es el mecanismo nativo para leer datos en una vista de SwiftUI. Envolverlo en un repositorio genérico va contra el grano del framework, agrega código, y uno de los criterios del jurado es justamente el <strong>uso correcto de las APIs nativas de Apple</strong>.</p>
+    <p>El principio general, sin vueltas: <strong>una capa se agrega cuando resuelve un problema que existe, no uno que se imagina que podría llegar a existir</strong>. Y hay que ser honesto con el costo de esta decisión: un repositorio haría más fácil cambiar de base de datos el día de mañana, y conscientemente no se paga ese costo, porque esta app no va a cambiar de base de datos.</p>
+
+    <h3>El invariante que sostiene todo</h3>
+    <p><code>StatsEngine</code> siempre recibe un array de structs del dominio, nunca un <code>ModelContext</code> de SwiftData. Los tipos <code>@Model</code> no pueden vivir adentro de <code>Domain/</code> — necesitarían importar SwiftData, y eso rompería la pureza del paquete. Por eso el mapeo va en una sola dirección, siempre en el borde entre capas: <code>@Model</code> → struct del dominio, nunca al revés.</p>
+    <div class="why">
+      <b>Por qué esto importa más que el resto.</b> Esta es la decisión que hace posible que cada estadística de la app se pueda testear en segundos, sin simulador. Si <code>StatsEngine</code> necesitara un <code>ModelContext</code> para calcular un porcentaje, cada test de una cuenta tendría que levantar una base de datos en memoria primero. Al no necesitarlo, calcular el save rate de una zona es una función pura: entra un array, sale un número, y el test lo comprueba sin esperar nada.
+    </div>
+
+    <h3>Dónde entra la inteligencia artificial, y dónde no</h3>
+    <p>Los porcentajes, los mapas de calor y las tendencias los calcula código determinístico y testeado. El modelo de lenguaje que corre en el dispositivo <strong>solo redacta</strong> los hechos que ya calculamos.</p>
+    <div class="why">
+      <b>Por qué esta línea es innegociable.</b> Un modelo generativo puede inventar un número con total seguridad. Si la app le dijera a un arquero “ataja el 70% arriba” y ese número estuviera inventado, la herramienta dejaría de servir. Además, cada función con IA tiene una versión de respaldo sin IA, por si el dispositivo no tiene Apple Intelligence disponible.
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="num">07</span>Cómo se construye: tests, revisión y commits</h2>
+    <p>La arquitectura dice cómo se organiza el código. Esta sección dice cómo se escribe, día a día, para que lo anterior no se quede en una intención.</p>
+
+    <h3>TDD: rojo, verde, refactor</h3>
+    <p>Un test se escribe <strong>antes</strong> que el código que lo cumple, y primero tiene que fallar. Suena a pérdida de tiempo — ¿para qué correr algo que ya se sabe que va a fallar? — pero es exactamente al revés: un test que nunca falló no prueba nada. No hay forma de saber si está atado de verdad al comportamiento que dice medir, o si pasaría igual aunque el código estuviera roto. Verlo fallar es la única prueba de que está conectado a lo que dice probar. Recién después se escribe el mínimo código para que pase (verde), y solo entonces se mejora la forma sin tocar el comportamiento (refactor), con los tests en verde cubriendo la espalda.</p>
+
+    <h3>Qué se testea y qué no</h3>
+    <p>El dominio —reglas, geometría, estadísticas— se testea de forma exhaustiva: son funciones puras, corren en segundos y un error ahí es silencioso y caro, porque un porcentaje mal calculado no tira ningún error, solo miente. Las vistas no se testean unitariamente: el simulador es lento, y mirar la pantalla ya alcanza para saber si el arco se dibuja bien o no. Testear no es un ritual que se aplica por igual a todo el código: se testea donde un error sale caro y pasa desapercibido, y se verifica a ojo donde el costo del test supera lo que ese test evitaría.</p>
+
+    <h3>RDD, y una aclaración necesaria</h3>
+    <p>RDD (<em>receipt-driven development</em>) es la revisión adversarial de código de Gentle AI, con constancia de lo revisado: lentes de riesgo, resiliencia, legibilidad y confiabilidad sobre un commit. Vale aclararlo con toda claridad: RDD <strong>no es testear</strong>. RDD nunca corre un solo test. Tests en verde no producen una constancia de revisión, y una constancia de revisión no prueba que la app funcione. Son dos cosas complementarias, ninguna sustituye a la otra.</p>
+    <p>La decisión: RDD quedó activado, y es el riesgo que calcula <code>gentle-ai review assess</code> sobre cada commit el que decide cuánta ceremonia recibe — no una corazonada. Riesgo bajo recibe un chequeo estructural silencioso; riesgo medio se acumula en una porción de revisión; riesgo alto se revisa en el momento. El motivo es de agenda: el jurado puntúa calidad de código, pero someter cada commit a la ceremonia completa de revisión no entra en un cronograma de seis días.</p>
+
+    <h3>La primera revisión real, y lo que encontró</h3>
+    <p>La primera vez que RDD corrió de verdad fue sobre la clasificación de lanzamientos. Encontró algo que los 54 tests en verde no habían visto, y vale la pena entenderlo porque no era un error: era una garantía puesta en el lugar equivocado. Un <code>switch</code> terminaba en <code>default</code>, la cláusula que atrapa «todo lo demás». El código era correcto para los tres casos existentes. El problema es que <code>default</code> apaga la verificación de exhaustividad del compilador: si mañana se agrega un cuarto caso, ese <code>switch</code> no da error, lo clasifica mal en silencio. Reemplazarlo por los dos casos escritos con nombre no cambió una sola línea de comportamiento — cambió <strong>quién garantiza</strong> que el comportamiento siga siendo correcto. Antes lo garantizaba un test que contaba los casos. Ahora lo garantiza el compilador, que no se olvida.</p>
+    <p>La segunda ronda de revisión, en cambio, marcó un hueco de cobertura que no existía: el caso ya estaba cubierto unas líneas más arriba, fuera del fragmento que el revisor tenía a la vista. Lo interesante es que lo dijo él mismo, que no podía confirmarlo con el diff solo. De ahí sale la regla que queda para el resto del proyecto: <strong>un hallazgo se verifica contra el archivo completo, no se obedece</strong>. Una revisión automática es una segunda opinión informada, no una autoridad.</p>
+
+    <h3>Corrección requerida versus sugerencia: no son el mismo nivel</h3>
+    <p>El día de persistencia y datos de muestra dejó dos revisiones con desenlaces opuestos, y el contraste es la lección. La porción de persistencia volvió con <strong>corrección requerida</strong> y dos hallazgos críticos: el mapeo entre los códigos guardados y los tipos del dominio no tenía un solo test. Era un defecto real y frenó el trabajo con razón. Una corrección acotada respondió a los dos hallazgos, y recién entonces la revisión aprobó.</p>
+    <p>La porción de datos de muestra volvió <strong>aprobada</strong>, con dos sugerencias no bloqueantes, y las dos se rechazaron después de verificarlas contra el código. Una marcaba que armar un diccionario por número de camiseta explota si dos jugadores comparten número —cierto, pero el plantel es una fixture estática escrita a mano, así que un número repetido es un error de quien la escribió, y que explote en el primer arranque lo hace visible en el momento. La alternativa propuesta habría descartado en silencio a un jugador y le habría atribuido mal cada estadística derivada de él. La otra marcaba un <code>force-unwrap</code> sobre una fecha armada con literales enteros en un calendario gregoriano —una rama que no se puede tomar. Reemplazarla habría exigido inventar una fecha de repuesto sin ningún sentido.</p>
+    <p>«Aprobado con sugerencia» y «corrección requerida con crítico» no piden la misma exigencia: el primero es una opinión para evaluar, el segundo es un defecto para arreglar. Y la pregunta que decide cualquier sugerencia es siempre la misma: <strong>¿cambia una falla ruidosa y correcta por una silenciosa y equivocada?</strong> Si la respuesta es sí, se rechaza. Esto extiende la regla que ya dejó la primera revisión: un hallazgo se verifica contra el archivo completo, no se obedece.</p>
+
+    <h3>Commits como unidad de trabajo</h3>
+    <p>Un commit es un comportamiento entregable completo, con sus tests y su documentación adentro. No es “todos los modelos” en un commit, después “todas las vistas” en otro y “todos los tests” al final, porque ninguno de esos tres sirve solo y ninguno se puede revertir de forma independiente sin arrastrar a los otros dos.</p>
+
+    <h3>Una rama secuencial, no sesiones en paralelo</h3>
+    <p>La hackathon exige que el autor pueda explicar cada línea de código. Dos sesiones de IA trabajando en paralelo generan código más rápido de lo que una persona puede leer, así que el cuello de botella nunca es la máquina: es la atención del autor. El trabajo pesado sí se delega a sub-agentes, pero el autor revisa un solo hilo y un solo diff a la vez, nunca varios cambios simultáneos que después haya que reconciliar sin haberlos leído.</p>
+
+    <h3>Por qué una vista se verifica corriéndola, no solo compilándola</h3>
+    <p>Cada una de las tareas de pantalla hechas hasta ahora —el arco, la cancha, la selección, el editor de plantel, la sesión, la carga del tiro— encontró al menos un defecto que ni un build en verde ni la batería completa de tests en verde habían visto: una proporción calculada en unidades que no eran cuadradas, una grilla dibujada del mismo color que el fondo, un palo cuyo trazo pintado no coincidía con su banda táctil, un área de afuera dibujada más chica que lo que realmente registraba, un mensaje de error que tiraba a la basura ediciones sin guardar al cerrar la hoja debajo suyo, una vista de iPad que conservaba la sesión del equipo anterior al cambiar de selección, y en la carga del tiro tres más: las tres columnas del iPad que nunca aparecían, un contador que seguía sumando un tiro ya deshecho y una tiradora seleccionada que se confundía con una arquera.</p>
+    <p>Ninguno de esos defectos es un hueco del dominio —el dominio no tuvo ninguno de estos bugs, porque es la única capa donde TDD estricto realmente llega. Es un hueco de lo que un build en verde prueba: el compilador verifica que los tipos encastren, no que un color se vea o que un toque caiga exactamente donde está la tinta. Por eso ninguna tarea de vista se da por terminada solo porque compiló: se cierra después de correrla a mano en el simulador, tocarla y mirarla.</p>
+  </section>
+
+  <section>
+    <h2><span class="num">08</span>La pantalla que carga un tiro</h2>
+    <p>Tres decisiones de los días 2 y 3, todas sobre la misma tensión: la pantalla tiene que ser rápida en el banco y no puede mentirle a los datos.</p>
+
+    <h3>Dibujo y toque: la misma cuenta, no dos aproximaciones</h3>
+    <p>El palo del arco se dibujaba con un trazo centrado sobre el borde de la boca, así que la mitad de ese trazo caía <em>adentro</em> del arco. Tocar el palo pintado de negro registraba, la mitad de las veces, un tiro adentro. Y en la cancha, el área de «afuera» se pintaba como un rectángulo documentado como un <em>subconjunto</em> garantizado del área real —un contrato correcto, pero con la forma equivocada—, así que quedaba un margen gris que igual registraba como afuera al tocarlo.</p>
+    <p>Los dos bugs son el mismo bug: el dibujo y el toque habían arrancado leyendo la misma función y con el tiempo se habían separado en dos aproximaciones distintas. La corrección en los dos casos fue la misma —pintar exactamente la región que el toque resuelve, ni un pixel más ni uno menos (<code>GoalGeometry.region(for:)</code>, <code>CourtGeometry.regions(for:within:)</code>)— para que dejen de poder desalinearse.</p>
+    <div class="why">
+      <b>La regla general.</b> Cuando el dibujo y el toque leen la misma función, no se pueden desincronizar porque no son dos cosas sincronizadas: son la misma cuenta leída dos veces. Dos aproximaciones que arrancan iguales, en cambio, se separan tarde o temprano — nadie las edita a la vez.
+    </div>
+
+    <h3>La fecha del partido, no la fecha de carga</h3>
+    <p>Una sesión guarda la <strong>fecha del partido</strong>, no la fecha en que se cargó. En vivo las dos coinciden, pero un scouting con video pasa días después del partido jugado. El dominio rechaza una fecha de partido posterior a hoy, comparando por día de calendario con un calendario inyectado en vez de comparar los instantes crudos —lo que evita que un partido jugado a las 23:30 UTC y cargado a la medianoche siguiente en Europa se rechace por una diferencia de huso horario que no es un día distinto para nadie que juega ahí.</p>
+
+    <h3>Deshacer de un solo nivel</h3>
+    <p>Después de cargar un tiro, la tarjeta repite exactamente lo que se guardó, junto a un botón grande de Deshacer y una vibración. Al deshacer, la tarjeta pasa a decir «Tiro eliminado», sin ningún botón encima. La ausencia del botón es la decisión: si quedara un botón de Deshacer sobre el Deshacer, un segundo toque —el reflejo de quien ya tocó una vez sin mirar— borraría un tiro correcto que nada tiene que ver con el que se acaba de deshacer.</p>
+
+    <h3>El registro de tiros: se borra, no se edita</h3>
+    <p>La lista de tiros de una sesión permite borrar, no editar. <code>docs/mvp.md</code> había prometido las dos cosas, pero un tiro mal cargado y notado varias jugadas después queda igual de bien resuelto borrándolo y cargándolo de nuevo, y editar hubiera costado una pantalla entera con el cronograma ya un día atrasado. Cada borrado toca una sola fila y hace <code>rollback()</code> si falla, como cualquier otra escritura de la app. Y como la tarjeta de Deshacer del tiro recién cargado sigue en pantalla mientras se navega al registro, el borrado desde la lista le avisa a la tarjeta qué fila borró: el Deshacer de un solo nivel solo desaparece cuando la fila que borra el registro es exactamente la misma que la tarjeta está mostrando, nunca por haberse borrado cualquier tiro.</p>
+  </section>
+
+  <section>
+    <h2><span class="num">09</span>El motor de estadísticas y las dos fichas</h2>
+    <p>El día 4 no agrega pantallas de carga nuevas: lee los tiros que ya están guardados y los convierte en números. <code>StatsEngine</code> es una función pura en el mismo sentido que <code>GoalGeometry</code> o <code>CourtGeometry</code>: recibe un array de <code>Shot</code> del dominio, nunca un <code>ModelContext</code> de SwiftData, así que una tasa de atajadas se testea igual que una clasificación de lanzamiento — sin simulador, en segundos, y sin necesitar una base de datos en memoria para calcular un número.</p>
+
+    <h3>Un conteo con su tasa adentro, nunca un porcentaje solo</h3>
+    <p><code>docs/mvp.md</code> no define un mínimo de muestra para considerar confiable una estadística, así que el motor no inventa uno. Cada estadística es un conteo con su tasa, y cuando no hubo ningún intento la tasa es <code>nil</code>, nunca <code>0%</code>:</p>
+<pre><span class="c-key">struct</span> <span class="c-type">Tally</span> {
+    <span class="c-key">let</span> attempts: <span class="c-type">Int</span>
+    <span class="c-key">let</span> successes: <span class="c-type">Int</span>
+    <span class="c-key">var</span> rate: <span class="c-type">Double</span>? { attempts == 0 ? <span class="c-key">nil</span> : <span class="c-type">Double</span>(successes) / <span class="c-type">Double</span>(attempts) }
+}</pre>
+    <div class="why">
+      <b>Por qué <code>nil</code> y no cero.</b> Un <code>0%</code> dice «lo intentó y le fue mal». Una zona sin intentos no dice nada de eso: no dice nada. Confundir las dos cosas es exactamente el tipo de mentira silenciosa que la sección 06 ya prohibió para <code>InsightWriter</code> — acá aplica al número, no a la frase que lo describe. Una zona sin datos se dibuja como «sin datos», nunca como una tasa mala.
+    </div>
+
+    <h3>El mapa de calor vive adentro del dibujo que ya existía</h3>
+    <p>El mapa de calor no es una vista nueva: es un tinte más que <code>GoalView</code> y <code>CourtView</code> pintan sobre las mismas regiones que ya dibujaban y ya hit-testeaban desde el día 2. La zona que se colorea es, por construcción, exactamente la zona que un toque resuelve — la misma regla de «lo que ves es lo que tocás» de la sección 08, aplicada ahora al color en vez de al trazo. Se descartó dibujar el arco como una grilla de 3×3 con <code>Chart</code> de Swift Charts: hubiera duplicado el dibujo del arco, perdido los palos y el travesaño, y no tiene forma de dibujar los sectores radiales de la cancha, que no son rectángulos. Swift Charts se usa donde es la herramienta correcta: los gráficos de barras de altura del remate y de resultados, debajo de la vista enlazada.</p>
+
+    <h3>Una vista sirve a las dos fichas: la lectura decide qué mide</h3>
+    <p>El tirador y el arquero rival no son dos vistas distintas con dos mapas de calor distintos: son la misma vista enlazada, leída con dos <strong>lecturas</strong> distintas.</p>
+<pre><span class="c-key">enum</span> <span class="c-type">StatsReading</span> {
+    <span class="c-key">case</span> effectiveness  <span class="c-com">// goles / lanzamientos — la ficha del tirador</span>
+    <span class="c-key">case</span> saveRate       <span class="c-com">// atajadas / tiros al arco — la ficha del arquero</span>
+}</pre>
+    <p>Tocar una zona de la cancha filtra el arco a los tiros que salieron desde ahí; sin nada seleccionado, el arco muestra los tiros de cancha. La marca de 7 m es su propio origen, aparte de las diez zonas de cancha, así que sigue apareciendo por separado a los dos lados de la vista enlazada.</p>
+
+    <h3>Rankear por cantidad, no por tasa</h3>
+    <p>Más allá de la vista enlazada, cada ficha nombra en palabras dónde es peligroso un tirador o dónde es débil un arquero: las tres zonas del arco y los tres orígenes de cancha con más goles para el tirador, las tres zonas con más goles recibidos y las tres con más atajadas para el arquero. El orden es por <strong>cantidad</strong>, no por tasa, porque una tasa sin un mínimo de muestra deja que una zona de 1/1 —un solo tiro, un solo gol— encabece el ranking por delante de una zona de 8/12. Se descartaron dos alternativas: ordenar por tasa con un mínimo de muestra (un umbral que <code>docs/mvp.md</code> no define en ningún lado) y no rankear nada (que delega todo juicio a la sección de texto en lenguaje natural, todavía sin escribir). Una zona con cero goles, o cero atajadas, no entra al ranking. Y como varias zonas pueden empatar en goles, el desempate es determinístico y en dos pasos: primero la que tuvo menos intentos —la tasa más alta entre empatadas—, y si eso también empata, el orden fijo de <code>GoalZone.allCases</code>, para que el mismo dataset produzca siempre el mismo ranking.</p>
+
+    <h3>Los 7 m aparte, y el bug que un build en verde no vio</h3>
+    <p>El ranking del arquero corrió, en un primer momento, sobre el motor completo, 7 m incluidos, mientras el mapa de calor de arriba —la vista enlazada— mostraba solo los tiros de cancha. El resultado: la ficha del arquero #1 nombraba su zona débil como «abajo izquierda 6/7», justo debajo de una celda del mapa de calor que leía 1/6 para esa misma zona. No eran dos números distintos de dos estadísticas distintas: eran <strong>la misma zona, leída por dos caminos que dejaron de estar de acuerdo</strong>, porque uno de los dos había sumado el gol de 7 m que el otro dejaba afuera a propósito. La corrección hizo que las dos rankings —del tirador y del arquero— lean los mismos tiros de cancha que ya lee el mapa de calor, y que el 7 m se mantenga como origen propio en el otro extremo de la vista enlazada, nunca mezclado adentro de una zona de cancha.</p>
+    <div class="why">
+      <b>La lección general.</b> Dos vistas de los mismos datos que no leen exactamente la misma función tienden a desacordarse, tarde o temprano, sobre algún caso límite — acá el 7 m. Un build en verde y toda la batería de tests en verde no vieron nada raro, porque cada cuenta por separado era correcta; hacía falta abrir las dos fichas del mismo arquero, una al lado de la otra, para notar que contaban historias distintas del mismo tiro.
+    </div>
+
+    <h3>Revisar una porción por tarea, no un commit por vez</h3>
+    <p>Con el motor de estadísticas y las dos fichas, la revisión de código dejó de correr commit por commit: cuando el riesgo evaluado es medio, la porción se deja acumular y se revisa una sola vez, al cerrar la tarea, desde el mismo límite que la última revisión aprobada. Es la misma decisión selectiva de la sección 07 —el riesgo decide la ceremonia, no una corazonada— aplicada ahora también al <em>tamaño</em> de lo que se manda a revisar, no solo a si se revisa.</p>
+  </section>
+
+  <section>
+    <h2><span class="num">10</span>Glosario: del código al handball</h2>
+    <p>El código está en inglés, que es la convención del ecosistema de Apple y lo que espera el jurado. Acá está la traducción de cada término.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>En el código</th><th>Qué significa</th></tr></thead>
+        <tbody>
+          <tr><td class="term">GoalTarget</td><td>Destino del lanzamiento: adentro, en el marco o afuera</td></tr>
+          <tr><td class="term">GoalZone</td><td>Una de las nueve celdas dentro del arco</td></tr>
+          <tr><td class="term">GoalRow</td><td>Fila: <code>top</code> arriba · <code>middle</code> medio · <code>bottom</code> abajo</td></tr>
+          <tr><td class="term">GoalColumn</td><td>Columna: <code>left</code> izquierda · <code>center</code> centro · <code>right</code> derecha</td></tr>
+          <tr><td class="term">PostSegment</td><td>Segmento del marco: palo izquierdo o derecho (arriba, medio, abajo) y travesaño (izquierda, centro, derecha)</td></tr>
+          <tr><td class="term">MissDirection</td><td>Tiro afuera: <code>wideLeft</code> por izquierda · <code>wideRight</code> por derecha · <code>over</code> por arriba</td></tr>
+          <tr><td class="term">ShotOutcome</td><td>Resultado: <code>goal</code> gol · <code>saved</code> atajada · <code>post</code> palo · <code>out</code> afuera</td></tr>
+          <tr><td class="term">impliedOutcome</td><td>Resultado que el destino ya implica por sí solo</td></tr>
+          <tr><td class="term">code</td><td>Texto estable con el que se guarda un destino en la base de datos</td></tr>
+          <tr><td class="term">Shot</td><td>Un lanzamiento registrado</td></tr>
+          <tr><td class="term">Session</td><td>Sesión de carga: un partido en vivo o un video</td></tr>
+          <tr><td class="term">RivalTeam</td><td>Equipo rival</td></tr>
+          <tr><td class="term">shooter</td><td>El jugador que lanzó</td></tr>
+          <tr><td class="term">goalkeeper</td><td>Arquero</td></tr>
+          <tr><td class="term">origin</td><td>Punto de la cancha desde donde salió el tiro</td></tr>
+          <tr><td class="term">delivery</td><td>Cómo se ejecutó: <code>jump</code> en salto · <code>standing</code> a pie firme</td></tr>
+          <tr><td class="term">approach</td><td>De qué lado venía la trayectoria del jugador</td></tr>
+          <tr><td class="term">CourtZone</td><td>Zona de la cancha: sector (extremo, lateral o central) más profundidad (cerca o lejos)</td></tr>
+          <tr><td class="term">ShotOrigin</td><td>De dónde salió el tiro: una zona de la cancha o la marca de 7 m</td></tr>
+          <tr><td class="term">CourtGeometry</td><td>La geometría real de la cancha: convierte un toque en sector y profundidad</td></tr>
+          <tr><td class="term">StatsEngine</td><td>El código que calcula todas las estadísticas</td></tr>
+          <tr><td class="term">InsightWriter</td><td>Lo que convierte los números en frases en castellano</td></tr>
+          <tr><td class="term">CaseIterable</td><td>Capacidad de listar todos los casos posibles de un tipo</td></tr>
+          <tr><td class="term">enum</td><td>Lista cerrada de posibilidades</td></tr>
+          <tr><td class="term">struct</td><td>Estructura que agrupa datos relacionados</td></tr>
+          <tr><td class="term">Roster</td><td>El plantel de un equipo rival: jugadores por número de camiseta</td></tr>
+          <tr><td class="term">RosterError</td><td>Por qué falló una operación sobre el plantel (número repetido, jugador con tiros)</td></tr>
+          <tr><td class="term">matchDate</td><td>Fecha en que se jugó el partido, no la fecha en que se cargó</td></tr>
+          <tr><td class="term">facingGoalkeeper</td><td>El arquero rival activo cuando se registró un tiro propio</td></tr>
+          <tr><td class="term">ShotEntryError</td><td>Por qué se rechazó un tiro antes de guardarlo (falta tirador, arquero, origen o resultado)</td></tr>
+          <tr><td class="term">ShotSummary</td><td>El texto de la tarjeta que confirma un tiro recién cargado</td></tr>
+          <tr><td class="term">Tally</td><td>Conteo de intentos y aciertos, con la tasa como opcional: <code>nil</code> si no hubo intentos</td></tr>
+          <tr><td class="term">effectiveness</td><td>Goles / lanzamientos: la métrica de la ficha del tirador</td></tr>
+          <tr><td class="term">saveRate</td><td>Atajadas / tiros al arco: la métrica de la ficha del arquero</td></tr>
+          <tr><td class="term">StatsReading</td><td>Cuál de las dos métricas usa la vista enlazada en cada ficha: <code>effectiveness</code> o <code>saveRate</code></td></tr>
+          <tr><td class="term">zona débil / zona fuerte</td><td>En la ficha del arquero: las tres zonas con más goles recibidos y las tres con más atajadas, por cantidad</td></tr>
+          <tr><td class="term">sevenMeters</td><td>El caso de <code>ShotOrigin</code> para la marca de 7 m; se mantiene aparte de las diez zonas de cancha en la vista enlazada y en los rankings</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="num">11</span>Decisiones tomadas, y las que descartamos</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Decisión</th><th>Por qué</th><th>Qué se descartó</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Una app para el arquero, no para el entrenador</td>
+            <td>Es el nicho que nadie atiende y es la experiencia real del autor</td>
+            <td>App de organización de equipos: necesitaba sincronizar entre celulares</td>
+          </tr>
+          <tr>
+            <td>Todo local, sin cuentas ni nube</td>
+            <td>La cuenta gratuita de Apple no habilita iCloud ni notificaciones push</td>
+            <td>CloudKit; y un backend propio habría sido un segundo proyecto</td>
+          </tr>
+          <tr>
+            <td>Perspectiva del tirador</td>
+            <td>Una sola referencia para la cancha y el arco, sin invertir nada</td>
+            <td>Perspectiva del arquero</td>
+          </tr>
+          <tr>
+            <td>Los 7 m se detectan tocando su marca</td>
+            <td>Evita un botón previo y un toque extra en cada carga</td>
+            <td>Botón de modo al inicio del flujo</td>
+          </tr>
+          <tr>
+            <td>No se registran los tiros bloqueados por un defensor</td>
+            <td>No dicen nada del arquero ni de hacia dónde apuntaba el tirador</td>
+            <td>Registrarlos como un resultado más</td>
+          </tr>
+          <tr>
+            <td>Los arqueros propios quedan fuera</td>
+            <td>El objetivo es el rival: cómo tiran ellos y dónde ataja su arquero</td>
+            <td>Estadísticas de rendimiento propio</td>
+          </tr>
+          <tr>
+            <td>iOS 26 como versión mínima, construido con Xcode 27</td>
+            <td>Los organizadores confirmaron que 26 es el piso y subir a 27 está permitido</td>
+            <td>Instalar Xcode 26 en paralelo</td>
+          </tr>
+          <tr>
+            <td>Nada se guarda en silencio</td>
+            <td>Un toque equivocado en el palo no puede registrar un lanzamiento sin vuelta atrás</td>
+            <td>Pedir confirmación en cada tiro: un toque extra en todos</td>
+          </tr>
+          <tr>
+            <td>Sin reproductor de video en la app</td>
+            <td>El video se mira en otra pantalla; la carga es idéntica a la de un partido</td>
+            <td>AVKit con tiros enlazados al segundo del video</td>
+          </tr>
+          <tr>
+            <td><code>@Query</code> directo en las vistas contenedoras</td>
+            <td>Es el mecanismo nativo de SwiftData, y el jurado puntúa el uso correcto de APIs nativas</td>
+            <td>Una capa de repositorio envolviendo a SwiftData</td>
+          </tr>
+          <tr>
+            <td>Separación entre vista contenedora y vista de presentación</td>
+            <td>Previews instantáneas y código de dibujo testeable sin base de datos</td>
+            <td>Vistas que consultan la base de datos ellas mismas</td>
+          </tr>
+          <tr>
+            <td><code>StatsEngine</code> nunca recibe un <code>ModelContext</code></td>
+            <td>Mantiene cada estadística testeable en segundos, sin simulador</td>
+            <td>Pasar el contexto de la base de datos hacia abajo, hasta el cálculo</td>
+          </tr>
+          <tr>
+            <td>RDD activado de forma selectiva según el riesgo evaluado</td>
+            <td>Constancia de revisión donde importa, sin gastar el cronograma en ceremonia</td>
+            <td>Revisar cada commit, o no revisar ninguno</td>
+          </tr>
+          <tr>
+            <td>La clasificación cubre también palos y tiros afuera</td>
+            <td>El detalle del palo es lo que diferencia a esta app: un remate al palo largo revela la misma intención que uno que entra</td>
+            <td>Clasificar solo los lanzamientos que terminan adentro del arco</td>
+          </tr>
+          <tr>
+            <td>La altura solo existe donde la banda vertical se conoce</td>
+            <td>Un remate por encima del travesaño no es la banda alta; contarlo ahí inflaría esa banda con tiros que nunca amenazaron el arco</td>
+            <td>Mapear «afuera por arriba» a la banda superior</td>
+          </tr>
+          <tr>
+            <td>Sin <code>default</code> en los <code>switch</code> del dominio</td>
+            <td><code>default</code> apaga la verificación de exhaustividad: un caso nuevo se clasificaría mal en silencio</td>
+            <td>Dejar <code>default</code> y confiar en un test que cuenta los casos</td>
+          </tr>
+          <tr>
+            <td>TDD estricto solo en el dominio</td>
+            <td>Ahí un error silencioso sale caro; las vistas se verifican mirándolas</td>
+            <td>Testear todo, o no testear nada</td>
+          </tr>
+          <tr>
+            <td>Una rama secuencial con sub-agentes, sin sesiones en paralelo</td>
+            <td>Cada línea tiene que poder explicarla el autor</td>
+            <td>Sesiones en paralelo sobre worktrees separados</td>
+          </tr>
+          <tr>
+            <td>El palo se pinta exactamente como se toca (relleno, no trazo centrado)</td>
+            <td>Un trazo centrado sobre el borde deja la mitad adentro del arco, y esa mitad se tocaba como gol</td>
+            <td>Agrandar solo la zona táctil sin tocar el dibujo</td>
+          </tr>
+          <tr>
+            <td>La línea de 9 m se genera caminando la misma función que clasifica la profundidad</td>
+            <td>Así la línea dibujada es, por construcción, el borde que se está clasificando</td>
+            <td>Un semicírculo geométrico simple, más fácil de dibujar pero distinto de la clasificación real</td>
+          </tr>
+          <tr>
+            <td>Borrar un jugador con tiros registrados queda bloqueado, no permitido ni soft-deleted</td>
+            <td>El inverso de SwiftData deja los tiros sin dueño y su ficha desaparece de las estadísticas: una respuesta equivocada en silencio</td>
+            <td>Permitir el borrado y dejar <code>shooter</code> en <code>nil</code></td>
+          </tr>
+          <tr>
+            <td>La sesión guarda la fecha del partido, no la fecha de carga</td>
+            <td>El scouting con video pasa días después del partido jugado</td>
+            <td>Usar siempre la fecha de hoy</td>
+          </tr>
+          <tr>
+            <td>El toggle de lado de ataque es pegajoso, no se resetea tras cada tiro</td>
+            <td>Algunos partidos se scoutean desde un solo lado de principio a fin</td>
+            <td>Volver al lado por defecto después de cada carga</td>
+          </tr>
+          <tr>
+            <td>iPad en horizontal: tres columnas, no dos</td>
+            <td>El arco sobre la cancha apilados quedan acotados por la altura —unos 550 pt de ancho en un iPad Pro 11", con ~660 pt libres que solo columnas laterales aprovechan</td>
+            <td>Dos columnas, con la grilla de tiradores y el panel apilados y scrolleables</td>
+          </tr>
+          <tr>
+            <td>Deshacer de un solo nivel, sin botón después de deshacer</td>
+            <td>Un doble toque no puede borrar un segundo tiro correcto que nada tiene que ver con el deshecho</td>
+            <td>Deshacer múltiple con historial</td>
+          </tr>
+          <tr>
+            <td>El registro de tiros permite borrar, no editar</td>
+            <td>Un tiro mal cargado se resuelve igual de bien borrándolo y cargándolo de nuevo; editar hubiera costado una pantalla entera</td>
+            <td>Editar un tiro ya guardado</td>
+          </tr>
+          <tr>
+            <td>El mapa de calor se pinta adentro de <code>GoalView</code>/<code>CourtView</code>, no con un <code>Chart</code> de 3×3</td>
+            <td>La zona coloreada es, por construcción, la misma que un toque resuelve; un <code>Chart</code> perdería los palos, el travesaño y los sectores radiales</td>
+            <td>Dibujar el arco como una grilla de rectángulos de Swift Charts</td>
+          </tr>
+          <tr>
+            <td>Los rankings de las fichas ordenan por cantidad de goles o atajadas, no por tasa</td>
+            <td>Una tasa sin mínimo de muestra deja que una zona de 1/1 encabece el ranking, y <code>docs/mvp.md</code> no define ningún umbral</td>
+            <td>Ordenar por tasa con un mínimo de muestra inventado, o no rankear nada</td>
+          </tr>
+          <tr>
+            <td>Los 7 m quedan aparte en los rankings de zona, igual que en la vista enlazada</td>
+            <td>Mezclarlos hizo que una ficha nombrara «6/7» en una zona que el mapa de calor de al lado mostraba como 1/6</td>
+            <td>Sumar el 7 m adentro de la zona de cancha que le corresponde</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="num">12</span>El avance, día por día</h2>
+
+    <div class="day">
+      <div class="when">Sáb 19/9</div>
+      <div class="what">
+        <b>Día 0 · Definición <span class="pill done">hecho</span></b>
+        Problema, alcance y plan escritos. Repositorio público creado con las reglas de la hackathon adentro, para que el contexto viaje con el código, y esta bitácora publicada para leerla desde cualquier dispositivo.
+      </div>
+    </div>
+
+    <div class="day">
+      <div class="when">Dom 20/9</div>
+      <div class="what">
+        <b>Día 1 · Dominio y datos <span class="pill done">hecho</span></b>
+        Destinos del arco modelados con tests primero: 21 destinos posibles, códigos de guardado que van y vuelven intactos, y el resultado implícito en un toque. Después, las zonas de la cancha con la geometría real: cinco sectores de 36°, profundidad medida desde la boca del arco y el origen de 7 m como caso propio. Luego la clasificación del lanzamiento: cruzado o al primer palo, y la altura del remate, derivadas del par origen-destino. Con el dominio resuelto, se sumó la capa de persistencia: los tipos <code>@Model</code> de SwiftData guardando solo primitivos, con la decodificación de vuelta al dominio viviendo en <code>Domain/</code> porque el proyecto no tiene target de tests, y el hallazgo de que un <code>@Relationship</code> necesita un inverso explícito para que el borrado llegue a las filas relacionadas. Por último, un dataset de muestra completo —un equipo rival, un plantel de doce y una sesión en vivo entera— construido sin <code>Date()</code> ni azar, para que la app abra siempre con datos reales para mirar. <strong>106 tests en 38 suites, todo en verde.</strong> Además quedó creado el proyecto de Xcode, universal y con iOS 26 como mínimo, compilando y enlazado al paquete del dominio, y corrieron revisiones de código con constancia sobre cada porción: la del dominio encontró una garantía mal ubicada que ningún test había visto, la de persistencia frenó por un mapeo sin testear y solo aprobó tras una corrección, y la de datos de muestra aprobó directo, con dos sugerencias que se rechazaron después de verificarlas contra el código.
+      </div>
+    </div>
+
+    <div class="day">
+      <div class="when">Lun 21/9</div>
+      <div class="what">
+        <b>Día 2 · Dibujo y toques <span class="pill done">hecho</span></b>
+        El arco y la cancha dibujados en pantalla sobre una geometría de dominio testeada antes de trazar una sola línea, con zonas táctiles precisas incluso en los segmentos finos del marco. La regla que atravesó las tres tareas: lo que se pinta y lo que se toca resuelven contra la misma función, nunca contra dos aproximaciones que arrancan iguales y se desalinean — encontrado dos veces corriendo la app a mano, no por un test. Selección con resaltado en las dos vistas, con un polígono exacto para cada una de las nueve zonas del arco y las diez de la cancha. <strong>182 tests en 55 suites, todo en verde.</strong>
+      </div>
+    </div>
+
+    <div class="day">
+      <div class="when">Mar 22/9</div>
+      <div class="what">
+        <b>Día 3 · Carga completa <span class="pill done">hecho</span></b>
+        Editor de plantel del equipo rival, con el borrado bloqueado si el jugador ya tiene tiros registrados en vez de permitido o silenciado. Sesión en vivo o con video, guardando la fecha del partido —no la de carga— como regla del dominio. Carga de un tiro de punta a punta: ataque propio o rival, arquero rival activo, diseño de tres columnas en iPad y deshacer de un solo nivel. Por último, el registro de tiros de la sesión: se borra, no se edita, y el borrado nunca deja al Deshacer de la tarjeta apuntando a un tiro distinto del que borró. Código corrido a mano en iPhone y iPad. <strong>238 tests en 69 suites, todo en verde.</strong>
+      </div>
+    </div>
+
+    <div class="day">
+      <div class="when">Mié 23/9</div>
+      <div class="what">
+        <b>Día 4 · Análisis <span class="pill done">hecho</span></b>
+        <code>StatsEngine</code>, la vista enlazada entre cancha y arco con el mapa de calor pintado adentro del dibujo existente, y las dos fichas —tirador y arquero rival— con sus rankings por cantidad de goles y atajadas, 7 m siempre aparte. Un bug de los rankings mezclando el 7 m, encontrado solo corriendo la app, corregido antes de cerrar el día. <strong>302 tests en 83 suites, todo en verde.</strong>
+      </div>
+    </div>
+
+    <div class="day">
+      <div class="when">Jue 24/9</div>
+      <div class="what">
+        <b>Día 5 · IA y compartir <span class="pill todo">pendiente</span></b>
+        Textos en lenguaje natural en el dispositivo, tarjeta para compartir con el equipo e importación de la planilla del partido. A la noche se congelan las funcionalidades.
+      </div>
+    </div>
+
+    <div class="day">
+      <div class="when">Vie 25/9</div>
+      <div class="what">
+        <b>Día 6 · Entrega <span class="pill todo">pendiente</span></b>
+        Solo corrección de errores, pulido, capturas y envío del repositorio.
+      </div>
+    </div>
+  </section>
+
+</div>
