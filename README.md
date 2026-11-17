@@ -59,10 +59,10 @@ Built from scratch for the ACoding Hackathon 2026 (Apple Coding Academy, Septemb
 
 ## Links
 
-- Study log (Spanish): https://tomioliveres.github.io/keepercent/
-- Privacy policy: [privacy.html](privacy.html) · https://tomioliveres.github.io/keepercent/privacy.html
-- Support: [support.html](support.html) · https://tomioliveres.github.io/keepercent/support.html
+- Website: https://keepercent.pages.dev/
+- Privacy policy: https://keepercent.pages.dev/privacy
+- Support: https://keepercent.pages.dev/support
 
-This repository holds the public site only: `index.html` (study log), `privacy.html` and `support.html`.
+The pages in this repository only redirect old links to the website above.
 
 Copyright © 2026 Tomás Oliveres. All rights reserved.
